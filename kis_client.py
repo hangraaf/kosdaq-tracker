@@ -136,6 +136,40 @@ class KISClient:
             "raw": output,
         }
 
+    def lookup_stock_info(self, code: str) -> dict[str, Any] | None:
+        """Try to resolve an unknown stock code via KIS.
+
+        Attempts KOSPI first, then KOSDAQ.  Returns a dict with keys
+        ``name``, ``market`` (KOSPI/KOSDAQ), ``sector``, ``price`` on success,
+        or ``None`` when the code is not found on either exchange.
+        """
+        for mrkt_div, market_label in (("J", "KOSPI"), ("Q", "KOSDAQ")):
+            try:
+                response = requests.get(
+                    f"{self.config.base_url}/uapi/domestic-stock/v1/quotations/inquire-price",
+                    headers=self._headers("FHKST01010100"),
+                    params={
+                        "FID_COND_MRKT_DIV_CODE": mrkt_div,
+                        "FID_INPUT_ISCD": code,
+                    },
+                    timeout=10,
+                )
+                output = self._parse_response(response).get("output") or {}
+                name = str(output.get("hts_kor_isnm", "")).strip()
+                price = self._to_int(output.get("stck_prpr"))
+                if not name or price == 0:
+                    continue
+                sector = str(output.get("bstp_kor_isnm", "기타")).strip() or "기타"
+                return {
+                    "name": name,
+                    "market": market_label,
+                    "sector": sector,
+                    "price": price,
+                }
+            except KISError:
+                continue
+        return None
+
     def daily_chart(self, code: str, days: int) -> pd.DataFrame:
         end = date.today()
         start = end - pd.Timedelta(days=max(days * 2, 60))

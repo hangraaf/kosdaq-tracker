@@ -24,6 +24,7 @@ FAVORITES_FILE = DATA_DIR / "favorites.json"
 PORTFOLIO_FILE = DATA_DIR / "portfolio.json"
 TOKEN_FILE = DATA_DIR / "kis_token.json"
 EXTERNAL_SIGNALS_FILE = DATA_DIR / "external_signals.json"
+CUSTOM_STOCKS_FILE = DATA_DIR / "custom_stocks.json"
 
 
 @dataclass(frozen=True)
@@ -838,8 +839,47 @@ def seed_for(code: str, salt: str = "") -> int:
     return int(digest[:12], 16)
 
 
+def load_custom_stocks() -> list[Stock]:
+    items = read_json(CUSTOM_STOCKS_FILE, [])
+    result = []
+    for item in items:
+        try:
+            result.append(Stock(
+                code=item["code"],
+                name=item["name"],
+                market=item["market"],
+                sector=item.get("sector", "기타"),
+                base_price=int(item.get("base_price", 10000)),
+            ))
+        except (KeyError, TypeError, ValueError):
+            continue
+    return result
+
+
+def save_custom_stock(stock: Stock) -> None:
+    existing = read_json(CUSTOM_STOCKS_FILE, [])
+    if any(item.get("code") == stock.code for item in existing):
+        return
+    existing.append({
+        "code": stock.code,
+        "name": stock.name,
+        "market": stock.market,
+        "sector": stock.sector,
+        "base_price": stock.base_price,
+    })
+    write_json(CUSTOM_STOCKS_FILE, existing)
+
+
+def remove_custom_stock(code: str) -> None:
+    existing = read_json(CUSTOM_STOCKS_FILE, [])
+    write_json(CUSTOM_STOCKS_FILE, [item for item in existing if item.get("code") != code])
+
+
 def all_stocks() -> list[Stock]:
-    return MARKET_STOCKS["전체"]
+    builtin = MARKET_STOCKS["전체"]
+    custom = load_custom_stocks()
+    existing_codes = {s.code for s in builtin}
+    return builtin + [s for s in custom if s.code not in existing_codes]
 
 
 def find_stock(code: str) -> Stock | None:
@@ -1141,7 +1181,7 @@ def forecast_context(df: pd.DataFrame, stock: Stock) -> tuple[dict[str, float], 
     volatility_score = -clamp((volatility - 0.025) / 0.04, 0.0, 1.0)
 
     stock_return = float(close.iloc[-1] / close.iloc[0] - 1) if len(close) >= 2 else 0.0
-    market_peers = MARKET_STOCKS.get("코스피" if stock.market == "KOSPI" else "코스닥", [])[:30]
+    market_peers = current_market_stocks("코스피" if stock.market == "KOSPI" else "코스닥")[:30]
     sector_peers = [s for s in all_stocks() if s.sector == stock.sector][:15]
     market_return = benchmark_return(market_peers, len(clean))
     sector_return = benchmark_return(sector_peers, len(clean))
@@ -1226,7 +1266,15 @@ def advanced_forecast_prices(df: pd.DataFrame, stock: Stock, forecast_days: int)
 
 
 def current_market_stocks(market_label: str) -> list[Stock]:
-    return MARKET_STOCKS[market_label]
+    base = MARKET_STOCKS[market_label]
+    custom = load_custom_stocks()
+    existing_codes = {s.code for s in base}
+    if market_label == "전체":
+        extras = [s for s in custom if s.code not in existing_codes]
+    else:
+        target_market = "KOSPI" if market_label == "코스피" else "KOSDAQ"
+        extras = [s for s in custom if s.code not in existing_codes and s.market == target_market]
+    return base + extras
 
 
 @st.cache_data(ttl=60, show_spinner=False)
@@ -1465,6 +1513,7 @@ def render_stock_table(stocks: list[Stock], use_live: bool) -> None:
 def render_stock_cards(stocks: list[Stock], use_live: bool) -> None:
     favorites = read_json(FAVORITES_FILE, [])
     favorite_codes = {item["code"] for item in favorites}
+    custom_codes = {s.code for s in load_custom_stocks()}
 
     snapshots = {stock.code: stock_snapshot(stock, use_live) for stock in stocks}
 
@@ -1519,6 +1568,10 @@ def render_stock_cards(stocks: list[Stock], use_live: bool) -> None:
             if btn2.button(fav_label, key=f"fav-{stock.code}", use_container_width=True):
                 toggle_favorite(stock)
                 st.rerun()
+            if stock.code in custom_codes:
+                if st.button("✕ 삭제", key=f"del-{stock.code}", use_container_width=True):
+                    remove_custom_stock(stock.code)
+                    st.rerun()
 
 
 def toggle_favorite(stock: Stock) -> None:
@@ -1530,7 +1583,68 @@ def toggle_favorite(stock: Stock) -> None:
     write_json(FAVORITES_FILE, favorites)
 
 
-def render_stocks_page(stocks: list[Stock], market: str, use_live: bool) -> None:
+def _render_add_stock_ui(keyword: str, use_live: bool) -> None:
+    """Shown when search finds no match — auto-adds via KIS or offers a manual form."""
+    is_code = keyword.isdigit() and len(keyword) == 6
+
+    st.warning(f"**'{keyword}'** 에 해당하는 종목을 찾을 수 없습니다.")
+
+    if is_code and use_live:
+        client = get_kis_client()
+        if client:
+            with st.spinner("KIS API로 종목 정보를 조회 중…"):
+                info = client.lookup_stock_info(keyword)
+            if info:
+                new_stock = Stock(
+                    code=keyword,
+                    name=info["name"],
+                    market=info["market"],
+                    sector=info["sector"],
+                    base_price=info["price"],
+                )
+                save_custom_stock(new_stock)
+                st.success(
+                    f"**{info['name']}** ({keyword}) 이(가) 데이터베이스에 추가됐습니다.  \n"
+                    f"시장: {info['market']} · 업종: {info['sector']}"
+                )
+                st.rerun()
+                return
+            else:
+                st.error("KIS API에서 해당 종목 코드를 찾을 수 없습니다. 코드를 확인하거나 아래에서 직접 입력해주세요.")
+
+    # Manual add form
+    with st.expander("종목 직접 추가", expanded=is_code):
+        with st.form("add-custom-stock-form", clear_on_submit=True):
+            col1, col2 = st.columns(2)
+            code_input = col1.text_input("종목 코드 (6자리)", value=keyword if is_code else "")
+            name_input = col2.text_input("종목명", placeholder="예) 삼성전자")
+            col3, col4, col5 = st.columns(3)
+            market_input = col3.selectbox("시장", ["KOSPI", "KOSDAQ"])
+            sector_input = col4.text_input("업종", placeholder="예) 반도체")
+            price_input = col5.number_input("현재가 (기준가)", min_value=1, value=10000, step=100)
+            submitted = st.form_submit_button("추가", use_container_width=True, type="primary")
+            if submitted:
+                code_val = code_input.strip()
+                name_val = name_input.strip()
+                if not code_val or not name_val:
+                    st.error("종목 코드와 종목명을 모두 입력해주세요.")
+                elif not code_val.isdigit() or len(code_val) != 6:
+                    st.error("종목 코드는 숫자 6자리여야 합니다.")
+                elif find_stock(code_val):
+                    st.warning(f"종목 코드 {code_val} 은(는) 이미 데이터베이스에 있습니다.")
+                else:
+                    save_custom_stock(Stock(
+                        code=code_val,
+                        name=name_val,
+                        market=market_input,
+                        sector=sector_input.strip() or "기타",
+                        base_price=int(price_input),
+                    ))
+                    st.success(f"**{name_val}** ({code_val}) 이(가) 추가됐습니다.")
+                    st.rerun()
+
+
+def render_stocks_page(stocks: list[Stock], market: str, keyword: str, use_live: bool) -> None:
     st.title(f"{market} 종목 현황")
     st.markdown(
         '<div class="bh-subtitle">'
@@ -1557,6 +1671,10 @@ def render_stocks_page(stocks: list[Stock], market: str, use_live: bool) -> None
             "**시가총액**  \n회사 전체의 가치를 나타냅니다.  \n"
             "현재가 × 총 주식 수로 계산하며, 숫자가 클수록 큰 회사입니다."
         )
+
+    if not stocks and keyword:
+        _render_add_stock_ui(keyword, use_live)
+        return
 
     render_market_overview(stocks, use_live)
     st.divider()
@@ -2694,7 +2812,7 @@ def main() -> None:
 
     stocks = filtered_stocks(market, keyword, sectors)
     if menu == "종목":
-        render_stocks_page(stocks, market, use_live)
+        render_stocks_page(stocks, market, keyword, use_live)
     elif menu == "차트":
         render_chart_page(market, use_live)
     elif menu == "관심종목":
