@@ -378,7 +378,7 @@ MARKET_STOCKS = {
     "전체": KOSPI_STOCKS + KOSDAQ_STOCKS,
 }
 
-PERIODS = {"1개월": 30, "3개월": 90, "6개월": 180, "1년": 365, "2년": 730}
+PERIODS = {"1개월": 22, "3개월": 65, "6개월": 130, "1년": 252, "2년": 504}
 
 
 BH_CSS = """
@@ -1123,8 +1123,8 @@ def forecast_context(df: pd.DataFrame, stock: Stock) -> tuple[dict[str, float], 
     volatility_score = -clamp((volatility - 0.025) / 0.04, 0.0, 1.0)
 
     stock_return = float(close.iloc[-1] / close.iloc[0] - 1) if len(close) >= 2 else 0.0
-    market_peers = MARKET_STOCKS.get("코스피" if stock.market == "KOSPI" else "코스닥", [])
-    sector_peers = [item for item in all_stocks() if item.sector == stock.sector]
+    market_peers = MARKET_STOCKS.get("코스피" if stock.market == "KOSPI" else "코스닥", [])[:30]
+    sector_peers = [s for s in all_stocks() if s.sector == stock.sector][:15]
     market_return = benchmark_return(market_peers, len(clean))
     sector_return = benchmark_return(sector_peers, len(clean))
     external = load_external_signals(stock)
@@ -1715,10 +1715,17 @@ def render_chart_page(market: str, use_live: bool) -> None:
                 st.rerun()
 
     st.divider()
-    df, source = render_chart(stock, period, use_live)
+    try:
+        df, source = render_chart(stock, period, use_live)
+    except Exception as exc:
+        st.error(f"차트 렌더링 오류: {exc}")
+        return
     st.caption(f"차트 데이터 출처: {source} · {datetime.now().strftime('%H:%M:%S')} 기준")
     st.divider()
-    render_forecast(df, stock)
+    try:
+        render_forecast(df, stock)
+    except Exception as exc:
+        st.warning(f"예측 계산 실패 (차트는 정상): {exc}")
     st.divider()
     render_stock_advisor_panel(stock)
 
