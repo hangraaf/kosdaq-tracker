@@ -1,0 +1,21 @@
+# Streamlit secrets — API 키 절대 커밋 금지
+.streamlit/secrets.toml
+
+# 로컬 데이터 (포트폴리오·관심종목은 각자 로컬에서 관리)
+data/portfolio.json
+data/favorites.json
+data/kis_token.json
+data/external_signals.json
+
+# Python 캐시
+__pycache__/
+*.pyc
+*.pyo
+.env
+
+# 런타임 로그
+.runtime/
+
+# IDE
+.vscode/
+.idea/

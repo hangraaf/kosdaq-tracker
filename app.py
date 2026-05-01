@@ -1,0 +1,2493 @@
+"""Korea stock chart tracker with optional Korea Investment API integration."""
+
+from __future__ import annotations
+
+import hashlib
+import json
+import os
+from dataclasses import dataclass
+from datetime import date, datetime, timedelta
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+import plotly.graph_objects as go
+import streamlit as st
+from plotly.subplots import make_subplots
+
+from kis_client import KISClient, KISConfig, KISError, config_from_env
+
+
+APP_DIR = Path(__file__).resolve().parent
+DATA_DIR = APP_DIR / "data"
+FAVORITES_FILE = DATA_DIR / "favorites.json"
+PORTFOLIO_FILE = DATA_DIR / "portfolio.json"
+TOKEN_FILE = DATA_DIR / "kis_token.json"
+EXTERNAL_SIGNALS_FILE = DATA_DIR / "external_signals.json"
+
+
+@dataclass(frozen=True)
+class Stock:
+    code: str
+    name: str
+    market: str
+    sector: str
+    base_price: int
+
+
+KOSPI_STOCKS: list[Stock] = [
+    # 반도체·전자
+    Stock("005930", "삼성전자", "KOSPI", "반도체", 76000),
+    Stock("000660", "SK하이닉스", "KOSPI", "반도체", 176000),
+    Stock("009150", "삼성전기", "KOSPI", "반도체", 140000),
+    Stock("011070", "LG이노텍", "KOSPI", "전자부품", 170000),
+    Stock("018260", "삼성SDS", "KOSPI", "IT서비스", 155000),
+    Stock("066570", "LG전자", "KOSPI", "전자", 95000),
+    # 통신
+    Stock("017670", "SK텔레콤", "KOSPI", "통신", 52000),
+    Stock("030200", "KT", "KOSPI", "통신", 40000),
+    Stock("032640", "LG유플러스", "KOSPI", "통신", 11000),
+    # 인터넷·플랫폼
+    Stock("035420", "NAVER", "KOSPI", "인터넷", 184000),
+    Stock("035720", "카카오", "KOSPI", "인터넷", 48500),
+    Stock("323410", "카카오뱅크", "KOSPI", "금융", 27000),
+    Stock("377300", "카카오페이", "KOSPI", "금융", 27000),
+    # 게임
+    Stock("259960", "크래프톤", "KOSPI", "게임", 260000),
+    Stock("036570", "엔씨소프트", "KOSPI", "게임", 200000),
+    Stock("251270", "넷마블", "KOSPI", "게임", 55000),
+    # 엔터
+    Stock("352820", "하이브", "KOSPI", "엔터", 195000),
+    Stock("035760", "CJ ENM", "KOSPI", "미디어", 55000),
+    # 바이오·제약
+    Stock("207940", "삼성바이오로직스", "KOSPI", "바이오", 825000),
+    Stock("068270", "셀트리온", "KOSPI", "바이오", 184000),
+    Stock("128940", "한미약품", "KOSPI", "제약", 320000),
+    Stock("000100", "유한양행", "KOSPI", "제약", 95000),
+    Stock("185750", "종근당", "KOSPI", "제약", 110000),
+    Stock("006280", "녹십자", "KOSPI", "제약", 110000),
+    Stock("170900", "동아에스티", "KOSPI", "제약", 78000),
+    Stock("326030", "SK바이오팜", "KOSPI", "바이오", 82000),
+    # 2차전지
+    Stock("373220", "LG에너지솔루션", "KOSPI", "2차전지", 392000),
+    Stock("006400", "삼성SDI", "KOSPI", "2차전지", 356000),
+    # 화학
+    Stock("051910", "LG화학", "KOSPI", "화학", 382000),
+    Stock("009830", "한화솔루션", "KOSPI", "화학", 28000),
+    Stock("011170", "롯데케미칼", "KOSPI", "화학", 98000),
+    Stock("011780", "금호석유", "KOSPI", "화학", 80000),
+    Stock("285130", "SK케미칼", "KOSPI", "화학", 55000),
+    Stock("010060", "OCI홀딩스", "KOSPI", "화학", 80000),
+    # 자동차
+    Stock("005380", "현대차", "KOSPI", "자동차", 243000),
+    Stock("000270", "기아", "KOSPI", "자동차", 108000),
+    Stock("012330", "현대모비스", "KOSPI", "자동차부품", 231000),
+    Stock("018880", "한온시스템", "KOSPI", "자동차부품", 7000),
+    Stock("161390", "한국타이어앤테크놀로지", "KOSPI", "타이어", 47000),
+    Stock("002350", "넥센타이어", "KOSPI", "타이어", 8000),
+    Stock("073240", "금호타이어", "KOSPI", "타이어", 7000),
+    Stock("086280", "현대글로비스", "KOSPI", "물류", 130000),
+    # 조선·중공업
+    Stock("009540", "HD한국조선해양", "KOSPI", "조선", 190000),
+    Stock("010140", "삼성중공업", "KOSPI", "조선", 12000),
+    Stock("010620", "현대미포조선", "KOSPI", "조선", 80000),
+    Stock("042660", "한화오션", "KOSPI", "조선", 27000),
+    Stock("267250", "HD현대", "KOSPI", "지주", 78000),
+    Stock("267260", "HD현대일렉트릭", "KOSPI", "전기기기", 220000),
+    # 두산 그룹
+    Stock("034020", "두산에너빌리티", "KOSPI", "중공업", 25000),
+    Stock("241560", "두산밥캣", "KOSPI", "기계", 42000),
+    Stock("336260", "두산퓨얼셀", "KOSPI", "에너지", 18000),
+    Stock("000150", "두산", "KOSPI", "지주", 130000),
+    Stock("454910", "두산로보틱스", "KOSPI", "로보틱스", 45000),
+    # 건설
+    Stock("000720", "현대건설", "KOSPI", "건설", 30000),
+    Stock("028050", "삼성엔지니어링", "KOSPI", "건설", 30000),
+    Stock("006360", "GS건설", "KOSPI", "건설", 17000),
+    Stock("047040", "대우건설", "KOSPI", "건설", 5000),
+    Stock("000210", "DL이앤씨", "KOSPI", "건설", 40000),
+    Stock("028260", "삼성물산", "KOSPI", "건설·지주", 150000),
+    # 철강·소재
+    Stock("005490", "POSCO홀딩스", "KOSPI", "철강", 412000),
+    Stock("004020", "현대제철", "KOSPI", "철강", 28000),
+    Stock("010130", "고려아연", "KOSPI", "비철금속", 620000),
+    Stock("001120", "LX홀딩스", "KOSPI", "지주", 13000),
+    # 금융
+    Stock("055550", "신한지주", "KOSPI", "금융", 47600),
+    Stock("105560", "KB금융", "KOSPI", "금융", 74500),
+    Stock("086790", "하나금융지주", "KOSPI", "금융", 65000),
+    Stock("316140", "우리금융지주", "KOSPI", "금융", 15000),
+    Stock("138040", "메리츠금융지주", "KOSPI", "금융", 100000),
+    Stock("016360", "삼성증권", "KOSPI", "증권", 44000),
+    Stock("006800", "미래에셋증권", "KOSPI", "증권", 10000),
+    Stock("005940", "NH투자증권", "KOSPI", "증권", 14000),
+    # 보험
+    Stock("032830", "삼성생명", "KOSPI", "보험", 85000),
+    Stock("000810", "삼성화재", "KOSPI", "보험", 310000),
+    Stock("005830", "DB손해보험", "KOSPI", "보험", 98000),
+    Stock("001450", "현대해상", "KOSPI", "보험", 37000),
+    Stock("088350", "한화생명", "KOSPI", "보험", 4000),
+    # 에너지·정유
+    Stock("015760", "한국전력", "KOSPI", "에너지", 22000),
+    Stock("036460", "한국가스공사", "KOSPI", "에너지", 45000),
+    Stock("010950", "S-Oil", "KOSPI", "정유", 72000),
+    Stock("096770", "SK이노베이션", "KOSPI", "정유", 110000),
+    # 지주
+    Stock("034730", "SK", "KOSPI", "지주", 180000),
+    Stock("003550", "LG", "KOSPI", "지주", 82000),
+    Stock("078930", "GS", "KOSPI", "지주", 47000),
+    Stock("000880", "한화", "KOSPI", "지주", 35000),
+    Stock("004990", "롯데지주", "KOSPI", "지주", 25000),
+    Stock("006260", "LS", "KOSPI", "지주", 130000),
+    Stock("004800", "효성", "KOSPI", "지주", 65000),
+    Stock("001040", "CJ", "KOSPI", "지주", 90000),
+    # 유통·소비
+    Stock("023530", "롯데쇼핑", "KOSPI", "유통", 70000),
+    Stock("004170", "신세계", "KOSPI", "유통", 170000),
+    Stock("139480", "이마트", "KOSPI", "유통", 70000),
+    Stock("069960", "현대백화점", "KOSPI", "유통", 55000),
+    Stock("007070", "GS리테일", "KOSPI", "유통", 24000),
+    Stock("282330", "BGF리테일", "KOSPI", "유통", 150000),
+    # 식품·음료
+    Stock("097950", "CJ제일제당", "KOSPI", "식품", 280000),
+    Stock("005300", "롯데칠성음료", "KOSPI", "음료", 140000),
+    Stock("000080", "하이트진로", "KOSPI", "음료", 23000),
+    Stock("271560", "오리온", "KOSPI", "식품", 105000),
+    Stock("004370", "농심", "KOSPI", "식품", 365000),
+    Stock("005180", "빙그레", "KOSPI", "식품", 58000),
+    Stock("033780", "KT&G", "KOSPI", "담배", 98000),
+    # 화장품
+    Stock("090430", "아모레퍼시픽", "KOSPI", "화장품", 120000),
+    Stock("051900", "LG생활건강", "KOSPI", "화장품", 380000),
+    Stock("161890", "한국콜마", "KOSPI", "화장품", 62000),
+    Stock("120110", "코스맥스", "KOSPI", "화장품", 85000),
+    # 항공·물류
+    Stock("003490", "대한항공", "KOSPI", "항공", 22000),
+    Stock("020560", "아시아나항공", "KOSPI", "항공", 13000),
+    Stock("000120", "CJ대한통운", "KOSPI", "물류", 130000),
+    Stock("011200", "HMM", "KOSPI", "해운", 18000),
+    Stock("180640", "한진칼", "KOSPI", "지주", 80000),
+    # 방산
+    Stock("012450", "한화에어로스페이스", "KOSPI", "방산", 220000),
+    Stock("047810", "한국항공우주", "KOSPI", "방산", 62000),
+    Stock("064350", "현대로템", "KOSPI", "방산", 45000),
+    # 레저
+    Stock("035250", "강원랜드", "KOSPI", "레저", 14000),
+    Stock("034230", "파라다이스", "KOSPI", "레저", 14000),
+]
+
+KOSDAQ_STOCKS: list[Stock] = [
+    # 2차전지·소재
+    Stock("247540", "에코프로비엠", "KOSDAQ", "2차전지", 184000),
+    Stock("086520", "에코프로", "KOSDAQ", "지주/소재", 672000),
+    Stock("066970", "엘앤에프", "KOSDAQ", "2차전지소재", 145000),
+    Stock("294630", "에코앤드림", "KOSDAQ", "2차전지소재", 24000),
+    Stock("025560", "미래나노텍", "KOSDAQ", "2차전지소재", 12000),
+    # 바이오·제약
+    Stock("091990", "셀트리온헬스케어", "KOSDAQ", "바이오", 76200),
+    Stock("028300", "HLB", "KOSDAQ", "바이오", 60400),
+    Stock("068760", "셀트리온제약", "KOSDAQ", "바이오", 104300),
+    Stock("196170", "알테오젠", "KOSDAQ", "바이오", 212500),
+    Stock("145020", "휴젤", "KOSDAQ", "바이오", 186400),
+    Stock("064550", "바이오니아", "KOSDAQ", "바이오", 31400),
+    Stock("237690", "에스티팜", "KOSDAQ", "바이오", 80000),
+    Stock("086900", "메디톡스", "KOSDAQ", "바이오", 170000),
+    Stock("141080", "레고켐바이오", "KOSDAQ", "바이오", 52000),
+    Stock("039200", "오스코텍", "KOSDAQ", "바이오", 44000),
+    Stock("321550", "티움바이오", "KOSDAQ", "바이오", 9000),
+    Stock("206650", "유바이오로직스", "KOSDAQ", "바이오", 8000),
+    Stock("950130", "엑시노젠", "KOSDAQ", "바이오", 14000),
+    Stock("310210", "보로노이", "KOSDAQ", "바이오", 38000),
+    Stock("347700", "스카이바이오텍", "KOSDAQ", "바이오", 9000),
+    # 의료기기
+    Stock("214150", "클래시스", "KOSDAQ", "의료기기", 45200),
+    Stock("322510", "제이시스메디칼", "KOSDAQ", "의료기기", 19000),
+    Stock("335890", "비올", "KOSDAQ", "의료기기", 18000),
+    Stock("214450", "파마리서치", "KOSDAQ", "의료기기", 120000),
+    Stock("216080", "제테마", "KOSDAQ", "의료기기", 22000),
+    Stock("328130", "루닛", "KOSDAQ", "AI·의료", 52000),
+    Stock("338220", "뷰노", "KOSDAQ", "AI·의료", 22000),
+    # 반도체·장비·소재
+    Stock("067310", "하나마이크론", "KOSDAQ", "반도체", 24300),
+    Stock("058470", "리노공업", "KOSDAQ", "반도체", 198500),
+    Stock("039030", "이오테크닉스", "KOSDAQ", "반도체", 167800),
+    Stock("357780", "솔브레인", "KOSDAQ", "반도체소재", 289000),
+    Stock("403870", "HPSP", "KOSDAQ", "반도체장비", 38600),
+    Stock("036830", "솔브레인홀딩스", "KOSDAQ", "반도체소재", 32000),
+    Stock("137400", "피엔티", "KOSDAQ", "반도체장비", 78000),
+    Stock("238490", "피에스케이", "KOSDAQ", "반도체장비", 36000),
+    Stock("056190", "에스에프에이", "KOSDAQ", "반도체장비", 35000),
+    Stock("240810", "원익IPS", "KOSDAQ", "반도체장비", 34000),
+    Stock("089030", "테크윙", "KOSDAQ", "반도체장비", 28000),
+    Stock("095340", "ISC", "KOSDAQ", "반도체소재", 32000),
+    Stock("033640", "네패스", "KOSDAQ", "반도체", 14000),
+    Stock("036810", "에프에스티", "KOSDAQ", "반도체장비", 22000),
+    Stock("102940", "코오롱인더스트리", "KOSDAQ", "반도체소재", 46000),
+    # 게임
+    Stock("263750", "펄어비스", "KOSDAQ", "게임", 38600),
+    Stock("293490", "카카오게임즈", "KOSDAQ", "게임", 22100),
+    Stock("112040", "위메이드", "KOSDAQ", "게임", 51200),
+    Stock("101730", "위메이드맥스", "KOSDAQ", "게임", 13600),
+    Stock("225570", "넥슨게임즈", "KOSDAQ", "게임", 14000),
+    Stock("078340", "컴투스", "KOSDAQ", "게임", 46000),
+    Stock("095660", "네오위즈", "KOSDAQ", "게임", 19000),
+    Stock("069080", "웹젠", "KOSDAQ", "게임", 17000),
+    Stock("192080", "더블유게임즈", "KOSDAQ", "게임", 35000),
+    Stock("194480", "데브시스터즈", "KOSDAQ", "게임", 40000),
+    # 엔터
+    Stock("035900", "JYP Ent.", "KOSDAQ", "엔터", 72400),
+    Stock("041510", "에스엠", "KOSDAQ", "엔터", 92700),
+    Stock("122870", "와이지엔터테인먼트", "KOSDAQ", "엔터", 42000),
+    Stock("253450", "스튜디오드래곤", "KOSDAQ", "엔터", 60000),
+    Stock("173940", "FNC엔터테인먼트", "KOSDAQ", "엔터", 5000),
+    Stock("182360", "큐브엔터테인먼트", "KOSDAQ", "엔터", 12000),
+    # IT·소프트웨어
+    Stock("053800", "안랩", "KOSDAQ", "소프트웨어", 78000),
+    Stock("041020", "폴라리스오피스", "KOSDAQ", "소프트웨어", 6000),
+    Stock("236340", "더존비즈온", "KOSDAQ", "소프트웨어", 52000),
+    Stock("079940", "가비아", "KOSDAQ", "IT서비스", 15000),
+    Stock("048410", "현대오토에버", "KOSDAQ", "IT서비스", 195000),
+    # 화장품·뷰티
+    Stock("257720", "실리콘투", "KOSDAQ", "화장품", 26000),
+    Stock("278470", "에이피알", "KOSDAQ", "화장품", 75000),
+    Stock("234080", "JM솔루션", "KOSDAQ", "화장품", 5000),
+    # 증권·금융
+    Stock("039490", "키움증권", "KOSDAQ", "증권", 130000),
+    # 여행·유통·패션
+    Stock("039130", "하나투어", "KOSDAQ", "여행", 62000),
+    Stock("080160", "모두투어", "KOSDAQ", "여행", 14000),
+    Stock("031430", "신세계인터내셔날", "KOSDAQ", "패션", 18000),
+    # 기타 제조·소재
+    Stock("036560", "더존비즈온홀딩스", "KOSDAQ", "소프트웨어", 18000),
+    Stock("065060", "지씨셀", "KOSDAQ", "바이오", 23000),
+    Stock("200130", "콜마비앤에이치", "KOSDAQ", "화장품", 26000),
+]
+
+MARKET_STOCKS = {
+    "코스피": KOSPI_STOCKS,
+    "코스닥": KOSDAQ_STOCKS,
+    "전체": KOSPI_STOCKS + KOSDAQ_STOCKS,
+}
+
+PERIODS = {"1개월": 30, "3개월": 90, "6개월": 180, "1년": 365, "2년": 730}
+
+
+BH_CSS = """
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Share+Tech+Mono&display=swap');
+
+/* ── Mondrian × Cyberpunk token ──────────────── */
+:root {
+  /* 배경 — 심우주 블랙 */
+  --bg:       #03030A;
+  --surf:     #08080F;
+  --surf2:    #0E0E18;
+  --grid:     #14141F;      /* 몬드리안 격자선 */
+  --border:   #1C1C2A;
+  --border2:  #28283C;
+
+  /* 몬드리안 원색 — 네온 에디션 */
+  --red:      #FF2D55;      /* 핫 네온 레드 (상승) */
+  --blue:     #00A8FF;      /* 일렉트릭 블루 (하락) */
+  --yellow:   #FFE600;      /* 네온 옐로 (강조) */
+  --cyan:     #00FFD4;      /* 사이버 틸 (보조 강조) */
+  --magenta:  #FF00CC;      /* 사이버펑크 마젠타 */
+
+  /* 텍스트 */
+  --white:    #E8E8F0;
+  --muted:    #42425A;
+  --muted2:   #6060780;
+
+  /* 글로우 */
+  --glow-y:   0 0 8px rgba(255,230,0,0.55), 0 0 24px rgba(255,230,0,0.18);
+  --glow-r:   0 0 8px rgba(255,45,85,0.6),  0 0 24px rgba(255,45,85,0.20);
+  --glow-b:   0 0 8px rgba(0,168,255,0.55), 0 0 24px rgba(0,168,255,0.18);
+  --glow-c:   0 0 6px rgba(0,255,212,0.45), 0 0 18px rgba(0,255,212,0.12);
+
+  --font:     'Space Grotesk', 'Noto Sans KR', sans-serif;
+  --mono:     'Share Tech Mono', 'Courier New', monospace;
+  color-scheme: dark;
+}
+
+/* ── Base ────────────────────────────────────── */
+body, .stApp {
+  background: var(--bg) !important;
+  color: var(--white) !important;
+  font-family: var(--font) !important;
+}
+
+/* ── Sidebar ─────────────────────────────────── */
+[data-testid="stSidebar"] {
+  background: var(--surf) !important;
+  border-right: 3px solid var(--grid) !important;
+}
+[data-testid="stSidebar"] label {
+  font-weight: 600 !important;
+  color: var(--white) !important;
+}
+
+/* ── Typography ──────────────────────────────── */
+h1 {
+  font-family: var(--font) !important;
+  font-size: 1.55rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.02em !important;
+  border-left: 5px solid var(--yellow) !important;
+  padding-left: 14px !important;
+  margin-bottom: 4px !important;
+  text-shadow: var(--glow-y) !important;
+}
+h2 {
+  font-family: var(--mono) !important;
+  font-size: 0.68rem !important;
+  font-weight: 400 !important;
+  letter-spacing: 0.18em !important;
+  text-transform: uppercase !important;
+  color: var(--cyan) !important;
+  margin-top: 28px !important;
+}
+h3 { font-family: var(--font) !important; font-weight: 700 !important; }
+
+/* ── Metric blocks — 몬드리안 컬러 블록 ─────── */
+div[data-testid="stMetric"] {
+  background: var(--surf2) !important;
+  border: 2px solid var(--border2) !important;
+  border-top: 4px solid var(--yellow) !important;
+  border-radius: 0 !important;
+  padding: 14px 18px !important;
+  box-shadow: inset 0 0 20px rgba(255,230,0,0.03) !important;
+}
+div[data-testid="stMetric"] label {
+  font-family: var(--mono) !important;
+  font-size: 0.64rem !important;
+  letter-spacing: 0.16em !important;
+  text-transform: uppercase !important;
+  color: var(--cyan) !important;
+  font-weight: 400 !important;
+}
+div[data-testid="stMetric"] [data-testid="stMetricValue"] {
+  font-family: var(--mono) !important;
+  font-size: 1.5rem !important;
+  font-weight: 400 !important;
+  letter-spacing: 0.02em !important;
+  color: var(--yellow) !important;
+  text-shadow: var(--glow-y) !important;
+}
+div[data-testid="stMetric"] [data-testid="stMetricDelta"] {
+  font-family: var(--mono) !important;
+  font-size: 0.82rem !important;
+}
+
+/* ── Buttons ─────────────────────────────────── */
+.stButton > button {
+  border-radius: 0 !important;
+  font-family: var(--mono) !important;
+  font-weight: 400 !important;
+  font-size: 0.75rem !important;
+  letter-spacing: 0.1em !important;
+  text-transform: uppercase !important;
+  transition: all 0.15s !important;
+}
+.stButton > button[kind="primary"] {
+  background: var(--yellow) !important;
+  color: #03030A !important;
+  border: 2px solid var(--yellow) !important;
+  box-shadow: var(--glow-y) !important;
+}
+.stButton > button[kind="primary"]:hover {
+  background: #03030A !important;
+  color: var(--yellow) !important;
+  box-shadow: var(--glow-y) !important;
+}
+.stButton > button[kind="secondary"] {
+  background: transparent !important;
+  color: var(--cyan) !important;
+  border: 2px solid var(--border2) !important;
+}
+.stButton > button[kind="secondary"]:hover {
+  border-color: var(--cyan) !important;
+  box-shadow: var(--glow-c) !important;
+}
+
+/* ── Inputs ──────────────────────────────────── */
+.stTextInput input, .stNumberInput input {
+  background: var(--surf2) !important;
+  border: 2px solid var(--border2) !important;
+  border-radius: 0 !important;
+  color: var(--white) !important;
+  font-family: var(--mono) !important;
+  font-size: 0.85rem !important;
+}
+.stTextInput input:focus, .stNumberInput input:focus {
+  border-color: var(--cyan) !important;
+  box-shadow: var(--glow-c) !important;
+}
+[data-baseweb="select"] > div {
+  background: var(--surf2) !important;
+  border: 2px solid var(--border2) !important;
+  border-radius: 0 !important;
+  font-family: var(--mono) !important;
+}
+
+/* ── Tabs ────────────────────────────────────── */
+[data-testid="stTabs"] [data-baseweb="tab-list"] {
+  background: var(--surf) !important;
+  border-bottom: 2px solid var(--border2) !important;
+  gap: 0 !important;
+}
+[data-testid="stTabs"] [data-baseweb="tab"] {
+  background: transparent !important;
+  font-family: var(--mono) !important;
+  font-weight: 400 !important;
+  font-size: 0.72rem !important;
+  letter-spacing: 0.12em !important;
+  text-transform: uppercase !important;
+  padding: 10px 20px !important;
+  border-radius: 0 !important;
+  color: var(--muted) !important;
+}
+[data-testid="stTabs"] [aria-selected="true"] {
+  color: var(--yellow) !important;
+  border-bottom: 3px solid var(--yellow) !important;
+  text-shadow: var(--glow-y) !important;
+}
+
+/* ── Expanders ───────────────────────────────── */
+[data-testid="stExpander"] {
+  border: 2px solid var(--border2) !important;
+  border-left: 3px solid var(--cyan) !important;
+  border-radius: 0 !important;
+  background: var(--surf) !important;
+}
+[data-testid="stExpander"] summary {
+  font-family: var(--mono) !important;
+  font-weight: 400 !important;
+  letter-spacing: 0.05em !important;
+  color: var(--cyan) !important;
+}
+
+/* ── Dataframe ───────────────────────────────── */
+[data-testid="stDataFrame"] {
+  border: 2px solid var(--border2) !important;
+  border-radius: 0 !important;
+}
+[data-testid="stDataFrame"] th {
+  font-family: var(--mono) !important;
+  font-size: 0.62rem !important;
+  letter-spacing: 0.14em !important;
+  text-transform: uppercase !important;
+  background: var(--grid) !important;
+  color: var(--cyan) !important;
+}
+
+/* ── Alerts ──────────────────────────────────── */
+[data-testid="stAlert"] {
+  border-radius: 0 !important;
+  border-width: 2px !important;
+  border-left-width: 4px !important;
+}
+
+/* ── Blockquotes ─────────────────────────────── */
+blockquote {
+  border-left: 4px solid var(--cyan) !important;
+  background: var(--grid) !important;
+  padding: 12px 18px !important;
+  margin: 12px 0 !important;
+  color: var(--cyan) !important;
+  font-family: var(--mono) !important;
+  font-size: 0.88rem !important;
+}
+
+/* ── Caption ─────────────────────────────────── */
+[data-testid="stCaptionContainer"] {
+  font-family: var(--mono) !important;
+  color: var(--muted) !important;
+  font-size: 0.7rem !important;
+  letter-spacing: 0.06em !important;
+}
+
+/* ── Divider ─────────────────────────────────── */
+hr {
+  border-color: var(--border2) !important;
+  margin: 28px 0 !important;
+}
+
+/* ── Toggle ──────────────────────────────────── */
+[data-testid="stToggle"] span[data-checked="true"] {
+  background: var(--cyan) !important;
+  box-shadow: var(--glow-c) !important;
+}
+
+/* ── Radio ───────────────────────────────────── */
+[data-testid="stRadio"] label {
+  font-family: var(--font) !important;
+  font-weight: 600 !important;
+  font-size: 0.85rem !important;
+}
+
+/* ── Stock cards — 몬드리안 컬러 블록 ────────── */
+.bh-card {
+  background: var(--surf2);
+  border: 2px solid var(--border2);
+  border-left: 5px solid var(--border2);
+  border-top: 1px solid var(--grid);
+  padding: 16px 16px 14px;
+  min-height: 160px;
+  margin-bottom: 2px;
+  position: relative;
+}
+.bh-card::before {
+  content: '';
+  position: absolute;
+  top: 0; right: 0;
+  width: 6px; height: 6px;
+  background: var(--border2);
+}
+.bh-card.up {
+  border-left-color: var(--red);
+  box-shadow: inset 2px 0 12px rgba(255,45,85,0.07);
+}
+.bh-card.up::before   { background: var(--red); box-shadow: var(--glow-r); }
+.bh-card.down {
+  border-left-color: var(--blue);
+  box-shadow: inset 2px 0 12px rgba(0,168,255,0.07);
+}
+.bh-card.down::before { background: var(--blue); box-shadow: var(--glow-b); }
+
+.bh-tag {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--cyan);
+  margin-bottom: 6px;
+}
+.bh-name {
+  font-family: var(--font);
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin: 0 0 8px;
+  color: var(--white);
+  letter-spacing: -0.01em;
+}
+.bh-price {
+  font-family: var(--mono);
+  font-size: 1.25rem;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  color: var(--yellow);
+  text-shadow: var(--glow-y);
+}
+.bh-delta { font-family: var(--mono); font-size: 0.82rem; margin-top: 4px; }
+.bh-delta.up   { color: var(--red);  text-shadow: var(--glow-r); }
+.bh-delta.down { color: var(--blue); text-shadow: var(--glow-b); }
+.bh-delta.flat { color: var(--muted); }
+
+/* ── Sidebar 로고 ────────────────────────────── */
+.bh-logo {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid var(--border2);
+}
+.bh-logo-mark {
+  width: 38px; height: 38px;
+  background: var(--yellow);
+  box-shadow: var(--glow-y);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--mono);
+  font-size: 1rem;
+  color: #03030A;
+}
+.bh-logo-text { line-height: 1.15; }
+.bh-logo-title {
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--yellow);
+  text-shadow: var(--glow-y);
+}
+.bh-logo-sub {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--cyan);
+  margin-top: 3px;
+}
+
+/* ── Section label ───────────────────────────── */
+.bh-section-label {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--cyan);
+  border-bottom: 1px solid var(--border2);
+  padding-bottom: 5px;
+  margin: 20px 0 10px;
+}
+
+/* ── Status pill ─────────────────────────────── */
+.bh-pill {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border: 1px solid var(--border2);
+  color: var(--muted);
+}
+.bh-pill.live {
+  border-color: var(--cyan);
+  color: var(--cyan);
+  box-shadow: var(--glow-c);
+}
+
+/* ── Page subtitle ───────────────────────────── */
+.bh-subtitle {
+  font-family: var(--mono);
+  font-size: 0.73rem;
+  letter-spacing: 0.07em;
+  color: var(--muted);
+  margin-bottom: 24px;
+  padding-left: 19px;
+}
+</style>
+"""
+
+
+def setup_page() -> None:
+    st.set_page_config(
+        page_title="Korea Stock Tracker",
+        page_icon="▲",
+        layout="wide",
+        initial_sidebar_state="expanded",
+    )
+    st.markdown(BH_CSS, unsafe_allow_html=True)
+
+
+def ensure_data_dir() -> None:
+    DATA_DIR.mkdir(exist_ok=True)
+
+
+def read_json(path: Path, default):
+    ensure_data_dir()
+    if not path.exists():
+        return default
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return default
+
+
+def write_json(path: Path, payload) -> None:
+    ensure_data_dir()
+    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def seed_for(code: str, salt: str = "") -> int:
+    digest = hashlib.sha256(f"{code}:{salt}".encode("utf-8")).hexdigest()
+    return int(digest[:12], 16)
+
+
+def all_stocks() -> list[Stock]:
+    return MARKET_STOCKS["전체"]
+
+
+def find_stock(code: str) -> Stock | None:
+    return next((stock for stock in all_stocks() if stock.code == code), None)
+
+
+def money(value: float | int) -> str:
+    """1주당 가격 등 정확한 원 단위 표시."""
+    return f"{value:,.0f}원"
+
+
+def money_per_share(value: float | int) -> str:
+    """주당 가격임을 명시."""
+    return f"{value:,.0f}원/주"
+
+
+def money_compact(value: float | int) -> str:
+    """큰 금액을 조·억·만 단위로 읽기 쉽게 표시."""
+    v = abs(float(value))
+    sign = "-" if value < 0 else ("+" if value > 0 else "")
+    if v >= 1_000_000_000_000:
+        return f"{sign}{v / 1_000_000_000_000:,.2f}조원"
+    if v >= 100_000_000:
+        return f"{sign}{v / 100_000_000:,.0f}억원"
+    if v >= 10_000:
+        return f"{sign}{v / 10_000:,.0f}만원"
+    return f"{sign}{v:,.0f}원"
+
+
+def money_signed(value: float | int) -> str:
+    """등락 금액: +/-와 함께 읽기 쉬운 단위로 표시."""
+    if value == 0:
+        return "0원"
+    v = abs(float(value))
+    sign = "+" if value > 0 else "-"
+    if v >= 100_000_000:
+        return f"{sign}{v / 100_000_000:,.1f}억원"
+    if v >= 10_000:
+        return f"{sign}{v / 10_000:,.0f}만원"
+    return f"{sign}{v:,.0f}원"
+
+
+def volume_fmt(value: float | int) -> str:
+    """거래량을 주·만주·백만주 단위로 표시."""
+    v = int(value)
+    if v >= 100_000_000:
+        return f"{v / 100_000_000:,.1f}억주"
+    if v >= 10_000_000:
+        return f"{v / 10_000_000:,.1f}천만주"
+    if v >= 1_000_000:
+        return f"{v / 1_000_000:,.1f}백만주"
+    if v >= 10_000:
+        return f"{v / 10_000:,.0f}만주"
+    return f"{v:,}주"
+
+
+def mktcap_fmt(value: float | int) -> str:
+    """시가총액: 조·억 단위."""
+    v = abs(float(value))
+    if v >= 1_000_000_000_000:
+        return f"{v / 1_000_000_000_000:,.1f}조원"
+    return f"{v / 100_000_000:,.0f}억원"
+
+
+def signed_pct(value: float) -> str:
+    return f"{value:+.2f}%"
+
+
+def get_secret(name: str, default: str = "") -> str:
+    try:
+        kis_secrets = st.secrets.get("kis", {})
+        value = kis_secrets.get(name.lower()) or kis_secrets.get(name.upper())
+        if value:
+            return str(value)
+    except Exception:
+        pass
+    return os.getenv(f"KIS_{name.upper()}", default)
+
+
+def get_kis_config() -> KISConfig | None:
+    env_config = config_from_env()
+    if env_config:
+        return env_config
+
+    app_key = get_secret("app_key").strip()
+    app_secret = get_secret("app_secret").strip()
+    env = get_secret("env", "prod").strip() or "prod"
+    if not app_key or not app_secret:
+        return None
+    return KISConfig(app_key=app_key, app_secret=app_secret, env=env)
+
+
+def get_kis_client() -> KISClient | None:
+    config = get_kis_config()
+    if not config:
+        return None
+    return KISClient(config, TOKEN_FILE)
+
+
+def auto_refresh(seconds: int) -> None:
+    if seconds <= 0:
+        return
+    st.markdown(
+        f"""
+        <script>
+        setTimeout(function() {{
+            window.parent.location.reload();
+        }}, {seconds * 1000});
+        </script>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+@st.cache_data(show_spinner=False)
+def generate_demo_ohlcv(code: str, base_price: int, days: int) -> pd.DataFrame:
+    rng = np.random.default_rng(seed_for(code, str(days)))
+    dates = pd.bdate_range(end=date.today(), periods=days)
+    drift = rng.normal(0.00035, 0.0002)
+    volatility = rng.uniform(0.018, 0.035)
+    returns = rng.normal(drift, volatility, len(dates))
+    close = base_price * np.exp(np.cumsum(returns))
+    open_ = close * (1 + rng.normal(0, 0.007, len(dates)))
+    high = np.maximum(open_, close) * (1 + rng.uniform(0.002, 0.022, len(dates)))
+    low = np.minimum(open_, close) * (1 - rng.uniform(0.002, 0.022, len(dates)))
+    volume = rng.integers(80_000, 2_800_000, len(dates))
+
+    return pd.DataFrame(
+        {
+            "date": dates,
+            "open": open_.round().astype(int),
+            "high": high.round().astype(int),
+            "low": low.round().astype(int),
+            "close": close.round().astype(int),
+            "volume": volume,
+        }
+    )
+
+
+@st.cache_data(ttl=3, show_spinner=False)
+def fetch_live_snapshot(code: str) -> dict:
+    client = get_kis_client()
+    if not client:
+        raise KISError("KIS API 키가 설정되어 있지 않습니다.")
+    return client.inquire_price(code)
+
+
+@st.cache_data(ttl=60, show_spinner=False)
+def fetch_live_chart(code: str, days: int) -> pd.DataFrame:
+    client = get_kis_client()
+    if not client:
+        raise KISError("KIS API 키가 설정되어 있지 않습니다.")
+    return client.daily_chart(code, days)
+
+
+def get_chart_data(stock: Stock, days: int, use_live: bool) -> tuple[pd.DataFrame, str]:
+    if use_live:
+        try:
+            return fetch_live_chart(stock.code, days), "KIS"
+        except KISError as exc:
+            st.warning(f"KIS 일봉 조회 실패: {exc}. 데모 차트로 표시합니다.")
+    return generate_demo_ohlcv(stock.code, stock.base_price, days), "DEMO"
+
+
+def stock_snapshot(stock: Stock, use_live: bool) -> dict:
+    if use_live:
+        try:
+            live = fetch_live_snapshot(stock.code)
+            return {"code": stock.code, "name": stock.name, "market": stock.market, "sector": stock.sector, **live}
+        except KISError as exc:
+            st.warning(f"{stock.name} 현재가 조회 실패: {exc}. 데모 시세로 표시합니다.")
+
+    chart = generate_demo_ohlcv(stock.code, stock.base_price, 90)
+    last = chart.iloc[-1]
+    previous = chart.iloc[-2]
+    change = int(last["close"] - previous["close"])
+    change_rate = change / previous["close"] * 100
+    market_cap = int(last["close"] * (seed_for(stock.code, "shares") % 80_000_000 + 20_000_000))
+    return {
+        "code": stock.code,
+        "name": stock.name,
+        "market": stock.market,
+        "sector": stock.sector,
+        "price": int(last["close"]),
+        "change": change,
+        "change_rate": change_rate,
+        "volume": int(last["volume"]),
+        "market_cap": market_cap,
+    }
+
+
+def calculate_indicators(df: pd.DataFrame) -> pd.DataFrame:
+    enriched = df.copy()
+    enriched["ma5"] = enriched["close"].rolling(5).mean()
+    enriched["ma20"] = enriched["close"].rolling(20).mean()
+    enriched["ma60"] = enriched["close"].rolling(60).mean()
+
+    delta = enriched["close"].diff()
+    gain = delta.clip(lower=0).rolling(14).mean()
+    loss = (-delta.clip(upper=0)).rolling(14).mean()
+    rs = gain / loss.replace(0, np.nan)
+    enriched["rsi"] = 100 - (100 / (1 + rs))
+
+    ema12 = enriched["close"].ewm(span=12, adjust=False).mean()
+    ema26 = enriched["close"].ewm(span=26, adjust=False).mean()
+    enriched["macd"] = ema12 - ema26
+    enriched["signal"] = enriched["macd"].ewm(span=9, adjust=False).mean()
+    enriched["histogram"] = enriched["macd"] - enriched["signal"]
+    return enriched
+
+
+def forecast_prices(df: pd.DataFrame, forecast_days: int) -> pd.DataFrame:
+    clean = df[["date", "close"]].copy()
+    clean["close"] = pd.to_numeric(clean["close"], errors="coerce")
+    clean = clean.dropna(subset=["date", "close"])
+    clean = clean[clean["close"] > 0].tail(30)
+    if clean.empty:
+        raise ValueError("예측에 사용할 유효한 종가 데이터가 없습니다.")
+
+    last_close = float(clean.iloc[-1]["close"])
+    if len(clean) >= 2:
+        slope = float(np.polyfit(np.arange(len(clean)), clean["close"], 1)[0])
+    else:
+        slope = 0.0
+
+    volatility = clean["close"].pct_change().replace([np.inf, -np.inf], np.nan).dropna().std()
+    if pd.isna(volatility) or volatility == 0:
+        volatility = 0.01
+
+    rng = np.random.default_rng(seed_for(str(last_close), str(forecast_days)))
+    dates = pd.bdate_range(start=clean.iloc[-1]["date"] + timedelta(days=1), periods=forecast_days)
+    noise = rng.normal(0, volatility * last_close, forecast_days)
+    prices = [max(100, last_close + slope * (idx + 1) + noise[idx]) for idx in range(forecast_days)]
+    return pd.DataFrame({"date": dates, "forecast": np.round(prices).astype(int)})
+
+
+def clamp(value: float, lower: float = -1.0, upper: float = 1.0) -> float:
+    return max(lower, min(upper, float(value)))
+
+
+def clean_price_frame(df: pd.DataFrame, lookback: int = 60) -> pd.DataFrame:
+    clean = df[["date", "close"]].copy()
+    clean["close"] = pd.to_numeric(clean["close"], errors="coerce")
+    clean["volume"] = pd.to_numeric(df["volume"], errors="coerce") if "volume" in df.columns else np.nan
+    clean = clean.dropna(subset=["date", "close"])
+    clean = clean[clean["close"] > 0].tail(lookback)
+    if clean.empty:
+        raise ValueError("예측에 사용할 유효한 종가 데이터가 없습니다.")
+    return clean
+
+
+def load_external_signals(stock: Stock) -> dict[str, float]:
+    raw = read_json(EXTERNAL_SIGNALS_FILE, {})
+    default = raw.get("default", {}) if isinstance(raw, dict) else {}
+    specific = raw.get(stock.code, {}) if isinstance(raw, dict) else {}
+    merged = {**default, **specific}
+    return {
+        "news_sentiment": clamp(float(merged.get("news_sentiment", 0.0))),
+        "earnings_surprise": clamp(float(merged.get("earnings_surprise", 0.0))),
+        "money_flow": clamp(float(merged.get("money_flow", 0.0))),
+        "disclosure_risk": clamp(float(merged.get("disclosure_risk", 0.0)), 0.0, 1.0),
+        "index_flow": clamp(float(merged.get("index_flow", 0.0))),
+        "sector_flow": clamp(float(merged.get("sector_flow", 0.0))),
+    }
+
+
+def benchmark_return(stocks: list[Stock], days: int) -> float:
+    returns = []
+    for stock in stocks:
+        frame = generate_demo_ohlcv(stock.code, stock.base_price, max(days, 30))
+        close = pd.to_numeric(frame["close"], errors="coerce").dropna()
+        if len(close) >= 2 and close.iloc[0] > 0:
+            returns.append(float(close.iloc[-1] / close.iloc[0] - 1))
+    return float(np.mean(returns)) if returns else 0.0
+
+
+def forecast_context(df: pd.DataFrame, stock: Stock) -> tuple[dict[str, float], pd.DataFrame]:
+    clean = clean_price_frame(df, 60)
+    close = clean["close"]
+    returns = close.pct_change().replace([np.inf, -np.inf], np.nan).dropna()
+    last_close = float(close.iloc[-1])
+
+    ma20 = close.rolling(20).mean().iloc[-1] if len(close) >= 20 else close.mean()
+    ma60 = close.rolling(60).mean().iloc[-1] if len(close) >= 60 else close.mean()
+    ma_score = clamp(((last_close / ma20) - 1) * 4) if ma20 else 0.0
+    trend_score = clamp(((ma20 / ma60) - 1) * 5) if ma60 else 0.0
+    momentum_score = clamp(float(returns.tail(10).mean() * 60)) if not returns.empty else 0.0
+
+    avg_volume = clean["volume"].tail(20).mean()
+    last_volume = clean["volume"].iloc[-1]
+    if pd.isna(avg_volume) or avg_volume <= 0 or pd.isna(last_volume):
+        volume_score = 0.0
+    else:
+        volume_score = clamp((float(last_volume / avg_volume) - 1) / 1.5)
+
+    volatility = float(returns.tail(30).std()) if not returns.empty else 0.01
+    if pd.isna(volatility) or volatility <= 0:
+        volatility = 0.01
+    volatility_score = -clamp((volatility - 0.025) / 0.04, 0.0, 1.0)
+
+    stock_return = float(close.iloc[-1] / close.iloc[0] - 1) if len(close) >= 2 else 0.0
+    market_peers = MARKET_STOCKS.get("코스피" if stock.market == "KOSPI" else "코스닥", [])
+    sector_peers = [item for item in all_stocks() if item.sector == stock.sector]
+    market_return = benchmark_return(market_peers, len(clean))
+    sector_return = benchmark_return(sector_peers, len(clean))
+    external = load_external_signals(stock)
+
+    factors = {
+        "ma_trend": clamp((ma_score + trend_score) / 2),
+        "momentum": momentum_score,
+        "volume": volume_score,
+        "volatility": volatility_score,
+        "market_relative_strength": clamp((stock_return - market_return) * 4),
+        "sector_relative_strength": clamp((stock_return - sector_return) * 4),
+        "news_sentiment": external["news_sentiment"],
+        "earnings_surprise": external["earnings_surprise"],
+        "money_flow": external["money_flow"],
+        "disclosure_risk": -external["disclosure_risk"],
+        "index_flow": external["index_flow"],
+        "sector_flow_external": external["sector_flow"],
+        "daily_volatility": volatility,
+    }
+    return factors, clean
+
+
+def composite_factor_score(factors: dict[str, float]) -> float:
+    weights = {
+        "ma_trend": 0.16,
+        "momentum": 0.12,
+        "volume": 0.08,
+        "volatility": 0.10,
+        "market_relative_strength": 0.12,
+        "sector_relative_strength": 0.10,
+        "news_sentiment": 0.09,
+        "earnings_surprise": 0.08,
+        "money_flow": 0.08,
+        "disclosure_risk": 0.04,
+        "index_flow": 0.02,
+        "sector_flow_external": 0.01,
+    }
+    return clamp(sum(factors.get(name, 0.0) * weight for name, weight in weights.items()))
+
+
+def advanced_forecast_prices(df: pd.DataFrame, stock: Stock, forecast_days: int) -> tuple[pd.DataFrame, dict[str, float]]:
+    factors, clean = forecast_context(df, stock)
+    last_close = float(clean.iloc[-1]["close"])
+    if len(clean) >= 2:
+        slope_return = float(np.polyfit(np.arange(len(clean)), clean["close"], 1)[0] / last_close)
+    else:
+        slope_return = 0.0
+
+    returns = clean["close"].pct_change().replace([np.inf, -np.inf], np.nan).dropna()
+    recent_return = float(returns.tail(10).mean()) if not returns.empty else 0.0
+    factor_score = composite_factor_score(factors)
+    expected_daily_return = clamp((recent_return * 0.45) + (slope_return * 0.35) + (factor_score * 0.003), -0.08, 0.08)
+    volatility = factors["daily_volatility"]
+
+    dates = pd.bdate_range(start=clean.iloc[-1]["date"] + timedelta(days=1), periods=forecast_days)
+    forecasts = []
+    lower = []
+    upper = []
+    for idx in range(1, forecast_days + 1):
+        center = last_close * ((1 + expected_daily_return) ** idx)
+        interval = 1.64 * volatility * np.sqrt(idx) * center
+        forecasts.append(max(100, center))
+        lower.append(max(100, center - interval))
+        upper.append(max(100, center + interval))
+
+    diagnostics = {
+        **factors,
+        "factor_score": factor_score,
+        "expected_daily_return": expected_daily_return,
+        "confidence_level": 0.90,
+    }
+    forecast = pd.DataFrame(
+        {
+            "date": dates,
+            "forecast": np.round(forecasts).astype(int),
+            "lower": np.round(lower).astype(int),
+            "upper": np.round(upper).astype(int),
+        }
+    )
+    return forecast, diagnostics
+
+
+def current_market_stocks(market_label: str) -> list[Stock]:
+    return MARKET_STOCKS[market_label]
+
+
+def render_sidebar() -> tuple[str, str, str, list[str], bool, int]:
+    st.sidebar.markdown(
+        """
+        <div class="bh-logo">
+          <div class="bh-logo-mark">K</div>
+          <div class="bh-logo-text">
+            <div class="bh-logo-title">Stock Tracker</div>
+            <div class="bh-logo-sub">KRX · KOSPI · KOSDAQ</div>
+          </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    st.sidebar.markdown('<div class="bh-section-label">화면</div>', unsafe_allow_html=True)
+    menu_icons = {"종목": "▦ 종목", "차트": "▲ 차트", "관심종목": "★ 관심종목", "포트폴리오": "◈ 포트폴리오"}
+    menu_key = st.sidebar.radio(
+        "화면",
+        list(menu_icons.values()),
+        index=0,
+        label_visibility="collapsed",
+    )
+    menu = next(k for k, v in menu_icons.items() if v == menu_key)
+
+    st.sidebar.markdown('<div class="bh-section-label">시장</div>', unsafe_allow_html=True)
+    market = st.sidebar.radio("시장", ["코스피", "코스닥", "전체"], horizontal=True, label_visibility="collapsed")
+
+    st.sidebar.markdown('<div class="bh-section-label">종목 검색</div>', unsafe_allow_html=True)
+    keyword = st.sidebar.text_input("검색", placeholder="종목명 · 코드  예) 삼성전자, 005930", label_visibility="collapsed")
+
+    st.sidebar.markdown('<div class="bh-section-label">업종 필터</div>', unsafe_allow_html=True)
+    market_stocks = current_market_stocks(market)
+    sectors = sorted({stock.sector for stock in market_stocks})
+    selected_sectors = st.sidebar.multiselect(
+        "업종", sectors, default=[],
+        placeholder="전체 업종 (클릭해서 필터)",
+        label_visibility="collapsed",
+    )
+
+    st.sidebar.divider()
+
+    config = get_kis_config()
+    has_config = config is not None
+    use_live = st.sidebar.toggle("실시간 시세 (KIS API)", value=has_config, disabled=not has_config)
+    refresh_seconds = st.sidebar.selectbox(
+        "자동 새로고침",
+        [0, 5, 10, 30, 60],
+        index=2,
+        format_func=lambda secs: "끄기" if secs == 0 else f"{secs}초 마다",
+    )
+
+    data_mode = "KIS REST" if (use_live and has_config) else "DEMO"
+    pill_cls = "live" if data_mode == "KIS REST" else ""
+    st.sidebar.markdown(
+        f'<span class="bh-pill {pill_cls}">{data_mode}</span>&nbsp;&nbsp;'
+        f'<span style="font-size:0.68rem;color:var(--muted);">'
+        f'{datetime.now().strftime("%H:%M:%S")} 기준</span>',
+        unsafe_allow_html=True,
+    )
+    if not has_config:
+        st.sidebar.caption("KIS_APP_KEY / KIS_APP_SECRET 미설정 → 데모 데이터 표시")
+
+    return menu, market, keyword.strip(), selected_sectors, use_live, int(refresh_seconds)
+
+
+def filtered_stocks(market: str, keyword: str, sectors: list[str]) -> list[Stock]:
+    kw = keyword.strip()
+    kw_lower = kw.lower()
+
+    # 키워드가 있으면 전체 종목에서 검색, 없으면 선택 시장으로 제한
+    pool = all_stocks() if kw else current_market_stocks(market)
+
+    result = []
+    for stock in pool:
+        if kw:
+            matches_keyword = (
+                kw_lower in stock.name.lower()
+                or kw in stock.code
+                or kw_lower in stock.sector.lower()
+                or kw_lower in stock.market.lower()
+            )
+        else:
+            matches_keyword = True
+
+        # 키워드 검색 중에는 업종 필터 무시 (검색 결과 우선)
+        matches_sector = bool(kw) or (not sectors or stock.sector in sectors)
+
+        if matches_keyword and matches_sector:
+            result.append(stock)
+    return result
+
+
+def render_market_overview(stocks: list[Stock], use_live: bool) -> None:
+    snapshots = [stock_snapshot(stock, use_live) for stock in stocks]
+    if not snapshots:
+        st.info("조건에 맞는 종목이 없습니다.")
+        return
+
+    frame = pd.DataFrame(snapshots)
+    total      = len(frame)
+    up_count   = int((frame["change_rate"] > 0).sum())
+    down_count = int((frame["change_rate"] < 0).sum())
+    flat_count = total - up_count - down_count
+    avg_change = float(frame["change_rate"].mean())
+    leader = frame.sort_values("change_rate", ascending=False).iloc[0]
+    lagger = frame.sort_values("change_rate", ascending=True).iloc[0]
+
+    up_pct   = up_count   / total * 100
+    flat_pct = flat_count / total * 100
+    down_pct = down_count / total * 100
+
+    st.markdown(
+        f"""
+        <div style="margin-bottom:18px;">
+          <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.13em;
+                      text-transform:uppercase;color:var(--muted);margin-bottom:8px;">
+            시장 현황 — {total}개 종목 추적 중
+          </div>
+          <div style="display:flex;height:10px;overflow:hidden;gap:2px;margin-bottom:8px;">
+            <div style="width:{up_pct:.1f}%;background:var(--red);"></div>
+            <div style="width:{flat_pct:.1f}%;background:var(--border2);"></div>
+            <div style="width:{down_pct:.1f}%;background:var(--blue);"></div>
+          </div>
+          <div style="display:flex;gap:20px;font-size:0.82rem;font-weight:700;">
+            <span style="color:var(--red);">▲ 상승 {up_count}개 ({up_pct:.0f}%)</span>
+            <span style="color:var(--muted);">— 보합 {flat_count}개</span>
+            <span style="color:var(--blue);">▼ 하락 {down_count}개 ({down_pct:.0f}%)</span>
+          </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    col1, col2, col3, col4 = st.columns(4)
+    col1.metric(
+        "평균 등락률",
+        signed_pct(avg_change),
+        help="추적 종목 전체의 오늘 평균 가격 변화율입니다.",
+    )
+    col2.metric(
+        "상승/하락",
+        f"{up_count} / {down_count}",
+        help="오늘 가격이 오른 종목 수 / 내린 종목 수입니다.",
+    )
+    col3.metric(
+        "오늘의 강세 ▲",
+        leader["name"],
+        signed_pct(float(leader["change_rate"])),
+        help="추적 종목 중 오늘 가장 많이 오른 종목입니다.",
+    )
+    col4.metric(
+        "오늘의 약세 ▼",
+        lagger["name"],
+        signed_pct(float(lagger["change_rate"])),
+        help="추적 종목 중 오늘 가장 많이 내린 종목입니다.",
+    )
+
+
+def render_stock_table(stocks: list[Stock], use_live: bool) -> None:
+    snapshots = [stock_snapshot(stock, use_live) for stock in stocks]
+    if not snapshots:
+        return
+
+    frame = pd.DataFrame(snapshots)
+    frame["현재가"] = frame["price"].map(money)
+    frame["등락률"] = frame["change_rate"].map(signed_pct)
+    frame["거래량"] = frame["volume"].map(volume_fmt)
+    frame["시가총액"] = frame["market_cap"].map(lambda x: "-" if not x else mktcap_fmt(x))
+    table = frame[["market", "code", "name", "sector", "현재가", "등락률", "거래량", "시가총액"]].rename(
+        columns={"market": "시장", "code": "코드", "name": "종목명", "sector": "업종"}
+    )
+    st.dataframe(table, use_container_width=True, hide_index=True)
+
+
+def render_stock_cards(stocks: list[Stock], use_live: bool) -> None:
+    favorites = read_json(FAVORITES_FILE, [])
+    favorite_codes = {item["code"] for item in favorites}
+
+    snapshots = {stock.code: stock_snapshot(stock, use_live) for stock in stocks}
+
+    sort_options = {
+        "상승률 높은순 ▲": lambda s: -snapshots[s.code]["change_rate"],
+        "하락률 높은순 ▼": lambda s:  snapshots[s.code]["change_rate"],
+        "현재가 높은순":   lambda s: -snapshots[s.code]["price"],
+        "현재가 낮은순":   lambda s:  snapshots[s.code]["price"],
+        "거래량 많은순":   lambda s: -snapshots[s.code]["volume"],
+        "종목명 가나다순": lambda s:  s.name,
+    }
+    sort_col, _ = st.columns([1, 3])
+    with sort_col:
+        sort_key_label = st.selectbox(
+            "정렬 기준",
+            list(sort_options.keys()),
+            index=0,
+        )
+    sorted_stocks = sorted(stocks, key=sort_options[sort_key_label])
+
+    columns = st.columns(4)
+    for idx, stock in enumerate(sorted_stocks):
+        snap = snapshots[stock.code]
+        cr   = snap["change_rate"]
+        direction = "up" if cr > 0 else ("down" if cr < 0 else "")
+        arrow     = "▲" if cr > 0 else ("▼" if cr < 0 else "—")
+        fav_label = "★ 해제" if stock.code in favorite_codes else "☆ 관심"
+
+        with columns[idx % 4]:
+            st.markdown(
+                f"""
+                <div class="bh-card {direction}">
+                  <div class="bh-tag">{stock.market} · {stock.sector}</div>
+                  <div class="bh-name">{stock.name}</div>
+                  <div style="font-size:0.68rem;color:var(--muted);margin-bottom:10px;
+                              letter-spacing:0.06em;">{stock.code}</div>
+                  <div class="bh-price">{money_per_share(snap["price"])}</div>
+                  <div class="bh-delta {direction}">{arrow} {signed_pct(cr)}
+                    <span style="font-weight:400;font-size:0.8rem;">
+                      &nbsp;{money_signed(snap["change"])}
+                    </span>
+                  </div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+            btn1, btn2 = st.columns(2)
+            if btn1.button("차트 보기", key=f"chart-{stock.code}", use_container_width=True):
+                st.session_state["selected_code"] = stock.code
+                st.session_state["menu_override"] = "차트"
+                st.rerun()
+            if btn2.button(fav_label, key=f"fav-{stock.code}", use_container_width=True):
+                toggle_favorite(stock)
+                st.rerun()
+
+
+def toggle_favorite(stock: Stock) -> None:
+    favorites = read_json(FAVORITES_FILE, [])
+    if any(item["code"] == stock.code for item in favorites):
+        favorites = [item for item in favorites if item["code"] != stock.code]
+    else:
+        favorites.append({"code": stock.code, "name": stock.name, "market": stock.market, "sector": stock.sector})
+    write_json(FAVORITES_FILE, favorites)
+
+
+def render_stocks_page(stocks: list[Stock], market: str, use_live: bool) -> None:
+    st.title(f"{market} 종목 현황")
+    st.markdown(
+        '<div class="bh-subtitle">'
+        "왼쪽 사이드바에서 시장(코스피·코스닥)과 업종을 선택하거나 종목명을 검색하세요."
+        "</div>",
+        unsafe_allow_html=True,
+    )
+
+    with st.expander("주식 용어 빠른 안내 — 처음이라면 펼쳐보세요", expanded=False):
+        g1, g2, g3, g4 = st.columns(4)
+        g1.markdown(
+            "**등락률**  \n오늘 주가가 전날보다 얼마나 올랐거나 내렸는지를 %로 나타냅니다.  \n"
+            "🔴 +는 상승, 🔵 −는 하락입니다."
+        )
+        g2.markdown(
+            "**현재가**  \n지금 이 순간 해당 주식 1주의 가격입니다.  \n"
+            "데모 모드에서는 시뮬레이션 값이 표시됩니다."
+        )
+        g3.markdown(
+            "**거래량**  \n오늘 하루 동안 사고팔린 주식 수입니다.  \n"
+            "거래량이 많을수록 많은 사람이 관심을 갖고 있다는 신호입니다."
+        )
+        g4.markdown(
+            "**시가총액**  \n회사 전체의 가치를 나타냅니다.  \n"
+            "현재가 × 총 주식 수로 계산하며, 숫자가 클수록 큰 회사입니다."
+        )
+
+    render_market_overview(stocks, use_live)
+    st.divider()
+
+    tab_cards, tab_table = st.tabs(["카드 보기", "표 보기"])
+    with tab_cards:
+        render_stock_cards(stocks, use_live)
+    with tab_table:
+        render_stock_table(stocks, use_live)
+
+
+def select_stock_widget(market: str, label: str = "종목 선택") -> Stock:
+    stocks = current_market_stocks(market)
+    options = {f"{stock.market} · {stock.name} ({stock.code})": stock for stock in stocks}
+    selected_code = st.session_state.get("selected_code")
+    default_index = 0
+    labels = list(options.keys())
+    if selected_code:
+        for idx, label_text in enumerate(labels):
+            if selected_code in label_text:
+                default_index = idx
+                break
+    choice = st.selectbox(label, labels, index=default_index)
+    stock = options[choice]
+    st.session_state["selected_code"] = stock.code
+    return stock
+
+
+def render_chart(stock: Stock, period_label: str, use_live: bool) -> tuple[pd.DataFrame, str]:
+    raw, source = get_chart_data(stock, PERIODS[period_label], use_live)
+    df = calculate_indicators(raw)
+
+    fig = make_subplots(
+        rows=4,
+        cols=1,
+        shared_xaxes=True,
+        vertical_spacing=0.04,
+        row_heights=[0.52, 0.16, 0.16, 0.16],
+        subplot_titles=("가격", "거래량", "MACD", "RSI"),
+    )
+    fig.add_trace(
+        go.Candlestick(
+            x=df["date"],
+            open=df["open"],
+            high=df["high"],
+            low=df["low"],
+            close=df["close"],
+            name="캔들",
+            increasing_line_color="#f85149",
+            decreasing_line_color="#3fb950",
+        ),
+        row=1,
+        col=1,
+    )
+    fig.add_trace(go.Scatter(x=df["date"], y=df["ma5"], name="MA5", line=dict(color="#f2cc60", width=1)), row=1, col=1)
+    fig.add_trace(go.Scatter(x=df["date"], y=df["ma20"], name="MA20", line=dict(color="#58a6ff", width=1)), row=1, col=1)
+    fig.add_trace(go.Scatter(x=df["date"], y=df["ma60"], name="MA60", line=dict(color="#a371f7", width=1)), row=1, col=1)
+    fig.add_trace(go.Bar(x=df["date"], y=df["volume"], name="거래량", marker_color="#6e7681"), row=2, col=1)
+    fig.add_trace(go.Bar(x=df["date"], y=df["histogram"], name="MACD Histogram", marker_color="#8b949e"), row=3, col=1)
+    fig.add_trace(go.Scatter(x=df["date"], y=df["macd"], name="MACD", line=dict(color="#58a6ff", width=1)), row=3, col=1)
+    fig.add_trace(go.Scatter(x=df["date"], y=df["signal"], name="Signal", line=dict(color="#f85149", width=1)), row=3, col=1)
+    fig.add_trace(go.Scatter(x=df["date"], y=df["rsi"], name="RSI", line=dict(color="#3fb950", width=1)), row=4, col=1)
+    fig.add_hline(y=70, line_dash="dot", line_color="#f85149", row=4, col=1)
+    fig.add_hline(y=30, line_dash="dot", line_color="#3fb950", row=4, col=1)
+    fig.update_layout(
+        template="plotly_dark",
+        height=780,
+        margin=dict(l=10, r=10, t=45, b=10),
+        xaxis_rangeslider_visible=False,
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
+    )
+    st.plotly_chart(fig, use_container_width=True)
+    return df, source
+
+
+def render_forecast(df: pd.DataFrame, stock: Stock) -> None:
+    forecast_days = st.radio("예측 기간", ["5영업일", "20영업일"], index=0, horizontal=True, key=f"forecast-days-{stock.code}")
+    days = 5 if forecast_days == "5영업일" else 20
+    try:
+        forecast, diagnostics = advanced_forecast_prices(df, stock, days)
+    except ValueError as exc:
+        st.warning(str(exc))
+        return
+
+    history = df[["date", "close"]].copy()
+    history["close"] = pd.to_numeric(history["close"], errors="coerce")
+    history = history.dropna(subset=["date", "close"]).tail(45)
+
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=history["date"], y=history["close"], name="최근 종가", line=dict(color="#58a6ff")))
+    fig.add_trace(
+        go.Scatter(
+            x=pd.concat([forecast["date"], forecast["date"].iloc[::-1]]),
+            y=pd.concat([forecast["upper"], forecast["lower"].iloc[::-1]]),
+            fill="toself",
+            fillcolor="rgba(242, 204, 96, 0.18)",
+            line=dict(color="rgba(255,255,255,0)"),
+            hoverinfo="skip",
+            name="90% 신뢰구간",
+        )
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=forecast["date"],
+            y=forecast["forecast"],
+            name="요인 반영 예측",
+            line=dict(color="#f2cc60", dash="dash"),
+            mode="lines+markers",
+        )
+    )
+    fig.update_layout(
+        template="plotly_dark",
+        height=340,
+        title=f"{stock.name} 다요인 예측",
+        margin=dict(l=10, r=10, t=48, b=10),
+    )
+    st.plotly_chart(fig, use_container_width=True)
+
+    col1, col2, col3 = st.columns(3)
+    col1.metric("종합 요인 점수", f"{diagnostics['factor_score']:+.2f}")
+    col2.metric("예상 일간 수익률", f"{diagnostics['expected_daily_return'] * 100:+.2f}%")
+    col3.metric("일간 변동성", f"{diagnostics['daily_volatility'] * 100:.2f}%")
+
+    factor_labels = {
+        "ma_trend": "이동평균 추세",
+        "momentum": "가격 모멘텀",
+        "volume": "거래량",
+        "volatility": "변동성 패널티",
+        "market_relative_strength": "지수 상대강도",
+        "sector_relative_strength": "업종 상대강도",
+        "news_sentiment": "뉴스 심리",
+        "earnings_surprise": "실적 서프라이즈",
+        "money_flow": "수급",
+        "disclosure_risk": "공시 리스크",
+        "index_flow": "지수 흐름",
+        "sector_flow_external": "외부 업종 흐름",
+    }
+    factor_rows = [{"요인": label, "점수": round(float(diagnostics[key]), 3)} for key, label in factor_labels.items()]
+    st.dataframe(pd.DataFrame(factor_rows), use_container_width=True, hide_index=True)
+    st.caption("뉴스/실적/수급/공시/지수/업종 외부 요인은 data/external_signals.json 점수를 반영합니다. 신뢰구간은 최근 종가 변동성 기반의 통계적 범위입니다.")
+
+
+def render_chart_page(market: str, use_live: bool) -> None:
+    st.title("종목별 차트")
+    left, right = st.columns([2, 1])
+    with left:
+        stock = select_stock_widget(market)
+    with right:
+        period = st.selectbox("차트 기간", list(PERIODS.keys()), index=1)
+
+    # 컬럼 컨텍스트 밖에서 데이터 조회 — 중첩 컬럼 오류 방지
+    df_period, _ = get_chart_data(stock, PERIODS[period], use_live)
+    period_high = int(df_period["high"].max())
+    period_low  = int(df_period["low"].min())
+
+    snapshot = stock_snapshot(stock, use_live)
+    col1, col2, col3, col4, col5, col6, col7 = st.columns(7)
+    col1.metric(
+        "현재가 (1주당)",
+        money_per_share(snapshot["price"]),
+        money_signed(snapshot["change"]),
+        help="주식 1주를 사고팔 때의 가격입니다.",
+    )
+    col2.metric(
+        "등락률",
+        signed_pct(snapshot["change_rate"]),
+        help="전 거래일 종가 대비 오늘 가격이 오르거나 내린 비율입니다.",
+    )
+    col3.metric(
+        "거래량",
+        volume_fmt(snapshot["volume"]),
+        help="오늘 하루 동안 사고팔린 주식 수입니다. 많을수록 관심이 높습니다.",
+    )
+    col4.metric("시장", stock.market, help="KOSPI=대형주 중심 / KOSDAQ=중소·성장주 중심")
+    col5.metric(
+        f"최고가 ({period})",
+        money_per_share(period_high),
+        help=f"선택한 기간({period}) 중 가장 높았던 1주당 가격입니다.",
+    )
+    col6.metric(
+        f"최저가 ({period})",
+        money_per_share(period_low),
+        help=f"선택한 기간({period}) 중 가장 낮았던 1주당 가격입니다.",
+    )
+    with col7:
+        st.markdown("<div style='height:28px'></div>", unsafe_allow_html=True)
+        if st.button("＋ 포트폴리오 추가", use_container_width=True, type="primary"):
+            st.session_state["portfolio_add_code"] = stock.code
+            st.session_state["portfolio_add_price"] = snapshot["price"]
+
+    if st.session_state.get("portfolio_add_code") == stock.code:
+        with st.form("chart-portfolio-form", clear_on_submit=True):
+            st.markdown(f"**{stock.name}** ({stock.code}) 포트폴리오 추가")
+            fc1, fc2, fc3 = st.columns(3)
+            quantity = fc1.number_input("수량", min_value=1, value=10, step=1)
+            buy_price = fc2.number_input(
+                "평균단가",
+                min_value=1,
+                value=st.session_state["portfolio_add_price"],
+                step=100,
+            )
+            memo = fc3.text_input("메모", placeholder="선택 입력")
+            fs1, fs2 = st.columns(2)
+            if fs1.form_submit_button("추가 확정", use_container_width=True, type="primary"):
+                portfolio = read_json(PORTFOLIO_FILE, [])
+                portfolio.append(
+                    {
+                        "code": stock.code,
+                        "name": stock.name,
+                        "market": stock.market,
+                        "quantity": int(quantity),
+                        "buy_price": int(buy_price),
+                        "memo": memo,
+                        "created_at": datetime.now().isoformat(timespec="seconds"),
+                    }
+                )
+                write_json(PORTFOLIO_FILE, portfolio)
+                st.session_state.pop("portfolio_add_code", None)
+                st.session_state.pop("portfolio_add_price", None)
+                st.success(f"{stock.name} 을(를) 포트폴리오에 추가했습니다.")
+                st.rerun()
+            if fs2.form_submit_button("취소", use_container_width=True):
+                st.session_state.pop("portfolio_add_code", None)
+                st.session_state.pop("portfolio_add_price", None)
+                st.rerun()
+
+    st.divider()
+    df, source = render_chart(stock, period, use_live)
+    st.caption(f"차트 데이터 출처: {source} · {datetime.now().strftime('%H:%M:%S')} 기준")
+    st.divider()
+    render_forecast(df, stock)
+    st.divider()
+    render_stock_advisor_panel(stock)
+
+
+def render_favorites_page(use_live: bool) -> None:
+    st.title("관심종목")
+    favorites = read_json(FAVORITES_FILE, [])
+    if not favorites:
+        st.info("아직 등록된 관심종목이 없습니다. 종목 화면에서 관심 버튼을 눌러 추가하세요.")
+        return
+    stocks = [find_stock(item["code"]) for item in favorites]
+    render_stock_cards([stock for stock in stocks if stock is not None], use_live)
+
+
+def _dalio_stock_analysis(stock: Stock, row: dict) -> dict:
+    debt_proxy = (seed_for(stock.code, "debt") % 200) + 50
+    div_yield = round((seed_for(stock.code, "div") % 40) / 10, 1)
+    profit_rate = row["profit_rate"]
+
+    score = 0.0
+    reasons: list[str] = []
+
+    if debt_proxy < 100:
+        score += 0.3
+        reasons.append(f"부채비율 추정 {debt_proxy}% — 낮은 레버리지, 리스크 패리티 적합")
+    elif debt_proxy < 150:
+        score += 0.1
+        reasons.append(f"부채비율 추정 {debt_proxy}% — 보통 수준, 분기별 모니터링 권장")
+    else:
+        score -= 0.3
+        reasons.append(f"부채비율 추정 {debt_proxy}% — 고레버리지, 부채 사이클 후기에 위험")
+
+    if div_yield > 2.0:
+        score += 0.2
+        reasons.append(f"배당수익률 추정 {div_yield}% — 인플레이션 헤지 역할 가능")
+    elif div_yield > 1.0:
+        score += 0.1
+        reasons.append(f"배당수익률 {div_yield}% — 보통. 올웨더 관점에서 방어성 다소 부족")
+    else:
+        score -= 0.1
+        reasons.append("배당수익률 낮음 — 방어 자산 역할 어려움, 채권·금 병행 권장")
+
+    if profit_rate < -15:
+        score -= 0.2
+        reasons.append(f"현재 {profit_rate:.1f}% 손실 — 포지션 규모 점검, 상관자산 리밸런싱 검토")
+    elif profit_rate > 10:
+        score += 0.1
+        reasons.append(f"현재 +{profit_rate:.1f}% 수익 — 비중이 과대해졌는지 점검하고 리밸런싱")
+
+    defensive = {"금융", "자동차부품", "철강"}
+    volatile = {"바이오", "게임", "엔터"}
+    if stock.sector in defensive:
+        score += 0.1
+        reasons.append(f"{stock.sector} 섹터 — 경기방어성 보유, 포트폴리오 안정 기여")
+    elif stock.sector in volatile:
+        score -= 0.15
+        reasons.append(f"{stock.sector} 섹터 — 변동성 높음, 포트폴리오 비중 5% 이하 권장")
+
+    if score > 0.3:
+        verdict, badge = "사라", "🟢"
+    elif score > 0:
+        verdict, badge = "관망", "🟡"
+    else:
+        verdict, badge = "팔아라", "🔴"
+
+    return {"verdict": verdict, "badge": badge, "score": score, "reasons": reasons}
+
+
+def _buffett_stock_analysis(stock: Stock, row: dict) -> dict:
+    pbr = round((seed_for(stock.code, "pbr") % 30) / 10 + 0.5, 1)
+    roe = (seed_for(stock.code, "roe") % 25) + 5
+    has_dividend = seed_for(stock.code, "div_hist") % 3 != 0
+    profit_rate = row["profit_rate"]
+
+    score = 0.0
+    reasons: list[str] = []
+
+    if pbr < 1.0:
+        score += 0.4
+        reasons.append(f"PBR {pbr} — 청산가치 이하, 강한 안전마진 확보")
+    elif pbr < 1.5:
+        score += 0.2
+        reasons.append(f"PBR {pbr} — 합리적 가치권, 해자 강도에 따라 매력도 결정")
+    elif pbr < 2.5:
+        reasons.append(f"PBR {pbr} — 적정~약간 고평가. 강한 해자 있어야 정당화 가능")
+    else:
+        score -= 0.3
+        reasons.append(f"PBR {pbr} — 고평가. 버핏 기준 '좋은 기업을 공정한 가격에'에 미달")
+
+    if roe >= 15:
+        score += 0.4
+        reasons.append(f"ROE {roe}% — 탁월한 자본효율성, 장기 복리 성장 기대")
+    elif roe >= 10:
+        score += 0.2
+        reasons.append(f"ROE {roe}% — 양호한 수준. 10년 지속 여부가 핵심")
+    else:
+        score -= 0.2
+        reasons.append(f"ROE {roe}% — 낮은 자본효율성. 경제적 해자 불명확")
+
+    if has_dividend:
+        score += 0.1
+        reasons.append("배당 이력 있음 — 주주환원 친화적 경영 신호")
+    else:
+        reasons.append("배당 이력 없음 — 성장 재투자 근거 확인 필요")
+
+    moat_sectors = {"반도체", "금융", "자동차"}
+    hard_sectors = {"게임", "엔터", "바이오"}
+    if stock.sector in moat_sectors:
+        score += 0.15
+        reasons.append(f"{stock.sector} — 기술·규모 해자 존재 가능성")
+    elif stock.sector in hard_sectors:
+        score -= 0.1
+        reasons.append(f"{stock.sector} — 사업 예측 어려움, 버핏 '능력 범위' 외 가능성")
+
+    if profit_rate < -20:
+        score += 0.05
+        reasons.append(f"현재 {profit_rate:.1f}% 손실 — 펀더멘털 이상 없으면 추가 매수 기회")
+    elif profit_rate > 30:
+        reasons.append(f"현재 +{profit_rate:.1f}% 수익 — 내재가치 재평가 후 보유 여부 재검토")
+
+    if score > 0.5:
+        verdict, badge = "사라", "🟢"
+    elif score > 0.2:
+        verdict, badge = "관망", "🟡"
+    else:
+        verdict, badge = "팔아라", "🔴"
+
+    return {"verdict": verdict, "badge": badge, "score": score, "reasons": reasons}
+
+
+def _kotegawa_stock_analysis(stock: Stock, row: dict) -> dict:
+    vol_spike = round((seed_for(stock.code, "vol_spike") % 30) / 10 + 0.5, 1)
+    profit_rate = row["profit_rate"]
+
+    score = 0.0
+    reasons: list[str] = []
+
+    if profit_rate > 15:
+        score += 0.35
+        reasons.append(f"매수가 대비 +{profit_rate:.1f}% — 강한 추세, 트레일링 스톱 설정 권장")
+    elif profit_rate > 5:
+        score += 0.2
+        reasons.append(f"매수가 대비 +{profit_rate:.1f}% — 추세 유지, 모멘텀 지속 여부 확인")
+    elif profit_rate > -5:
+        reasons.append(f"매수가 대비 {profit_rate:.1f}% — 횡보. 방향성 확인 후 재판단")
+    elif profit_rate > -10:
+        score -= 0.3
+        reasons.append(f"매수가 대비 {profit_rate:.1f}% — BNF 손절 기준(-5%) 초과. 즉시 포지션 점검")
+    else:
+        score -= 0.55
+        reasons.append(f"매수가 대비 {profit_rate:.1f}% — 심각한 손실. BNF 원칙상 이미 청산 구간")
+
+    if vol_spike >= 2.0:
+        score += 0.2
+        reasons.append(f"거래량 급증도 {vol_spike}x — 강한 수급 신호, 추세 신뢰도 높음")
+    elif vol_spike >= 1.5:
+        score += 0.1
+        reasons.append(f"거래량 {vol_spike}x — 보통 수준, 추가 수급 확인 필요")
+    else:
+        score -= 0.1
+        reasons.append(f"거래량 {vol_spike}x — 수급 약함. 주가 움직임 신뢰도 낮음")
+
+    if stock.market == "KOSDAQ":
+        score += 0.1
+        reasons.append("KOSDAQ — 모멘텀 효과 강한 시장, BNF 방식에 적합")
+
+    hot_sectors = {"반도체", "2차전지", "바이오", "게임"}
+    if stock.sector in hot_sectors:
+        score += 0.1
+        reasons.append(f"{stock.sector} — 테마 사이클 활성 섹터. 모멘텀 포착 기회")
+
+    if score > 0.35:
+        verdict, badge = "사라", "🟢"
+    elif score > 0:
+        verdict, badge = "관망", "🟡"
+    else:
+        verdict, badge = "팔아라", "🔴"
+
+    return {"verdict": verdict, "badge": badge, "score": score, "reasons": reasons}
+
+
+def _katayama_stock_analysis(stock: Stock, row: dict) -> dict:
+    """카타야마 아키라(片山晃·五月天) — 소형 성장주 발굴·집중 투자."""
+    growth_proxy = (seed_for(stock.code, "growth") % 40) + 5      # 5–44% 매출성장률 추정
+    margin_proxy = (seed_for(stock.code, "margin") % 25) + 5      # 5–29% 영업이익률 추정
+    mktcap_rank  = seed_for(stock.code, "mktcap_rank") % 5        # 0=소형 ~ 4=대형
+    mgmt_score   = (seed_for(stock.code, "mgmt") % 10) + 1        # 1–10 경영진 신뢰도
+    profit_rate  = row["profit_rate"]
+
+    score = 0.0
+    reasons: list[str] = []
+
+    # 성장률
+    if growth_proxy >= 30:
+        score += 0.4
+        reasons.append(f"매출 성장률 추정 {growth_proxy}% — 고성장 기업, 카타야마 핵심 조건 충족")
+    elif growth_proxy >= 20:
+        score += 0.25
+        reasons.append(f"매출 성장률 추정 {growth_proxy}% — 양호한 성장. 지속성 확인 필요")
+    elif growth_proxy >= 10:
+        score += 0.1
+        reasons.append(f"매출 성장률 추정 {growth_proxy}% — 완만한 성장. 가속 계기가 있어야 관심 대상")
+    else:
+        score -= 0.2
+        reasons.append(f"매출 성장률 추정 {growth_proxy}% — 성장 정체. 카타야마 관점에서 매력 낮음")
+
+    # 이익률
+    if margin_proxy >= 20:
+        score += 0.25
+        reasons.append(f"영업이익률 추정 {margin_proxy}% — 높은 마진, 해자와 가격결정력 반영")
+    elif margin_proxy >= 12:
+        score += 0.1
+        reasons.append(f"영업이익률 추정 {margin_proxy}% — 양호. 성장과 함께 추가 확장 여부 모니터")
+    else:
+        score -= 0.1
+        reasons.append(f"영업이익률 추정 {margin_proxy}% — 낮은 마진. 수익성 개선 로드맵이 필수")
+
+    # 시가총액·시장 (소형 KOSDAQ 선호)
+    if stock.market == "KOSDAQ":
+        if mktcap_rank <= 1:
+            score += 0.2
+            reasons.append("소형 KOSDAQ — 기관 미발굴 가능성 높음. 카타야마 최선호 구간")
+        elif mktcap_rank <= 3:
+            score += 0.1
+            reasons.append("중소형 KOSDAQ — 성장 잠재력과 유동성의 균형점")
+        else:
+            reasons.append("대형 KOSDAQ — 이미 기관 커버. 추가 발굴 여지 제한적")
+    else:
+        if mktcap_rank <= 2:
+            score += 0.05
+            reasons.append("KOSPI 중형주 — 성장 스토리 강하면 검토 가능")
+        else:
+            score -= 0.1
+            reasons.append("KOSPI 대형주 — 기관 커버리지 포화, 초과수익 기회 제한적")
+
+    # 경영진 신뢰도
+    if mgmt_score >= 8:
+        score += 0.15
+        reasons.append(f"경영진 신뢰도 추정 {mgmt_score}/10 — 실행력·주주소통 우수. 카타야마 핵심 기준")
+    elif mgmt_score >= 5:
+        score += 0.05
+        reasons.append(f"경영진 신뢰도 추정 {mgmt_score}/10 — 보통. IR 발언과 실적 일치 여부 추적 필요")
+    else:
+        score -= 0.15
+        reasons.append(f"경영진 신뢰도 추정 {mgmt_score}/10 — 낮음. 카타야마는 경영진 실망 시 즉시 매도 원칙")
+
+    # 섹터 선호
+    growth_sectors = {"바이오", "반도체", "소프트웨어", "의료기기", "2차전지소재", "반도체장비", "반도체소재"}
+    niche_sectors  = {"방산", "화장품", "엔터"}
+    if stock.sector in growth_sectors:
+        score += 0.1
+        reasons.append(f"{stock.sector} — 카타야마 선호 고성장 섹터. 실적 가시성 확인 필수")
+    elif stock.sector in niche_sectors:
+        score += 0.07
+        reasons.append(f"{stock.sector} — 틈새 시장 지배력 보유 가능성. 점유율 추이 모니터")
+
+    # 포트폴리오 P&L
+    if profit_rate > 30:
+        reasons.append(f"현재 +{profit_rate:.1f}% — 성장 스토리 유효하면 카타야마는 계속 보유. 목표가 재산정 권장")
+    elif profit_rate < -20:
+        score -= 0.1
+        reasons.append(f"현재 {profit_rate:.1f}% 손실 — 성장 스토리 훼손 여부 즉시 재점검 필요")
+
+    if score > 0.45:
+        verdict, badge = "사라", "🟢"
+    elif score > 0.15:
+        verdict, badge = "관망", "🟡"
+    else:
+        verdict, badge = "팔아라", "🔴"
+
+    return {"verdict": verdict, "badge": badge, "score": score, "reasons": reasons}
+
+
+def render_portfolio_advisor_summary(rows: list[dict]) -> None:
+    st.subheader("투자 대가별 종목 분석")
+    st.caption(
+        "보유 종목 각각을 레이 달리오(리스크 패리티), 워렌 버핏(가치투자), "
+        "코테가와 다카시(모멘텀), 카타야마 아키라(소형 성장주)의 철학으로 분석합니다. "
+        "재무 수치는 데모 시뮬레이션이므로 실제 투자 전 공시 데이터를 확인하십시오."
+    )
+
+    for row in rows:
+        stock = find_stock(row["code"])
+        if stock is None:
+            continue
+
+        dalio    = _dalio_stock_analysis(stock, row)
+        buffett  = _buffett_stock_analysis(stock, row)
+        kotegawa = _kotegawa_stock_analysis(stock, row)
+        katayama = _katayama_stock_analysis(stock, row)
+
+        profit_label = f"+{row['profit_rate']:.1f}%" if row["profit_rate"] >= 0 else f"{row['profit_rate']:.1f}%"
+        profit_money = money_signed(row["profit"])
+
+        with st.expander(
+            f"{row['name']} ({row['code']}) · {profit_label} · {profit_money} "
+            f"| 달리오 {dalio['badge']} 버핏 {buffett['badge']} "
+            f"코테가와 {kotegawa['badge']} 카타야마 {katayama['badge']}",
+            expanded=False,
+        ):
+            analyses = [
+                ("레이 달리오", "리스크 패리티 · 부채 사이클", dalio),
+                ("워렌 버핏", "가치투자 · 경제적 해자", buffett),
+                ("코테가와 다카시", "모멘텀 · 수급 추세", kotegawa),
+                ("카타야마 아키라", "소형 성장주 · 집중 투자", katayama),
+            ]
+            cols = st.columns(4)
+            for col, (name, subtitle, result) in zip(cols, analyses):
+                with col:
+                    st.markdown(f"**{name}**")
+                    st.caption(subtitle)
+                    vcolor = {"사라": "var(--red)", "관망": "var(--yellow)", "팔아라": "var(--blue)"}
+                    vc = vcolor.get(result["verdict"], "#888")
+                    st.markdown(
+                        f"<div style='font-size:1.5rem;font-weight:900;color:{vc};"
+                        f"letter-spacing:0.05em;margin:6px 0 2px;'>"
+                        f"{result['badge']} {result['verdict']}</div>"
+                        f"<div style='font-size:0.72rem;color:#666;margin-bottom:8px;'>"
+                        f"점수 {result['score']:+.2f}</div>",
+                        unsafe_allow_html=True,
+                    )
+                    st.markdown("---")
+                    for reason in result["reasons"]:
+                        st.markdown(f"- {reason}")
+
+    # Portfolio-level cross-advisor summary
+    st.divider()
+    st.markdown("**포트폴리오 종합 의견**")
+    valid_stocks = [find_stock(r["code"]) for r in rows if find_stock(r["code"])]
+    valid_rows   = [r for r in rows if find_stock(r["code"])]
+    dalio_all    = [_dalio_stock_analysis(s, r) for s, r in zip(valid_stocks, valid_rows)]
+    buffett_all  = [_buffett_stock_analysis(s, r) for s, r in zip(valid_stocks, valid_rows)]
+    kotegawa_all = [_kotegawa_stock_analysis(s, r) for s, r in zip(valid_stocks, valid_rows)]
+    katayama_all = [_katayama_stock_analysis(s, r) for s, r in zip(valid_stocks, valid_rows)]
+
+    def avg_score(analyses: list[dict]) -> float:
+        return sum(a["score"] for a in analyses) / len(analyses) if analyses else 0.0
+
+    col1, col2, col3, col4 = st.columns(4)
+    col1.metric("달리오 점수", f"{avg_score(dalio_all):+.2f}",    help="리스크 패리티 관점 평균 (높을수록 분산·방어성 양호)")
+    col2.metric("버핏 점수",   f"{avg_score(buffett_all):+.2f}",  help="가치투자 관점 평균 (높을수록 저평가·고ROE 비중 높음)")
+    col3.metric("코테가와 점수", f"{avg_score(kotegawa_all):+.2f}", help="모멘텀 관점 평균 (높을수록 추세 종목 비중 높음)")
+    col4.metric("카타야마 점수", f"{avg_score(katayama_all):+.2f}", help="성장주 관점 평균 (높을수록 고성장·소형주 비중 높음)")
+
+    sectors_in_portfolio = [find_stock(r["code"]).sector for r in rows if find_stock(r["code"])]
+    unique_sectors = set(sectors_in_portfolio)
+    if len(unique_sectors) < 3:
+        st.warning(
+            f"달리오 경고: 포트폴리오 섹터가 {', '.join(unique_sectors)}에 집중되어 있습니다. "
+            "3개 이상 섹터로 분산을 권장합니다."
+        )
+    else:
+        st.success(f"달리오 관점: {len(unique_sectors)}개 섹터에 분산 — 기본 분산 조건 충족")
+
+
+def render_portfolio_page(market: str, use_live: bool) -> None:
+    st.title("포트폴리오")
+    portfolio = read_json(PORTFOLIO_FILE, [])
+
+    with st.form("portfolio-form", clear_on_submit=True):
+        stock = select_stock_widget(market, "추가할 종목")
+        cols = st.columns(3)
+        quantity = cols[0].number_input("수량", min_value=1, value=10, step=1)
+        buy_price = cols[1].number_input("평균단가", min_value=1, value=stock_snapshot(stock, use_live)["price"], step=100)
+        memo = cols[2].text_input("메모", placeholder="선택 입력")
+        submitted = st.form_submit_button("포트폴리오에 추가", use_container_width=True)
+        if submitted:
+            portfolio.append(
+                {
+                    "code": stock.code,
+                    "name": stock.name,
+                    "market": stock.market,
+                    "quantity": int(quantity),
+                    "buy_price": int(buy_price),
+                    "memo": memo,
+                    "created_at": datetime.now().isoformat(timespec="seconds"),
+                }
+            )
+            write_json(PORTFOLIO_FILE, portfolio)
+            st.rerun()
+
+    if not portfolio:
+        st.info("보유 종목을 추가하면 평가금액과 손익률을 추적할 수 있습니다.")
+        return
+
+    rows = []
+    for item in portfolio:
+        stock = find_stock(item["code"])
+        if stock is None:
+            continue
+        current = stock_snapshot(stock, use_live)["price"]
+        quantity = int(item["quantity"])
+        buy_price = int(item["buy_price"])
+        invested = quantity * buy_price
+        evaluated = quantity * current
+        profit = evaluated - invested
+        profit_rate = profit / invested * 100 if invested else 0
+        rows.append({**item, "market": stock.market, "current": current, "invested": invested, "evaluated": evaluated, "profit": profit, "profit_rate": profit_rate})
+
+    total_invested = sum(row["invested"] for row in rows)
+    total_evaluated = sum(row["evaluated"] for row in rows)
+    total_profit = total_evaluated - total_invested
+    total_rate = total_profit / total_invested * 100 if total_invested else 0
+
+    col1, col2, col3 = st.columns(3)
+    col1.metric(
+        "투자원금",
+        money_compact(total_invested),
+        help="내가 주식을 살 때 쓴 총 금액입니다.",
+    )
+    col2.metric(
+        "평가금액",
+        money_compact(total_evaluated),
+        money_signed(total_profit),
+        help="현재 주가로 환산한 보유 주식의 총 가치입니다.",
+    )
+    col3.metric(
+        "수익률",
+        signed_pct(total_rate),
+        help="투자원금 대비 현재 얼마나 벌었거나 잃었는지입니다.",
+    )
+
+    st.divider()
+    display = pd.DataFrame(rows)
+    display["수량"] = display["quantity"].map("{:,}주".format)
+    display["평균단가 (1주)"] = display["buy_price"].map(money_per_share)
+    display["현재가 (1주)"] = display["current"].map(money_per_share)
+    display["평가금액"] = display["evaluated"].map(money_compact)
+    display["손익"] = display["profit"].map(money_signed)
+    display["수익률"] = display["profit_rate"].map(signed_pct)
+    st.dataframe(
+        display[["market", "code", "name", "수량", "평균단가 (1주)", "현재가 (1주)", "평가금액", "손익", "수익률", "memo"]].rename(
+            columns={"market": "시장", "code": "코드", "name": "종목명", "memo": "메모"}
+        ),
+        use_container_width=True,
+        hide_index=True,
+    )
+
+    delete_options = {f"{row['market']} · {row['name']} · {row['quantity']}주 · {row['created_at']}": row["created_at"] for row in rows}
+    selected = st.selectbox("삭제할 항목", list(delete_options.keys()))
+    if st.button("선택 항목 삭제", type="secondary"):
+        portfolio = [item for item in portfolio if item.get("created_at") != delete_options[selected]]
+        write_json(PORTFOLIO_FILE, portfolio)
+        st.rerun()
+
+    st.divider()
+    render_portfolio_advisor_summary(rows)
+
+
+def render_stock_advisor_panel(stock: Stock) -> None:
+    """세 투자 대가의 관점으로 선택 종목을 분석하는 패널."""
+    st.subheader("투자 대가별 종목 분석")
+    dummy_row = {"profit_rate": 0.0, "profit": 0}
+
+    dalio    = _dalio_stock_analysis(stock, dummy_row)
+    buffett  = _buffett_stock_analysis(stock, dummy_row)
+    kotegawa = _kotegawa_stock_analysis(stock, dummy_row)
+    katayama = _katayama_stock_analysis(stock, dummy_row)
+
+    tab_d, tab_b, tab_k, tab_ka = st.tabs([
+        f"레이 달리오  {dalio['badge']}",
+        f"워렌 버핏  {buffett['badge']}",
+        f"코테가와 다카시  {kotegawa['badge']}",
+        f"카타야마 아키라  {katayama['badge']}",
+    ])
+
+    def _render_tab(subtitle: str, result: dict) -> None:
+        st.caption(subtitle)
+        vcolor = {"사라": "var(--red)", "관망": "var(--yellow)", "팔아라": "var(--blue)"}
+        vc = vcolor.get(result["verdict"], "#888")
+        st.markdown(
+            f"<div style='font-size:2rem;font-weight:900;color:{vc};"
+            f"letter-spacing:0.06em;margin:10px 0 4px;'>"
+            f"{result['badge']} {result['verdict']}</div>"
+            f"<div style='font-size:0.75rem;color:#666;margin-bottom:12px;'>"
+            f"종합 점수 {result['score']:+.2f}</div>",
+            unsafe_allow_html=True,
+        )
+        st.divider()
+        for reason in result["reasons"]:
+            st.markdown(f"- {reason}")
+
+    with tab_d:
+        _render_tab("리스크 패리티 · 부채 사이클 · 분산투자", dalio)
+        st.markdown(
+            '> *"분산투자는 성배다. 상관관계가 낮은 수익원 15–20개를 찾아라."*  \n'
+            '> — 레이 달리오'
+        )
+
+    with tab_b:
+        _render_tab("가치투자 · 경제적 해자 · 장기 보유", buffett)
+        st.markdown(
+            '> *"훌륭한 기업을 공정한 가격에 사는 것이, 그저 그런 기업을 싼 가격에 사는 것보다 낫다."*  \n'
+            '> — 워렌 버핏'
+        )
+
+    with tab_k:
+        _render_tab("모멘텀 · 수급 추세 · 손절 원칙", kotegawa)
+        st.markdown(
+            '> *"작게 잃고 크게 이겨라. 틀렸을 때 즉시 인정하고 나와라."*  \n'
+            '> — 코테가와 다카시(BNF)'
+        )
+
+    with tab_ka:
+        _render_tab("소형 성장주 발굴 · 집중 투자 · 경영진 중시", katayama)
+        st.markdown(
+            '> *"남들이 모르는 성장 기업을 먼저 찾아라. 기관이 주목하기 전에 사고, '
+            '성장 스토리가 끝날 때 팔아라."*  \n'
+            '> — 카타야마 아키라(片山晃·五月天)'
+        )
+
+    st.caption("재무 수치는 데모 시뮬레이션 값입니다. 실제 투자 전 공시 재무제표를 반드시 확인하십시오.")
+
+
+def render_dalio_advice(stocks: list[Stock], use_live: bool) -> None:
+    st.title("레이 달리오의 조언")
+    st.caption("브리지워터 어소시에이츠 창업자 · 올웨더 포트폴리오 · 경제 사이클 이론")
+
+    st.info(
+        "**레이 달리오**는 거시경제 사이클과 부채 사이클을 분석해 자산을 배분하는 '리스크 패리티(Risk Parity)' 전략으로 유명합니다. "
+        "그는 '분산투자'를 성배(Holy Grail)라 부르며, 서로 상관관계가 낮은 자산을 조합해 변동성을 낮추면서도 수익을 추구합니다."
+    )
+
+    tab1, tab2, tab3 = st.tabs(["핵심 원칙", "한국 시장 적용", "종목 스크리닝"])
+
+    with tab1:
+        st.subheader("투자 철학 핵심 원칙")
+
+        principles = [
+            (
+                "1. 경제 기계(Economic Machine)를 이해하라",
+                "경제는 생산성 성장 + 단기 부채 사이클(5~8년) + 장기 부채 사이클(75~100년)의 조합으로 움직입니다. "
+                "현재 한국은 고금리 이후 완화 사이클 진입 초기로, 부채 디레버리징 압력이 낮아지는 구간입니다. "
+                "이 시기에는 장기채 비중 확대와 실물자산(원자재, 금) 병행이 유리합니다.",
+            ),
+            (
+                "2. 리스크 패리티 — 리스크를 균등하게 분산하라",
+                "달리오의 올웨더 포트폴리오 배분: 주식 30%, 장기채 40%, 중기채 15%, 금 7.5%, 원자재 7.5%. "
+                "한국 개인투자자 관점에서는 KOSPI/KOSDAQ 주식(30%) + KTB 장기채 ETF(35%) + 금 ETF(10%) + 리츠(10%) + 해외 분산(15%)으로 응용할 수 있습니다. "
+                "핵심은 '어떤 경제 환경에서도 어느 한 자산만 크게 손실 나지 않도록 설계'하는 것입니다.",
+            ),
+            (
+                "3. 상관관계가 낮은 15~20개 자산에 분산하라",
+                "달리오는 '상관관계 0에 가까운 좋은 수익원 15~20개를 조합하면 리스크를 80% 줄이면서 수익을 거의 희생하지 않는다'고 말합니다. "
+                "단일 섹터(예: 2차전지 집중)나 단일 국가 집중은 이 원칙에 위배됩니다. "
+                "KOSDAQ 반도체 + KOSPI 금융 + 해외 원자재 ETF처럼 사이클이 다른 자산을 섞어야 합니다.",
+            ),
+            (
+                "4. 디플레이션/인플레이션 시나리오를 모두 대비하라",
+                "성장↑인플레↑: 주식·원자재 강세. 성장↑인플레↓: 주식·채권 강세. "
+                "성장↓인플레↑(스태그플레이션): 금·물가채 강세. 성장↓인플레↓: 장기채·금 강세. "
+                "한국 투자자는 금리 환경과 원/달러 환율 방향성을 매 분기 점검해 비중을 재조정해야 합니다.",
+            ),
+            (
+                "5. 부채 사이클이 피크일 때 반드시 레버리지를 줄여라",
+                "달리오는 과도한 부채가 쌓인 섹터(예: 부동산 PF 익스포저가 큰 중소형 건설사, 고레버리지 스타트업)를 "
+                "사이클 후기에 집중 보유하는 것을 경고합니다. KOSDAQ 고성장주의 부채비율, 이자보상배율을 반드시 체크하십시오.",
+            ),
+        ]
+
+        for title, body in principles:
+            with st.expander(title):
+                st.write(body)
+
+    with tab2:
+        st.subheader("한국 시장 분석 관점")
+
+        col1, col2 = st.columns(2)
+        with col1:
+            st.markdown("**달리오 관점의 현재 한국 시장 진단**")
+            st.markdown("""
+- **부채 사이클 위치**: 단기 사이클 중반. 고금리 압력 완화 시작 → 주식·채권 동반 회복 환경
+- **통화 정책**: 한은 인하 사이클 진입 → 성장주 재평가 여지 존재
+- **환율 리스크**: 원/달러 고환율 구간은 수출주(반도체, 자동차) 이익 확대, 수입원가 부담 업종(항공, 음식료) 압박
+- **지정학 리스크**: 한반도 리스크 디스카운트 → 한국 시장 PER이 글로벌 대비 낮은 구조적 원인. 달리오는 이를 '국가 리스크 프리미엄'으로 인식하고 적정 할인율을 높게 봄
+- **권고 비중**: 한국 주식 단독 집중 지양. 한국 주식 25% + 채권·대안자산 75% 병행 권장
+            """)
+        with col2:
+            st.markdown("**섹터별 달리오 관점 평가**")
+            sector_views = {
+                "반도체": ("▲ 긍정", "AI 사이클 + 글로벌 수요 회복. 단, 고점 재고 위험 모니터 필요"),
+                "2차전지": ("◆ 중립", "EV 성장 둔화 우려 vs 장기 에너지전환 수혜. 변동성 높아 비중 조절 필요"),
+                "금융": ("▲ 긍정", "고금리 수혜 마무리, 인하기 전환. NIM 압박 오나 자본력 안정"),
+                "바이오": ("▽ 주의", "개별 임상 리스크 높음. 달리오 방식으론 비중 최소화"),
+                "자동차": ("▲ 긍정", "고환율 수혜, 글로벌 점유율 확대. 전기차 전환 비용은 리스크"),
+                "엔터": ("◆ 중립", "한류 프리미엄 있으나 수익 변동성 큼. 포트폴리오 5% 이하"),
+            }
+            for sector, (view, reason) in sector_views.items():
+                st.markdown(f"**{sector}** {view}  \n{reason}")
+
+    with tab3:
+        st.subheader("달리오 관점 종목 체크리스트")
+        st.caption("리스크 패리티 원칙 기반 — 부채 건전성과 경기 방어성을 우선 확인합니다.")
+
+        snapshots = [stock_snapshot(s, use_live) for s in stocks]
+        frame = pd.DataFrame(snapshots)
+
+        frame["부채비율 proxy"] = frame["code"].apply(lambda c: (seed_for(c, "debt") % 200) + 50)
+        frame["배당수익률 proxy (%)"] = frame["code"].apply(lambda c: round((seed_for(c, "div") % 40) / 10, 1))
+        frame["달리오 적합도"] = frame.apply(
+            lambda row: "★★★" if row["부채비율 proxy"] < 100 and row["배당수익률 proxy (%)"] > 1.5
+            else ("★★" if row["부채비율 proxy"] < 150 else "★"),
+            axis=1,
+        )
+
+        display = frame[["market", "code", "name", "sector", "부채비율 proxy", "배당수익률 proxy (%)", "달리오 적합도"]].rename(
+            columns={"market": "시장", "code": "코드", "name": "종목명", "sector": "업종"}
+        )
+        st.dataframe(display, use_container_width=True, hide_index=True)
+        st.caption("부채비율·배당수익률은 데모 시뮬레이션 값입니다. 실제 투자 전 공시 재무제표를 반드시 확인하십시오.")
+
+        st.divider()
+        st.markdown("**달리오의 최종 메시지**")
+        st.markdown(
+            '> *“분산투자는 성배다. 상관관계가 낮은 좋은 수익원을 15–20개 찾아라. '
+            '그것이 리스크를 줄이면서 수익을 지키는 유일한 방법이다.”*  \n'
+            '> — 레이 달리오, 《원칙(Principles)》'
+        )
+
+
+def render_buffett_advice(stocks: list[Stock], use_live: bool) -> None:
+    st.title("워렌 버핏의 조언")
+    st.caption("버크셔 해서웨이 CEO · 가치투자의 대가 · 장기 보유 전략")
+
+    st.info(
+        "**워렌 버핏**은 벤저민 그레이엄의 가치투자를 기반으로, "
+        "찰리 멍거의 영향을 받아 '좋은 기업을 공정한 가격에 사는 것이 그저 그런 기업을 싼 가격에 사는 것보다 낫다'는 철학을 정립했습니다. "
+        "장기적 경쟁 우위(해자), 우수한 경영진, 지속적 자본수익률을 핵심 기준으로 봅니다."
+    )
+
+    tab1, tab2, tab3 = st.tabs(["핵심 원칙", "한국 시장 적용", "종목 스크리닝"])
+
+    with tab1:
+        st.subheader("투자 철학 핵심 원칙")
+
+        principles = [
+            (
+                "1. 경제적 해자(Economic Moat)를 보유한 기업만 매수하라",
+                "해자의 4가지 유형: ①브랜드 파워(소비자가 더 비싼 가격을 지불하게 만드는 힘) "
+                "②전환비용(고객이 경쟁사로 쉽게 옮기지 못하는 구조) "
+                "③네트워크 효과(사용자 증가가 서비스 가치를 높이는 구조) "
+                "④비용 우위(규모의 경제나 독점 자원으로 경쟁사보다 싸게 만드는 능력). "
+                "한국 시장에서는 삼성전자의 메모리 기술 독점, 카카오의 국내 플랫폼 잠금 효과, "
+                "현대차그룹의 수직 계열화 비용 우위 등이 해당됩니다.",
+            ),
+            (
+                "2. 안전마진(Margin of Safety)을 확보하고 매수하라",
+                "버핏은 기업의 내재가치를 추정한 뒤, 현재 주가가 내재가치보다 충분히 낮을 때만 매수합니다. "
+                "일반적으로 20~30% 이상의 할인율을 요구합니다. "
+                "한국 시장은 코리아 디스카운트로 인해 글로벌 동종 대비 PBR, PER이 낮아 "
+                "해자가 명확한 기업의 경우 안전마진을 확보하기 비교적 유리한 환경입니다.",
+            ),
+            (
+                "3. 자기자본이익률(ROE)이 15% 이상 지속되는 기업을 선택하라",
+                "버핏은 '10년 이상 ROE 15% 이상을 유지한 기업이 진짜 복리 기계'라고 말합니다. "
+                "단순한 레버리지(부채)로 만든 ROE가 아닌, 순이익/자기자본 기준의 진짜 사업 수익성이어야 합니다. "
+                "한국 KOSPI 대형주 중 이 기준을 충족하는 기업은 많지 않으며, 반도체 다운사이클 시 ROE가 급락하는 "
+                "삼성전자·SK하이닉스의 주기적 변동성에 주의가 필요합니다.",
+            ),
+            (
+                "4. 이해할 수 있는 사업에만 투자하라 (능력 범위, Circle of Competence)",
+                "버핏이 한국 바이오·게임주를 직접 매수하지 않는 이유는 사업 모델의 복잡성과 예측 불가능성 때문입니다. "
+                "개인 투자자도 자신이 사업 구조, 수익 메커니즘, 경쟁 환경을 명확히 설명할 수 없는 종목은 '이해 범위 밖'으로 분류해 보유하지 않아야 합니다.",
+            ),
+            (
+                "5. '10년 보유할 주식이 아니면 10분도 보유하지 마라'",
+                "단기 주가 변동에 집착하지 말고 사업 자체의 펀더멘털 변화를 추적하십시오. "
+                "분기 실적 발표 때 사업이 여전히 해자를 유지하는지, 자본 배분이 주주 친화적으로 이뤄지는지를 확인하십시오. "
+                "한국 증시 특성상 외국인·기관의 수급 변동이 크므로, 버핏식 장기 보유자에게 단기 급락은 오히려 추가 매수 기회입니다.",
+            ),
+            (
+                "6. 경영진의 자본 배분 능력과 정직성을 평가하라",
+                "버핏은 '훌륭한 경영진이 나쁜 사업을 구할 수는 없지만, 나쁜 경영진이 좋은 사업을 망칠 수 있다'고 강조합니다. "
+                "한국 시장에서는 대주주의 일감 몰아주기, 순환출자, 과도한 유상증자가 소액주주 가치를 훼손하는 주요 패턴입니다. "
+                "주주환원(배당+자사주 소각) 정책과 공시 투명성을 반드시 확인하십시오.",
+            ),
+        ]
+
+        for title, body in principles:
+            with st.expander(title):
+                st.write(body)
+
+    with tab2:
+        st.subheader("한국 시장 분석 관점")
+
+        col1, col2 = st.columns(2)
+        with col1:
+            st.markdown("**버핏이 주목할 한국 기업 유형**")
+            st.markdown("""
+- **독점적 기술 기업**: 메모리 반도체 상위 2개사(삼성·하이닉스)는 글로벌 점유율 70%+. 단, 사이클 변동성 있음
+- **소비자 브랜드**: 아모레퍼시픽·LG생활건강 등 K-뷰티 브랜드. 중국 시장 의존도 리스크 주의
+- **금융 지주**: 신한·KB 등 — 낮은 PBR, 안정 배당, 경기방어성. 버핏식 저평가 대표 업종
+- **보험**: 한국 보험사는 부채를 플로트(float)로 활용 가능한 버핏 선호 구조. 삼성생명·DB손보 등
+- **피하는 유형**: 고레버리지 스타트업, 적자 바이오, 메타버스·NFT 테마주 — 예측 불가능한 사업 모델
+            """)
+        with col2:
+            st.markdown("**코리아 디스카운트와 버핏의 기회 인식**")
+            st.markdown("""
+버핏은 2023년 일본 5대 상사를 저PBR·고배당을 이유로 대규모 매수했습니다.
+한국도 유사한 '아시아 저평가 우량주' 프레임이 가능합니다.
+
+**투자 체크리스트**
+- PBR 1 미만이면서 ROE 10% 이상?
+- 10년 배당 성장 이력 존재?
+- 부채비율 100% 미만 또는 금융업 특성 고려?
+- 최근 3년 영업이익률 꾸준히 성장?
+- 지배주주 일감 몰아주기·순환출자 없음?
+
+모두 'Yes'면 버핏 포트폴리오 후보군입니다.
+            """)
+
+    with tab3:
+        st.subheader("버핏 관점 종목 체크리스트")
+        st.caption("가치투자 핵심 지표 — 내재가치 대비 안전마진과 해자의 지속성을 우선 확인합니다.")
+
+        snapshots = [stock_snapshot(s, use_live) for s in stocks]
+        frame = pd.DataFrame(snapshots)
+
+        frame["PBR proxy"] = frame["code"].apply(lambda c: round((seed_for(c, "pbr") % 30) / 10 + 0.5, 1))
+        frame["ROE proxy (%)"] = frame["code"].apply(lambda c: (seed_for(c, "roe") % 25) + 5)
+        frame["배당 이력"] = frame["code"].apply(lambda c: "있음" if seed_for(c, "div_hist") % 3 != 0 else "없음/불규칙")
+        frame["버핏 적합도"] = frame.apply(
+            lambda row: "★★★" if row["PBR proxy"] < 1.5 and row["ROE proxy (%)"] >= 15 and row["배당 이력"] == "있음"
+            else ("★★" if row["PBR proxy"] < 2.0 and row["ROE proxy (%)"] >= 10 else "★"),
+            axis=1,
+        )
+
+        display = frame[["market", "code", "name", "sector", "PBR proxy", "ROE proxy (%)", "배당 이력", "버핏 적합도"]].rename(
+            columns={"market": "시장", "code": "코드", "name": "종목명", "sector": "업종"}
+        )
+        st.dataframe(display, use_container_width=True, hide_index=True)
+        st.caption("PBR·ROE는 데모 시뮬레이션 값입니다. 실제 투자 전 공시 재무제표를 반드시 확인하십시오.")
+
+        st.divider()
+        st.markdown("**버핏의 최종 메시지**")
+        st.markdown(
+            '> *"훌륭한 기업을 공정한 가격에 사는 것이, 그저 그런 기업을 싼 가격에 사는 것보다 훨씬 낫다."*  \n'
+            '> — 워렌 버핏, 1989년 버크셔 해서웨이 주주 서한\n\n'
+            '> *"주식 시장은 조급한 사람에게서 인내심 있는 사람에게로 돈이 이전되는 장치다."*  \n'
+            '> — 워렌 버핏'
+        )
+
+
+def render_kotegawa_advice(stocks: list[Stock], use_live: bool) -> None:
+    st.title("코테가와 다카시의 조언")
+    st.caption("是川高志(BNF) · 일본 개인투자자 전설 · 1,600만 원 → 160억 원 수익 달성")
+
+    st.info(
+        "**코테가와 다카시(BNF)**는 2000년대 일본 증시에서 약 1,600만 엔으로 시작해 "
+        "160억 엔 이상의 자산을 만든 전설적인 일본 개인 투자자입니다. "
+        "그는 패턴 인식 기반 단기 모멘텀 거래와 철저한 리스크 관리, 그리고 시장 심리 분석으로 유명합니다. "
+        "화려한 기술 대신 '실제 작동하는 단순한 원칙'을 반복하는 것이 그의 핵심 철학입니다."
+    )
+
+    tab1, tab2, tab3 = st.tabs(["핵심 원칙", "한국 시장 적용", "종목 스크리닝"])
+
+    with tab1:
+        st.subheader("투자 철학 핵심 원칙")
+
+        principles = [
+            (
+                "1. 패턴을 반복해서 인식하고, 검증된 패턴에만 베팅하라",
+                "BNF는 수천 개 종목의 주가 움직임을 매일 관찰하며 '이 패턴이 나타나면 다음에 이렇게 된다'는 법칙을 직접 발견했습니다. "
+                "KOSDAQ에서도 급등 직전 '거래량 급증 + 외국인·기관 동시 매집 + 52주 신고가 돌파'의 패턴은 통계적으로 유의미합니다. "
+                "개인 투자자는 자신만의 백테스트를 통해 검증된 진입 조건만 반복해야 합니다.",
+            ),
+            (
+                "2. 손절매는 절대 늦추지 마라 — 손실은 빠르게, 수익은 길게",
+                "BNF는 '작게 잃고 크게 이기는 것'을 생존의 원칙으로 삼습니다. "
+                "매수 후 예상과 다른 방향으로 움직이면 즉시 -3~5%에서 손절하고, "
+                "예상대로 움직이면 수익을 극대화합니다. "
+                "한국 개인투자자의 가장 흔한 실수는 '버티면 오를 것'이라는 희망으로 손절을 미루다 "
+                "대형 손실로 이어지는 것입니다.",
+            ),
+            (
+                "3. 시장 전체 방향성(수급 흐름)을 먼저 파악하라",
+                "BNF는 개별 종목보다 시장 전체의 자금 흐름을 먼저 읽습니다. "
+                "외국인 순매수가 지속되면 대형주 중심으로, 기관 순매수가 강하면 중형주 성장주 중심으로 자금이 유입됩니다. "
+                "KOSDAQ은 개인 비중이 높아 수급 쏠림이 빠르고 방향 전환도 급격합니다. "
+                "코스닥 150 선물의 외국인 포지션 변화는 선행 지표로 유용합니다.",
+            ),
+            (
+                "4. 과열 종목은 절대 추격 매수하지 마라",
+                "BNF는 주가가 이미 단기 급등한 종목의 '고점 추격 매수'를 절대 하지 않습니다. "
+                "KOSDAQ에서 주가가 5일 내 30% 이상 급등하면 조정 리스크가 크게 높아집니다. "
+                "그는 '급등 후 1차 조정 시 재진입하거나, 다음 저점을 기다리는 것'을 원칙으로 합니다. "
+                "뉴스·테마가 터진 당일 매수는 최악의 타이밍인 경우가 많습니다.",
+            ),
+            (
+                "5. 집중 투자하되, 분산은 최소한으로",
+                "BNF는 한 번에 소수의 종목에 집중 투자하며, 확신도에 따라 포지션 크기를 조절합니다. "
+                "30개 종목을 조금씩 사는 것은 시간 낭비이자 수익 희석입니다. "
+                "단, KOSDAQ 중소형주는 유동성 리스크가 있어 시가총액 500억 원 미만은 진입 규모를 제한해야 합니다.",
+            ),
+            (
+                "6. 하루 거래보다 며칠~몇 주의 '스윙 트레이드'가 개인에게 더 현실적",
+                "BNF는 초기엔 초단기 거래를 했지만, 자산 규모가 커지면서 스윙 트레이드 위주로 전환했습니다. "
+                "한국 개인투자자 대부분은 증권사 수수료·세금·슬리피지를 고려할 때 "
+                "초단타보다 며칠~몇 주 단위의 추세 추종이 실효 수익에서 유리합니다. "
+                "KOSDAQ 모멘텀 종목에서 진입 타이밍은 거래량 급증과 이동평균선 배열을 함께 확인하십시오.",
+            ),
+        ]
+
+        for title, body in principles:
+            with st.expander(title):
+                st.write(body)
+
+    with tab2:
+        st.subheader("한국 시장 적용 분석")
+
+        col1, col2 = st.columns(2)
+        with col1:
+            st.markdown("**BNF 방식의 KOSDAQ 접근법**")
+            st.markdown("""
+**진입 신호 체크리스트**
+- 최근 5영업일 거래량이 20일 평균의 2배 이상?
+- 외국인 또는 기관 중 하나가 3일 연속 순매수?
+- 주가가 20일 이동평균 위에 위치?
+- 52주 신고가에 근접(5% 이내)?
+- 섹터 전체적 자금 유입 확인?
+
+**손절 기준**
+- 매수 평균단가 대비 -5% 이탈 시 무조건 손절
+- 거래량 없이 주가만 오른 종목은 리스크 2배
+- 상한가 다음날 하한가 갭하락 패턴 주의
+            """)
+        with col2:
+            st.markdown("**BNF가 주목하는 한국 시장 특성**")
+            st.markdown("""
+**유리한 환경**
+- 테마주 사이클이 빠르게 돌아감 (AI·로봇·방산·K-뷰티 등)
+- 기관 수급 쏠림이 명확해 추세 추종 유효
+- 배터리·반도체 글로벌 이슈가 국내 수급에 즉각 반영
+
+**불리한 환경**
+- 작전 세력·불공정 거래 리스크 존재
+- 유동성 낮은 소형주에서 갑작스러운 매물 출회
+- 코스닥 급등락 폭이 커서 리스크 관리 더욱 중요
+
+**BNF의 경고**
+시장이 전체적으로 하락 추세일 때는 개별 종목 롱 포지션보다
+현금 비중을 높이는 것이 최선입니다. '기다림'도 전략입니다.
+            """)
+
+    with tab3:
+        st.subheader("BNF 관점 모멘텀 스크리닝")
+        st.caption("거래량 급증 + 추세 강도 기반 — 단기 모멘텀이 높은 종목을 우선 확인합니다.")
+
+        snapshots = [stock_snapshot(s, use_live) for s in stocks]
+        frame = pd.DataFrame(snapshots)
+
+        frame["거래량 급증도"] = frame.apply(
+            lambda row: round((seed_for(row["code"], "vol_spike") % 30) / 10 + 0.5, 1), axis=1
+        )
+        frame["모멘텀 점수"] = frame.apply(
+            lambda row: round(abs(row["change_rate"]) * (seed_for(row["code"], "mom") % 3 + 1), 1), axis=1
+        )
+        frame["추세 방향"] = frame["change_rate"].apply(lambda x: "↑ 상승" if x > 0.5 else ("↓ 하락" if x < -0.5 else "→ 횡보"))
+        frame["BNF 관심도"] = frame.apply(
+            lambda row: "★★★" if row["거래량 급증도"] >= 2.0 and row["change_rate"] > 1.0
+            else ("★★" if row["거래량 급증도"] >= 1.5 else "★"),
+            axis=1,
+        )
+
+        display = frame[["market", "code", "name", "sector", "거래량 급증도", "모멘텀 점수", "추세 방향", "BNF 관심도"]].rename(
+            columns={"market": "시장", "code": "코드", "name": "종목명", "sector": "업종"}
+        )
+        st.dataframe(display, use_container_width=True, hide_index=True)
+        st.caption("거래량 급증도·모멘텀 점수는 데모 시뮬레이션 값입니다. 실제 투자 전 증권사 HTS/MTS 수급 데이터를 반드시 확인하십시오.")
+
+        st.divider()
+        st.markdown("**코테가와의 최종 메시지**")
+        st.markdown(
+            '> *"승리의 비결은 단순하다. 작게 잃고, 크게 이겨라. '
+            '당신이 옳을 때 최대한 버텨라. 그리고 틀렸을 때 즉시 인정하고 나와라."*  \n'
+            '> — 코테가와 다카시(BNF)\n\n'
+            '> *"시장은 당신의 의견을 신경 쓰지 않는다. 주가가 틀렸다고 주장하기 전에, '
+            '자신이 틀린 것은 아닌지 먼저 의심하라."*  \n'
+            '> — 코테가와 다카시(BNF)'
+        )
+
+
+def main() -> None:
+    setup_page()
+    menu, market, keyword, sectors, use_live, refresh_seconds = render_sidebar()
+    auto_refresh(refresh_seconds if use_live else 0)
+    if st.session_state.pop("menu_override", None) == "차트":
+        menu = "차트"
+
+    stocks = filtered_stocks(market, keyword, sectors)
+    if menu == "종목":
+        render_stocks_page(stocks, market, use_live)
+    elif menu == "차트":
+        render_chart_page(market, use_live)
+    elif menu == "관심종목":
+        render_favorites_page(use_live)
+    else:
+        render_portfolio_page(market, use_live)
+
+
+if __name__ == "__main__":
+    main()

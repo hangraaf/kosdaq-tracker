@@ -1,0 +1,26 @@
+{
+  "default": {
+    "news_sentiment": 0.0,
+    "earnings_surprise": 0.0,
+    "money_flow": 0.0,
+    "disclosure_risk": 0.0,
+    "index_flow": 0.0,
+    "sector_flow": 0.0
+  },
+  "005930": {
+    "news_sentiment": 0.2,
+    "earnings_surprise": 0.1,
+    "money_flow": 0.15,
+    "disclosure_risk": 0.0,
+    "index_flow": 0.1,
+    "sector_flow": 0.2
+  },
+  "247540": {
+    "news_sentiment": -0.1,
+    "earnings_surprise": 0.0,
+    "money_flow": -0.2,
+    "disclosure_risk": 0.1,
+    "index_flow": 0.0,
+    "sector_flow": -0.1
+  }
+}
