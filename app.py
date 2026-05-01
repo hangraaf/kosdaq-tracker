@@ -463,28 +463,41 @@ div[data-testid="stMetric"] {
   border: 2px solid var(--border2) !important;
   border-top: 4px solid var(--yellow) !important;
   border-radius: 0 !important;
-  padding: 14px 18px !important;
+  padding: 12px 14px !important;
   box-shadow: inset 0 0 20px rgba(255,230,0,0.03) !important;
+  overflow: visible !important;
 }
 div[data-testid="stMetric"] label {
   font-family: var(--mono) !important;
-  font-size: 0.64rem !important;
-  letter-spacing: 0.16em !important;
+  font-size: 0.6rem !important;
+  letter-spacing: 0.14em !important;
   text-transform: uppercase !important;
   color: var(--cyan) !important;
   font-weight: 400 !important;
+  white-space: normal !important;
 }
 div[data-testid="stMetric"] [data-testid="stMetricValue"] {
   font-family: var(--mono) !important;
-  font-size: 1.5rem !important;
+  font-size: 1.05rem !important;
   font-weight: 400 !important;
-  letter-spacing: 0.02em !important;
+  letter-spacing: 0.01em !important;
   color: var(--yellow) !important;
   text-shadow: var(--glow-y) !important;
+  overflow: visible !important;
+  white-space: nowrap !important;
+}
+div[data-testid="stMetric"] [data-testid="stMetricValue"] > div {
+  overflow: visible !important;
+  white-space: nowrap !important;
+}
+div[data-testid="stMetricValue"] {
+  overflow: visible !important;
+  white-space: nowrap !important;
 }
 div[data-testid="stMetric"] [data-testid="stMetricDelta"] {
   font-family: var(--mono) !important;
-  font-size: 0.82rem !important;
+  font-size: 0.78rem !important;
+  white-space: nowrap !important;
 }
 
 /* ── Buttons ─────────────────────────────────── */
@@ -1611,22 +1624,31 @@ def render_forecast(df: pd.DataFrame, stock: Stock) -> None:
 
 def render_chart_page(market: str, use_live: bool) -> None:
     st.title("종목별 차트")
-    left, right = st.columns([2, 1])
-    with left:
+
+    # ── 상단 행: 종목 선택 | 기간 선택 | 포트폴리오 버튼 ──
+    sel_col, period_col, btn_col = st.columns([3, 1, 1])
+    with sel_col:
         stock = select_stock_widget(market)
-    with right:
+    with period_col:
         period = st.selectbox("차트 기간", list(PERIODS.keys()), index=1)
 
-    # 컬럼 컨텍스트 밖에서 데이터 조회 — 중첩 컬럼 오류 방지
+    # 컬럼 컨텍스트 밖에서 데이터 조회
+    snapshot = stock_snapshot(stock, use_live)
     df_period, _ = get_chart_data(stock, PERIODS[period], use_live)
     period_high = int(df_period["high"].max())
     period_low  = int(df_period["low"].min())
 
-    snapshot = stock_snapshot(stock, use_live)
-    col1, col2, col3, col4, col5, col6, col7 = st.columns(7)
+    with btn_col:
+        st.markdown("<div style='height:28px'></div>", unsafe_allow_html=True)
+        if st.button("＋ 포트폴리오 추가", use_container_width=True, type="primary"):
+            st.session_state["portfolio_add_code"] = stock.code
+            st.session_state["portfolio_add_price"] = snapshot["price"]
+
+    # ── 메트릭 행: 6열 (버튼 분리로 여유 확보) ──
+    col1, col2, col3, col4, col5, col6 = st.columns(6)
     col1.metric(
-        "현재가 (1주당)",
-        money_per_share(snapshot["price"]),
+        "현재가 (1주)",
+        money(snapshot["price"]),
         money_signed(snapshot["change"]),
         help="주식 1주를 사고팔 때의 가격입니다.",
     )
@@ -1640,22 +1662,21 @@ def render_chart_page(market: str, use_live: bool) -> None:
         volume_fmt(snapshot["volume"]),
         help="오늘 하루 동안 사고팔린 주식 수입니다. 많을수록 관심이 높습니다.",
     )
-    col4.metric("시장", stock.market, help="KOSPI=대형주 중심 / KOSDAQ=중소·성장주 중심")
+    col4.metric(
+        "시장",
+        stock.market,
+        help="KOSPI=대형주 중심 / KOSDAQ=중소·성장주 중심",
+    )
     col5.metric(
         f"최고가 ({period})",
-        money_per_share(period_high),
+        money(period_high),
         help=f"선택한 기간({period}) 중 가장 높았던 1주당 가격입니다.",
     )
     col6.metric(
         f"최저가 ({period})",
-        money_per_share(period_low),
+        money(period_low),
         help=f"선택한 기간({period}) 중 가장 낮았던 1주당 가격입니다.",
     )
-    with col7:
-        st.markdown("<div style='height:28px'></div>", unsafe_allow_html=True)
-        if st.button("＋ 포트폴리오 추가", use_container_width=True, type="primary"):
-            st.session_state["portfolio_add_code"] = stock.code
-            st.session_state["portfolio_add_price"] = snapshot["price"]
 
     if st.session_state.get("portfolio_add_code") == stock.code:
         with st.form("chart-portfolio-form", clear_on_submit=True):
