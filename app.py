@@ -782,6 +782,24 @@ hr {
   margin-bottom: 24px;
   padding-left: 19px;
 }
+
+/* ── Sector status grid ──────────────────────── */
+.bh-sector-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+.bh-sector-pill {
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.06em;
+  padding: 3px 6px;
+  border: 1px solid;
+  line-height: 1.4;
+  cursor: default;
+  white-space: nowrap;
+}
 </style>
 """
 
@@ -1211,6 +1229,28 @@ def current_market_stocks(market_label: str) -> list[Stock]:
     return MARKET_STOCKS[market_label]
 
 
+@st.cache_data(ttl=60, show_spinner=False)
+def sector_change_map(stock_codes: tuple[str, ...], base_prices: tuple[int, ...]) -> dict[str, float]:
+    """Average demo change-rate per sector; inputs must be hashable for caching."""
+    sector_totals: dict[str, list[float]] = {}
+    for code, base_price in zip(stock_codes, base_prices):
+        snap = generate_demo_ohlcv(code, base_price, 90)
+        cr = (snap.iloc[-1]["close"] - snap.iloc[-2]["close"]) / snap.iloc[-2]["close"] * 100
+        stock = find_stock(code)
+        if stock:
+            sector_totals.setdefault(stock.sector, []).append(cr)
+    return {s: sum(v) / len(v) for s, v in sector_totals.items()}
+
+
+def _sector_indicator(cr: float) -> tuple[str, str, str]:
+    """Return (symbol, hex_color, glow_var) based on change rate."""
+    if cr > 0.1:
+        return "▲", "#FF2D55", "var(--glow-r)"
+    if cr < -0.1:
+        return "▼", "#00A8FF", "var(--glow-b)"
+    return "━", "#42425A", "none"
+
+
 def render_sidebar() -> tuple[str, str, str, list[str], bool, int]:
     st.sidebar.markdown(
         """
@@ -1244,10 +1284,37 @@ def render_sidebar() -> tuple[str, str, str, list[str], bool, int]:
     st.sidebar.markdown('<div class="bh-section-label">업종 필터</div>', unsafe_allow_html=True)
     market_stocks = current_market_stocks(market)
     sectors = sorted({stock.sector for stock in market_stocks})
+
+    changes = sector_change_map(
+        tuple(s.code for s in market_stocks),
+        tuple(s.base_price for s in market_stocks),
+    )
+
+    # Colored sector pill grid for visual overview
+    pills_html = '<div class="bh-sector-grid">'
+    for sector in sectors:
+        cr = changes.get(sector, 0.0)
+        sym, color, glow = _sector_indicator(cr)
+        pills_html += (
+            f'<div class="bh-sector-pill" '
+            f'style="border-color:{color};color:{color};box-shadow:0 0 6px {color}33;" '
+            f'title="{cr:+.2f}%">'
+            f'{sym} {sector}'
+            f'</div>'
+        )
+    pills_html += '</div>'
+    st.sidebar.markdown(pills_html, unsafe_allow_html=True)
+
+    def _sector_label(sector: str) -> str:
+        cr = changes.get(sector, 0.0)
+        sym, _, _ = _sector_indicator(cr)
+        return f"{sym} {sector} {cr:+.1f}%"
+
     selected_sectors = st.sidebar.multiselect(
         "업종", sectors, default=[],
         placeholder="전체 업종 (클릭해서 필터)",
         label_visibility="collapsed",
+        format_func=_sector_label,
     )
 
     st.sidebar.divider()
