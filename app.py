@@ -1254,13 +1254,25 @@ def render_sidebar() -> tuple[str, str, str, list[str], bool, int]:
 
     config = get_kis_config()
     has_config = config is not None
-    use_live = st.sidebar.toggle("실시간 시세 (KIS API)", value=has_config, disabled=not has_config)
+    use_live = st.sidebar.toggle(
+        "실시간 시세 (KIS API)",
+        value=has_config,
+        help="한국투자증권 KIS API 키가 설정된 경우 실시간 시세를 조회합니다.",
+    )
     refresh_seconds = st.sidebar.selectbox(
         "자동 새로고침",
         [0, 5, 10, 30, 60],
         index=2,
         format_func=lambda secs: "끄기" if secs == 0 else f"{secs}초 마다",
     )
+
+    if use_live and not has_config:
+        st.sidebar.warning(
+            "KIS API 키가 설정되지 않았습니다.  \n"
+            "Streamlit Cloud → App settings → Secrets에  \n"
+            "`[kis]` 섹션으로 app_key / app_secret을 추가하세요.  \n"
+            "현재는 데모 데이터로 표시됩니다."
+        )
 
     data_mode = "KIS REST" if (use_live and has_config) else "DEMO"
     pill_cls = "live" if data_mode == "KIS REST" else ""
@@ -1270,8 +1282,6 @@ def render_sidebar() -> tuple[str, str, str, list[str], bool, int]:
         f'{datetime.now().strftime("%H:%M:%S")} 기준</span>',
         unsafe_allow_html=True,
     )
-    if not has_config:
-        st.sidebar.caption("KIS_APP_KEY / KIS_APP_SECRET 미설정 → 데모 데이터 표시")
 
     return menu, market, keyword.strip(), selected_sectors, use_live, int(refresh_seconds)
 
