@@ -1905,7 +1905,7 @@ def render_stocks_page(stocks: list[Stock], use_live: bool, keyword: str = "") -
             st.markdown(
                 f'<div style="background:var(--surf2);border:2px solid var(--border2);'
                 f'border-left:4px solid {sc};padding:12px 14px;margin-bottom:10px;">'
-                f'<div style="font-family:var(--mono);font-size:0.6rem;letter-spacing:0.14em;'
+                f'<div style="font-family:var(--font);font-size:0.6rem;letter-spacing:0.14em;'
                 f'text-transform:uppercase;color:var(--cyan);margin-bottom:5px;">'
                 f'{news["icon"]} {news["tag"]}'
                 f'<span style="float:right;color:{sc};">{sl}</span></div>'
@@ -1929,12 +1929,12 @@ def render_stocks_page(stocks: list[Stock], use_live: bool, keyword: str = "") -
             st.markdown(
                 f'<div style="background:var(--surf2);border:2px solid var(--border2);'
                 f'border-top:4px solid {color};padding:14px 12px;text-align:center;">'
-                f'<div style="font-family:var(--mono);font-size:0.6rem;letter-spacing:0.12em;'
+                f'<div style="font-family:var(--font);font-size:0.6rem;letter-spacing:0.12em;'
                 f'text-transform:uppercase;color:var(--muted);margin-bottom:6px;">'
                 f'{sec["count"]}개 종목</div>'
                 f'<div style="font-weight:700;font-size:0.95rem;color:var(--white);margin-bottom:6px;">'
                 f'{sec["sector"]}</div>'
-                f'<div style="font-family:var(--mono);font-size:1.05rem;color:{color};'
+                f'<div style="font-family:var(--font);font-size:1.05rem;color:{color};'
                 f'text-shadow:0 0 8px {color};">{arrow} {rate:+.2f}%</div>'
                 f'</div>',
                 unsafe_allow_html=True,
@@ -1949,7 +1949,7 @@ def render_stocks_page(stocks: list[Stock], use_live: bool, keyword: str = "") -
         st.markdown(
             '<div style="background:var(--surf2);border:2px solid var(--border2);'
             'border-left:4px solid var(--yellow);padding:16px 18px;'
-            'font-family:var(--mono);font-size:0.85rem;color:var(--muted);">'
+            'font-family:var(--font);font-size:0.85rem;color:var(--muted);">'
             '포트폴리오가 비어 있습니다. ◈ 포트폴리오 메뉴에서 종목을 추가하세요.</div>',
             unsafe_allow_html=True,
         )
@@ -1971,11 +1971,11 @@ def render_stocks_page(stocks: list[Stock], use_live: bool, keyword: str = "") -
         bc1.markdown(
             f'<div style="background:var(--surf2);border:2px solid var(--border2);'
             f'border-left:4px solid var(--red);padding:10px 14px;margin-top:6px;">'
-            f'<div style="font-family:var(--mono);font-size:0.6rem;letter-spacing:0.12em;'
+            f'<div style="font-family:var(--font);font-size:0.6rem;letter-spacing:0.12em;'
             f'text-transform:uppercase;color:var(--cyan);">최고 수익 종목</div>'
             f'<div style="font-weight:700;font-size:0.95rem;color:var(--white);margin:4px 0;">'
             f'{b["name"]}</div>'
-            f'<div style="font-family:var(--mono);color:var(--red);">'
+            f'<div style="font-family:var(--font);color:var(--red);">'
             f'▲ {b["profit_rate"]:+.2f}% &nbsp; {money_signed(b["profit"])}</div>'
             f'</div>',
             unsafe_allow_html=True,
@@ -1983,11 +1983,11 @@ def render_stocks_page(stocks: list[Stock], use_live: bool, keyword: str = "") -
         bc2.markdown(
             f'<div style="background:var(--surf2);border:2px solid var(--border2);'
             f'border-left:4px solid var(--blue);padding:10px 14px;margin-top:6px;">'
-            f'<div style="font-family:var(--mono);font-size:0.6rem;letter-spacing:0.12em;'
+            f'<div style="font-family:var(--font);font-size:0.6rem;letter-spacing:0.12em;'
             f'text-transform:uppercase;color:var(--cyan);">최저 수익 종목</div>'
             f'<div style="font-weight:700;font-size:0.95rem;color:var(--white);margin:4px 0;">'
             f'{w["name"]}</div>'
-            f'<div style="font-family:var(--mono);color:var(--blue);">'
+            f'<div style="font-family:var(--font);color:var(--blue);">'
             f'▼ {w["profit_rate"]:+.2f}% &nbsp; {money_signed(w["profit"])}</div>'
             f'</div>',
             unsafe_allow_html=True,
