@@ -1722,8 +1722,17 @@ def render_stocks_page(stocks: list[Stock], use_live: bool) -> None:
             render_stock_table(stocks, use_live)
 
 
-def select_stock_widget(market: str, label: str = "종목 선택") -> Stock:
-    stocks = current_market_stocks(market)
+def select_stock_widget(
+    market: str,
+    keyword: str = "",
+    sectors: list[str] | None = None,
+    label: str = "종목 선택",
+) -> Stock:
+    # 키워드가 있으면 전체 종목에서 검색, 없으면 시장 필터 적용
+    stocks = filtered_stocks(market, keyword, sectors or [])
+    if not stocks:
+        # 검색 결과가 없으면 전체 종목 fallback
+        stocks = all_stocks()
     options = {f"{stock.market} · {stock.name} ({stock.code})": stock for stock in stocks}
     selected_code = st.session_state.get("selected_code")
     default_index = 0
@@ -1853,13 +1862,13 @@ def render_forecast(df: pd.DataFrame, stock: Stock) -> None:
     st.caption("뉴스/실적/수급/공시/지수/업종 외부 요인은 data/external_signals.json 점수를 반영합니다. 신뢰구간은 최근 종가 변동성 기반의 통계적 범위입니다.")
 
 
-def render_chart_page(market: str, use_live: bool) -> None:
+def render_chart_page(market: str, use_live: bool, keyword: str = "", sectors: list[str] | None = None) -> None:
     st.title("종목별 차트")
 
     # ── 상단 행: 종목 선택 | 기간 선택 | 포트폴리오 버튼 ──
     sel_col, period_col, btn_col = st.columns([3, 1, 1])
     with sel_col:
-        stock = select_stock_widget(market)
+        stock = select_stock_widget(market, keyword, sectors)
     with period_col:
         period = st.selectbox("차트 기간", list(PERIODS.keys()), index=1)
 
@@ -2850,7 +2859,7 @@ def main() -> None:
     if menu == "종목":
         render_stocks_page(stocks, use_live)
     elif menu == "차트":
-        render_chart_page(market, use_live)
+        render_chart_page(market, use_live, keyword, sectors)
     elif menu == "관심종목":
         render_favorites_page(use_live)
     else:
