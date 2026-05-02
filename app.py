@@ -383,7 +383,7 @@ PERIODS = {"1개월": 22, "3개월": 65, "6개월": 130, "1년": 252, "2년": 50
 
 BH_CSS = """
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Share+Tech+Mono&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Nanum+Square:wght@400;700;800&family=Nanum+Gothic:wght@400;700;800&family=Share+Tech+Mono&display=swap');
 
 /* ── Mondrian × Cyberpunk token ──────────────── */
 :root {
@@ -413,8 +413,8 @@ BH_CSS = """
   --glow-b:   0 0 8px rgba(0,168,255,0.55), 0 0 24px rgba(0,168,255,0.18);
   --glow-c:   0 0 6px rgba(0,255,212,0.45), 0 0 18px rgba(0,255,212,0.12);
 
-  --font:     'Space Grotesk', 'Noto Sans KR', sans-serif;
-  --mono:     'Share Tech Mono', 'Courier New', monospace;
+  --font:     'Nanum Square', 'NanumSquare', 'Nanum Gothic', sans-serif;
+  --mono:     'Share Tech Mono', 'Nanum Gothic', 'NanumGothic', monospace;
   color-scheme: dark;
 }
 
@@ -438,24 +438,24 @@ body, .stApp {
 /* ── Typography ──────────────────────────────── */
 h1 {
   font-family: var(--font) !important;
-  font-size: 1.55rem !important;
-  font-weight: 700 !important;
-  letter-spacing: 0.02em !important;
+  font-size: 1.45rem !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.01em !important;
   border-left: 5px solid var(--yellow) !important;
   padding-left: 14px !important;
   margin-bottom: 4px !important;
   text-shadow: var(--glow-y) !important;
 }
 h2 {
-  font-family: var(--mono) !important;
-  font-size: 0.68rem !important;
-  font-weight: 400 !important;
-  letter-spacing: 0.18em !important;
+  font-family: var(--font) !important;
+  font-size: 0.7rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.14em !important;
   text-transform: uppercase !important;
   color: var(--cyan) !important;
   margin-top: 28px !important;
 }
-h3 { font-family: var(--font) !important; font-weight: 700 !important; }
+h3 { font-family: var(--font) !important; font-weight: 700 !important; font-size: 0.95rem !important; }
 
 /* ── Metric blocks — 몬드리안 컬러 블록 ─────── */
 div[data-testid="stMetric"] {
@@ -468,17 +468,17 @@ div[data-testid="stMetric"] {
   overflow: visible !important;
 }
 div[data-testid="stMetric"] label {
-  font-family: var(--mono) !important;
-  font-size: 0.6rem !important;
-  letter-spacing: 0.14em !important;
+  font-family: var(--font) !important;
+  font-size: 0.68rem !important;
+  letter-spacing: 0.06em !important;
   text-transform: uppercase !important;
   color: var(--cyan) !important;
-  font-weight: 400 !important;
+  font-weight: 700 !important;
   white-space: normal !important;
 }
 div[data-testid="stMetric"] [data-testid="stMetricValue"] {
   font-family: var(--mono) !important;
-  font-size: 1.05rem !important;
+  font-size: 1.08rem !important;
   font-weight: 400 !important;
   letter-spacing: 0.01em !important;
   color: var(--yellow) !important;
@@ -496,17 +496,17 @@ div[data-testid="stMetricValue"] {
 }
 div[data-testid="stMetric"] [data-testid="stMetricDelta"] {
   font-family: var(--mono) !important;
-  font-size: 0.78rem !important;
+  font-size: 0.8rem !important;
   white-space: nowrap !important;
 }
 
 /* ── Buttons ─────────────────────────────────── */
 .stButton > button {
   border-radius: 0 !important;
-  font-family: var(--mono) !important;
-  font-weight: 400 !important;
-  font-size: 0.75rem !important;
-  letter-spacing: 0.1em !important;
+  font-family: var(--font) !important;
+  font-weight: 700 !important;
+  font-size: 0.76rem !important;
+  letter-spacing: 0.06em !important;
   text-transform: uppercase !important;
   transition: all 0.15s !important;
 }
@@ -537,8 +537,8 @@ div[data-testid="stMetric"] [data-testid="stMetricDelta"] {
   border: 2px solid var(--border2) !important;
   border-radius: 0 !important;
   color: var(--white) !important;
-  font-family: var(--mono) !important;
-  font-size: 0.85rem !important;
+  font-family: var(--font) !important;
+  font-size: 0.86rem !important;
 }
 .stTextInput input:focus, .stNumberInput input:focus {
   border-color: var(--cyan) !important;
@@ -548,7 +548,7 @@ div[data-testid="stMetric"] [data-testid="stMetricDelta"] {
   background: var(--surf2) !important;
   border: 2px solid var(--border2) !important;
   border-radius: 0 !important;
-  font-family: var(--mono) !important;
+  font-family: var(--font) !important;
 }
 
 /* ── Tabs ────────────────────────────────────── */
@@ -559,10 +559,10 @@ div[data-testid="stMetric"] [data-testid="stMetricDelta"] {
 }
 [data-testid="stTabs"] [data-baseweb="tab"] {
   background: transparent !important;
-  font-family: var(--mono) !important;
-  font-weight: 400 !important;
-  font-size: 0.72rem !important;
-  letter-spacing: 0.12em !important;
+  font-family: var(--font) !important;
+  font-weight: 700 !important;
+  font-size: 0.75rem !important;
+  letter-spacing: 0.06em !important;
   text-transform: uppercase !important;
   padding: 10px 20px !important;
   border-radius: 0 !important;
@@ -582,9 +582,10 @@ div[data-testid="stMetric"] [data-testid="stMetricDelta"] {
   background: var(--surf) !important;
 }
 [data-testid="stExpander"] summary {
-  font-family: var(--mono) !important;
-  font-weight: 400 !important;
-  letter-spacing: 0.05em !important;
+  font-family: var(--font) !important;
+  font-weight: 700 !important;
+  font-size: 0.9rem !important;
+  letter-spacing: 0.02em !important;
   color: var(--cyan) !important;
 }
 
@@ -594,9 +595,10 @@ div[data-testid="stMetric"] [data-testid="stMetricDelta"] {
   border-radius: 0 !important;
 }
 [data-testid="stDataFrame"] th {
-  font-family: var(--mono) !important;
-  font-size: 0.62rem !important;
-  letter-spacing: 0.14em !important;
+  font-family: var(--font) !important;
+  font-size: 0.68rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.06em !important;
   text-transform: uppercase !important;
   background: var(--grid) !important;
   color: var(--cyan) !important;
@@ -616,16 +618,17 @@ blockquote {
   padding: 12px 18px !important;
   margin: 12px 0 !important;
   color: var(--cyan) !important;
-  font-family: var(--mono) !important;
+  font-family: var(--font) !important;
   font-size: 0.88rem !important;
+  font-weight: 400 !important;
 }
 
 /* ── Caption ─────────────────────────────────── */
 [data-testid="stCaptionContainer"] {
-  font-family: var(--mono) !important;
+  font-family: var(--font) !important;
   color: var(--muted) !important;
-  font-size: 0.7rem !important;
-  letter-spacing: 0.06em !important;
+  font-size: 0.73rem !important;
+  letter-spacing: 0.02em !important;
 }
 
 /* ── Divider ─────────────────────────────────── */
@@ -643,8 +646,8 @@ hr {
 /* ── Radio ───────────────────────────────────── */
 [data-testid="stRadio"] label {
   font-family: var(--font) !important;
-  font-weight: 600 !important;
-  font-size: 0.85rem !important;
+  font-weight: 700 !important;
+  font-size: 0.88rem !important;
 }
 
 /* ── Stock cards — 몬드리안 컬러 블록 ────────── */
@@ -677,16 +680,17 @@ hr {
 .bh-card.down::before { background: var(--blue); box-shadow: var(--glow-b); }
 
 .bh-tag {
-  font-family: var(--mono);
-  font-size: 0.6rem;
-  letter-spacing: 0.14em;
+  font-family: var(--font);
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--cyan);
   margin-bottom: 6px;
 }
 .bh-name {
   font-family: var(--font);
-  font-size: 1.05rem;
+  font-size: 1.0rem;
   font-weight: 700;
   margin: 0 0 8px;
   color: var(--white);
@@ -728,17 +732,19 @@ hr {
 }
 .bh-logo-text { line-height: 1.15; }
 .bh-logo-title {
-  font-family: var(--mono);
-  font-size: 0.8rem;
-  letter-spacing: 0.14em;
+  font-family: var(--font);
+  font-size: 0.85rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--yellow);
   text-shadow: var(--glow-y);
 }
 .bh-logo-sub {
-  font-family: var(--mono);
-  font-size: 0.6rem;
-  letter-spacing: 0.1em;
+  font-family: var(--font);
+  font-size: 0.65rem;
+  font-weight: 400;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--cyan);
   margin-top: 3px;
@@ -746,9 +752,10 @@ hr {
 
 /* ── Section label ───────────────────────────── */
 .bh-section-label {
-  font-family: var(--mono);
-  font-size: 0.6rem;
-  letter-spacing: 0.2em;
+  font-family: var(--font);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--cyan);
   border-bottom: 1px solid var(--border2);
@@ -759,9 +766,10 @@ hr {
 /* ── Status pill ─────────────────────────────── */
 .bh-pill {
   display: inline-block;
-  font-family: var(--mono);
-  font-size: 0.6rem;
-  letter-spacing: 0.12em;
+  font-family: var(--font);
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   padding: 3px 8px;
   border: 1px solid var(--border2);
@@ -775,9 +783,10 @@ hr {
 
 /* ── Page subtitle ───────────────────────────── */
 .bh-subtitle {
-  font-family: var(--mono);
-  font-size: 0.73rem;
-  letter-spacing: 0.07em;
+  font-family: var(--font);
+  font-size: 0.78rem;
+  font-weight: 400;
+  letter-spacing: 0.02em;
   color: var(--muted);
   margin-bottom: 24px;
   padding-left: 19px;
