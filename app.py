@@ -752,44 +752,92 @@ hr {
 .bh-delta.down { color: var(--blue); }
 .bh-delta.flat { color: var(--muted); }
 
-/* ── Sidebar 로고 ────────────────────────────── */
+/* ── Sidebar 로고 — 80s Bauhaus ─────────────── */
 .bh-logo {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 24px;
-  padding-bottom: 20px;
-  border-bottom: 1px solid var(--border);
+  gap: 14px;
+  margin-bottom: 28px;
+  padding-bottom: 22px;
+  border-bottom: 3px solid var(--yellow);
 }
 .bh-logo-mark {
-  width: 34px; height: 34px;
-  background: var(--yellow);
+  width: 54px; height: 54px;
+  background: var(--white);
   flex-shrink: 0;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  font-family: var(--serif);
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: #FFFFFF;
-  border-radius: 2px;
+  position: relative;
+  overflow: hidden;
+  gap: 0;
 }
-.bh-logo-text { line-height: 1.3; }
+/* 왼쪽 황금 수직 바 — 바우하우스 그리드 강조 */
+.bh-logo-mark::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 6px;
+  background: var(--yellow);
+}
+/* 하단 얇은 황금 줄 */
+.bh-logo-mark::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 6px; right: 0;
+  height: 3px;
+  background: var(--yellow);
+  opacity: 0.6;
+}
+.bh-logo-tri {
+  font-size: 1.6rem;
+  color: var(--yellow);
+  line-height: 1;
+  margin-left: 4px;
+}
+.bh-logo-krx {
+  font-family: var(--font);
+  font-size: 0.46rem;
+  font-weight: 800;
+  letter-spacing: 0.22em;
+  color: rgba(255,255,255,0.55);
+  margin-top: 1px;
+  margin-left: 4px;
+  text-transform: uppercase;
+}
+.bh-logo-text { line-height: 1; }
 .bh-logo-title {
-  font-family: var(--serif);
-  font-size: 0.88rem;
-  font-weight: 700;
-  letter-spacing: 0.03em;
+  font-family: var(--font);
+  font-size: 1.18rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
   color: var(--white);
+  text-transform: uppercase;
+  line-height: 1.05;
+  display: block;
+}
+.bh-logo-tracker {
+  font-family: var(--font);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.28em;
+  color: var(--yellow);
+  text-transform: uppercase;
+  display: block;
+  margin-top: 2px;
+  line-height: 1.3;
 }
 .bh-logo-sub {
   font-family: var(--font);
-  font-size: 0.65rem;
+  font-size: 0.58rem;
   font-weight: 400;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  letter-spacing: 0.12em;
   color: var(--muted);
-  margin-top: 2px;
+  margin-top: 6px;
+  padding-top: 5px;
+  border-top: 1px solid var(--border);
+  display: block;
 }
 
 /* ── Section label ───────────────────────────── */
@@ -1292,10 +1340,14 @@ def render_sidebar() -> tuple[str, str, str, list[str], bool, int]:
     st.sidebar.markdown(
         """
         <div class="bh-logo">
-          <div class="bh-logo-mark">K</div>
+          <div class="bh-logo-mark">
+            <span class="bh-logo-tri">▲</span>
+            <span class="bh-logo-krx">KRX</span>
+          </div>
           <div class="bh-logo-text">
-            <div class="bh-logo-title">Stock Tracker</div>
-            <div class="bh-logo-sub">KRX · KOSPI · KOSDAQ</div>
+            <span class="bh-logo-title">STOCK</span>
+            <span class="bh-logo-tracker">TRACKER</span>
+            <span class="bh-logo-sub">KOSPI &nbsp;·&nbsp; KOSDAQ</span>
           </div>
         </div>
         """,
