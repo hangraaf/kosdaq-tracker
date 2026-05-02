@@ -825,6 +825,20 @@ hr {
   color: var(--yellow);
 }
 
+/* ── Sidebar nav title ───────────────────────── */
+.bh-sidebar-title {
+  font-family: var(--font);
+  font-size: 0.92rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: var(--fg);
+  border-bottom: 2px solid var(--yellow);
+  padding-bottom: 5px;
+  margin: 28px 0 10px;
+  display: block;
+  background: transparent;
+}
+
 /* ── Page subtitle ───────────────────────────── */
 .bh-subtitle {
   font-family: var(--font);
@@ -1288,7 +1302,7 @@ def render_sidebar() -> tuple[str, str, str, list[str], bool, int]:
         unsafe_allow_html=True,
     )
 
-    st.sidebar.markdown('<div class="bh-section-label">화면</div>', unsafe_allow_html=True)
+    st.sidebar.markdown('<div class="bh-sidebar-title">화면</div>', unsafe_allow_html=True)
     menu_icons = {"종목": "▦ 종목", "차트": "▲ 차트", "관심종목": "★ 관심종목", "포트폴리오": "◈ 포트폴리오"}
     menu_key = st.sidebar.radio(
         "화면",
@@ -1298,10 +1312,10 @@ def render_sidebar() -> tuple[str, str, str, list[str], bool, int]:
     )
     menu = next(k for k, v in menu_icons.items() if v == menu_key)
 
-    st.sidebar.markdown('<div class="bh-section-label">시장</div>', unsafe_allow_html=True)
+    st.sidebar.markdown('<div class="bh-sidebar-title">시장</div>', unsafe_allow_html=True)
     market = st.sidebar.radio("시장", ["코스피", "코스닥", "전체"], horizontal=True, label_visibility="collapsed")
 
-    st.sidebar.markdown('<div class="bh-section-label">종목 검색</div>', unsafe_allow_html=True)
+    st.sidebar.markdown('<div class="bh-sidebar-title">종목</div>', unsafe_allow_html=True)
     keyword = st.sidebar.text_input("검색", placeholder="종목명 · 코드  예) 삼성전자, 005930", label_visibility="collapsed")
 
     # ── 자동완성 검색 결과 ──────────────────────────
@@ -1329,7 +1343,7 @@ def render_sidebar() -> tuple[str, str, str, list[str], bool, int]:
                     st.session_state["menu_override"] = "차트"
                     st.rerun()
 
-    st.sidebar.markdown('<div class="bh-section-label">업종 필터</div>', unsafe_allow_html=True)
+    st.sidebar.markdown('<div class="bh-sidebar-title">업종</div>', unsafe_allow_html=True)
     market_stocks = current_market_stocks(market)
     sectors = sorted({stock.sector for stock in market_stocks})
     selected_sectors = st.sidebar.multiselect(
