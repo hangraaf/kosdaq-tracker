@@ -3426,68 +3426,84 @@ def render_stock_advisor_panel(stock: Stock) -> None:
     graham   = _graham_stock_analysis(stock, dummy_row)
 
     tab_d, tab_b, tab_k, tab_ka, tab_l, tab_g = st.tabs([
-        f"🇺🇸 달리오  {dalio['badge']}",
-        f"🇺🇸 버핏  {buffett['badge']}",
-        f"🇯🇵 코테가와  {kotegawa['badge']}",
-        f"🇯🇵 카타야마  {katayama['badge']}",
-        f"🇺🇸 피터 린치  {lynch['badge']}",
-        f"🇺🇸 그레이엄  {graham['badge']}",
+        f"🇺🇸 달리오 {dalio['badge']}",
+        f"🇺🇸 버핏 {buffett['badge']}",
+        f"🇯🇵 코테가와 {kotegawa['badge']}",
+        f"🇯🇵 카타야마 {katayama['badge']}",
+        f"🇺🇸 린치 {lynch['badge']}",
+        f"🇺🇸 그레이엄 {graham['badge']}",
     ])
 
-    def _render_tab(subtitle: str, result: dict) -> None:
-        st.caption(subtitle)
+    def _render_tab(flag: str, name: str, subtitle: str, result: dict, quote: str, quotee: str) -> None:
         vcolor = {"매수": "var(--red)", "관망": "var(--yellow)", "매도": "var(--blue)"}
-        vc = vcolor.get(result["verdict"], "#888")
+        vc = vcolor.get(result["verdict"], "var(--muted)")
+
+        # ── 판정 카드 ──────────────────────────────────────
         st.markdown(
-            f"<div style='font-size:2rem;font-weight:900;color:{vc};"
-            f"letter-spacing:0.06em;margin:10px 0 4px;'>"
-            f"{result['badge']} {result['verdict']}</div>"
-            f"<div style='font-size:0.75rem;color:var(--muted);margin-bottom:12px;'>"
-            f"종합 점수 {result['score']:+.2f}</div>",
+            f'<div style="background:var(--surf2);border:1px solid var(--border);'
+            f'border-left:4px solid {vc};padding:20px 24px;margin:12px 0 20px;border-radius:2px;">'
+            f'<div style="display:flex;align-items:center;gap:14px;">'
+            f'<span style="font-size:2.4rem;line-height:1;flex-shrink:0;">{result["badge"]}</span>'
+            f'<div style="flex:1;min-width:0;">'
+            f'<div style="font-size:1.5rem;font-weight:800;color:{vc};line-height:1.15;">{result["verdict"]}</div>'
+            f'<div style="font-size:0.75rem;color:var(--muted);margin-top:3px;letter-spacing:0.02em;">{subtitle}</div>'
+            f'</div>'
+            f'<div style="text-align:right;border-left:1px solid var(--border);padding-left:18px;flex-shrink:0;">'
+            f'<div style="font-size:0.62rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--muted);margin-bottom:4px;">종합 점수</div>'
+            f'<div style="font-size:1.5rem;font-weight:800;color:{vc};line-height:1;">{result["score"]:+.2f}</div>'
+            f'</div>'
+            f'</div>'
+            f'<div style="margin-top:14px;padding-top:10px;border-top:1px solid var(--border);'
+            f'display:flex;align-items:center;gap:8px;">'
+            f'<span style="font-size:1.1rem;">{flag}</span>'
+            f'<span style="font-size:0.78rem;font-weight:700;color:var(--fg);">{name}</span>'
+            f'</div>'
+            f'</div>',
             unsafe_allow_html=True,
         )
-        st.divider()
-        for reason in result["reasons"]:
-            st.markdown(f"- {reason}")
+
+        # ── 근거 리스트 ────────────────────────────────────
+        items_html = "".join(
+            f'<div style="display:flex;gap:10px;align-items:flex-start;'
+            f'padding:9px 12px;border-bottom:1px solid var(--border);background:var(--surf);">'
+            f'<span style="color:{vc};font-size:0.7rem;margin-top:3px;flex-shrink:0;">◆</span>'
+            f'<span style="font-size:0.88rem;color:var(--fg);line-height:1.6;">{r}</span>'
+            f'</div>'
+            for r in result["reasons"]
+        )
+        st.markdown(
+            f'<div style="border:1px solid var(--border);border-radius:2px;'
+            f'margin-bottom:20px;overflow:hidden;">{items_html}</div>',
+            unsafe_allow_html=True,
+        )
+
+        # ── 인용구 ─────────────────────────────────────────
+        st.markdown(f'> *"{quote}"*  \n> — {quotee}')
 
     with tab_d:
-        _render_tab("리스크 패리티 · 부채 사이클 · 분산투자", dalio)
-        st.markdown(
-            '> *"분산투자는 성배다. 상관관계가 낮은 수익원 15–20개를 찾아라."*  \n'
-            '> — 레이 달리오'
-        )
+        _render_tab("🇺🇸", "레이 달리오 · Ray Dalio",
+                    "리스크 패리티 · 부채 사이클 · 분산투자", dalio,
+                    "분산투자는 성배다. 상관관계가 낮은 수익원 15–20개를 찾아라.", "레이 달리오")
     with tab_b:
-        _render_tab("가치투자 · 경제적 해자 · 장기 보유", buffett)
-        st.markdown(
-            '> *"훌륭한 기업을 공정한 가격에 사는 것이, 그저 그런 기업을 싼 가격에 사는 것보다 낫다."*  \n'
-            '> — 워렌 버핏'
-        )
+        _render_tab("🇺🇸", "워렌 버핏 · Warren Buffett",
+                    "가치투자 · 경제적 해자 · 장기 보유", buffett,
+                    "훌륭한 기업을 공정한 가격에 사는 것이, 그저 그런 기업을 싼 가격에 사는 것보다 낫다.", "워렌 버핏")
     with tab_k:
-        _render_tab("모멘텀 · 수급 추세 · 손절 원칙", kotegawa)
-        st.markdown(
-            '> *"작게 잃고 크게 이겨라. 틀렸을 때 즉시 인정하고 나와라."*  \n'
-            '> — 코테가와 다카시(BNF)'
-        )
+        _render_tab("🇯🇵", "코테가와 다카시 · 是川高志(BNF)",
+                    "모멘텀 · 수급 추세 · 손절 원칙", kotegawa,
+                    "작게 잃고 크게 이겨라. 틀렸을 때 즉시 인정하고 나와라.", "코테가와 다카시(BNF)")
     with tab_ka:
-        _render_tab("소형 성장주 발굴 · 집중 투자 · 경영진 중시", katayama)
-        st.markdown(
-            '> *"남들이 모르는 성장 기업을 먼저 찾아라. 기관이 주목하기 전에 사고, '
-            '성장 스토리가 끝날 때 팔아라."*  \n'
-            '> — 카타야마 아키라(片山晃·五月天)'
-        )
+        _render_tab("🇯🇵", "카타야마 아키라 · 片山晃(五月天)",
+                    "소형 성장주 발굴 · 집중 투자 · 경영진 중시", katayama,
+                    "남들이 모르는 성장 기업을 먼저 찾아라. 기관이 주목하기 전에 사고, 성장 스토리가 끝날 때 팔아라.", "카타야마 아키라")
     with tab_l:
-        _render_tab("10루타 · PEG 지표 · 생활 밀착형 성장주", lynch)
-        st.markdown(
-            '> *"내가 아는 것에 투자하라. 월가보다 당신이 먼저 알 수 있다."*  \n'
-            '> — 피터 린치'
-        )
+        _render_tab("🇺🇸", "피터 린치 · Peter Lynch",
+                    "10루타 · PEG 지표 · 생활 밀착형 성장주", lynch,
+                    "내가 아는 것에 투자하라. 월가보다 당신이 먼저 알 수 있다.", "피터 린치")
     with tab_g:
-        _render_tab("안전마진 · PBR·PER 이중 기준 · 방어적 투자", graham)
-        st.markdown(
-            '> *"투자란 철저한 분석 후 원금을 안전하게 지키면서 적절한 수익을 추구하는 것이다. '
-            '그 외는 모두 투기다."*  \n'
-            '> — 벤저민 그레이엄'
-        )
+        _render_tab("🇺🇸", "벤저민 그레이엄 · Benjamin Graham",
+                    "안전마진 · PBR·PER 이중 기준 · 방어적 투자", graham,
+                    "투자란 철저한 분석 후 원금을 안전하게 지키면서 적절한 수익을 추구하는 것이다. 그 외는 모두 투기다.", "벤저민 그레이엄")
 
     st.caption("재무 수치는 데모 시뮬레이션 값입니다. 실제 투자 전 공시 재무제표를 반드시 확인하십시오.")
 
