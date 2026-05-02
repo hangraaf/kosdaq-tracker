@@ -1524,15 +1524,6 @@ def _sector_leaderboard(use_live: bool, top_n: int = 5) -> list[dict]:
     return sorted(results, key=lambda x: -x["avg_rate"])[:top_n]
 
 
-def _top_stock_picks(use_live: bool, n: int = 6) -> list[dict]:
-    """등락률 상위 종목."""
-    picks = []
-    for stock in all_stocks():
-        snap = stock_snapshot(stock, use_live)
-        picks.append({"stock": stock, "snap": snap})
-    return sorted(picks, key=lambda x: -x["snap"]["change_rate"])[:n]
-
-
 def _portfolio_mini_summary(use_live: bool) -> dict | None:
     portfolio = read_json(PORTFOLIO_FILE, [])
     if not portfolio:
@@ -1623,38 +1614,6 @@ def render_stocks_page(stocks: list[Stock], use_live: bool, keyword: str = "") -
                 f'</div>',
                 unsafe_allow_html=True,
             )
-
-    st.divider()
-
-    # ── 오늘의 종목 Pick ─────────────────────────
-    st.markdown('<div class="bh-section-label">오늘의 종목 Pick — 상승 상위 6</div>', unsafe_allow_html=True)
-    picks = _top_stock_picks(use_live, n=6)
-    pick_cols = st.columns(6)
-    for col, pick in zip(pick_cols, picks):
-        stk  = pick["stock"]
-        snap = pick["snap"]
-        cr   = snap["change_rate"]
-        color = "var(--red)" if cr > 0 else "var(--blue)"
-        with col:
-            st.markdown(
-                f'<div style="background:var(--surf2);border:2px solid var(--border2);'
-                f'border-left:4px solid {color};padding:12px 10px;min-height:130px;">'
-                f'<div style="font-family:var(--mono);font-size:0.58rem;letter-spacing:0.1em;'
-                f'text-transform:uppercase;color:var(--cyan);margin-bottom:4px;">'
-                f'{stk.market} · {stk.sector}</div>'
-                f'<div style="font-weight:700;font-size:0.88rem;color:var(--white);margin-bottom:8px;">'
-                f'{stk.name}</div>'
-                f'<div style="font-family:var(--mono);font-size:0.95rem;color:var(--yellow);">'
-                f'{money(snap["price"])}</div>'
-                f'<div style="font-family:var(--mono);font-size:0.82rem;color:{color};'
-                f'text-shadow:0 0 6px {color};">▲ {cr:+.2f}%</div>'
-                f'</div>',
-                unsafe_allow_html=True,
-            )
-            if col.button("차트", key=f"pick-chart-{stk.code}", use_container_width=True):
-                st.session_state["selected_code"] = stk.code
-                st.session_state["menu_override"] = "차트"
-                st.rerun()
 
     st.divider()
 
