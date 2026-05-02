@@ -3232,18 +3232,18 @@ def render_portfolio_advisor_summary(rows: list[dict]) -> None:
 
         with st.expander(
             f"{row['name']} ({row['code']}) · {profit_label} · {profit_money} "
-            f"| 달리오 {dalio['badge']} 버핏 {buffett['badge']} "
-            f"코테가와 {kotegawa['badge']} 카타야마 {katayama['badge']} "
-            f"린치 {lynch['badge']} 그레이엄 {graham['badge']}",
+            f"| 🇺🇸달리오 {dalio['badge']} 🇺🇸버핏 {buffett['badge']} "
+            f"🇯🇵코테가와 {kotegawa['badge']} 🇯🇵카타야마 {katayama['badge']} "
+            f"🇺🇸린치 {lynch['badge']} 🇺🇸그레이엄 {graham['badge']}",
             expanded=False,
         ):
             analyses = [
-                ("레이 달리오",    "리스크 패리티 · 부채 사이클",   dalio),
-                ("워렌 버핏",      "가치투자 · 경제적 해자",        buffett),
-                ("코테가와 다카시", "모멘텀 · 수급 추세",            kotegawa),
-                ("카타야마 아키라", "소형 성장주 · 집중 투자",       katayama),
-                ("피터 린치",      "10루타 · PEG · 생활 밀착형",    lynch),
-                ("벤저민 그레이엄", "안전마진 · 방어적 가치투자",    graham),
+                ("🇺🇸 레이 달리오",    "리스크 패리티 · 부채 사이클",   dalio),
+                ("🇺🇸 워렌 버핏",      "가치투자 · 경제적 해자",        buffett),
+                ("🇯🇵 코테가와 다카시", "모멘텀 · 수급 추세",            kotegawa),
+                ("🇯🇵 카타야마 아키라", "소형 성장주 · 집중 투자",       katayama),
+                ("🇺🇸 피터 린치",      "10루타 · PEG · 생활 밀착형",    lynch),
+                ("🇺🇸 벤저민 그레이엄", "안전마진 · 방어적 가치투자",    graham),
             ]
             vcolor = {"매수": "var(--red)", "관망": "var(--yellow)", "매도": "var(--blue)"}
             # 3열 2행으로 배치
@@ -3286,13 +3286,13 @@ def render_portfolio_advisor_summary(rows: list[dict]) -> None:
         return sum(a["score"] for a in analyses) / len(analyses) if analyses else 0.0
 
     col1, col2, col3 = st.columns(3)
-    col1.metric("달리오 점수",   f"{avg_score(dalio_all):+.2f}",    help="리스크 패리티 관점 평균")
-    col2.metric("버핏 점수",     f"{avg_score(buffett_all):+.2f}",  help="가치투자 관점 평균")
-    col3.metric("코테가와 점수", f"{avg_score(kotegawa_all):+.2f}", help="모멘텀 관점 평균")
+    col1.metric("🇺🇸 달리오 점수",   f"{avg_score(dalio_all):+.2f}",    help="리스크 패리티 관점 평균")
+    col2.metric("🇺🇸 버핏 점수",     f"{avg_score(buffett_all):+.2f}",  help="가치투자 관점 평균")
+    col3.metric("🇯🇵 코테가와 점수", f"{avg_score(kotegawa_all):+.2f}", help="모멘텀 관점 평균")
     col4, col5, col6 = st.columns(3)
-    col4.metric("카타야마 점수", f"{avg_score(katayama_all):+.2f}", help="소형 성장주 관점 평균")
-    col5.metric("린치 점수",     f"{avg_score(lynch_all):+.2f}",    help="PEG·10루타 관점 평균")
-    col6.metric("그레이엄 점수", f"{avg_score(graham_all):+.2f}",   help="안전마진·방어 관점 평균")
+    col4.metric("🇯🇵 카타야마 점수", f"{avg_score(katayama_all):+.2f}", help="소형 성장주 관점 평균")
+    col5.metric("🇺🇸 린치 점수",     f"{avg_score(lynch_all):+.2f}",    help="PEG·10루타 관점 평균")
+    col6.metric("🇺🇸 그레이엄 점수", f"{avg_score(graham_all):+.2f}",   help="안전마진·방어 관점 평균")
 
     sectors_in_portfolio = [find_stock(r["code"]).sector for r in rows if find_stock(r["code"])]
     unique_sectors = set(sectors_in_portfolio)
@@ -3412,12 +3412,12 @@ def render_stock_advisor_panel(stock: Stock) -> None:
     graham   = _graham_stock_analysis(stock, dummy_row)
 
     tab_d, tab_b, tab_k, tab_ka, tab_l, tab_g = st.tabs([
-        f"달리오  {dalio['badge']}",
-        f"버핏  {buffett['badge']}",
-        f"코테가와  {kotegawa['badge']}",
-        f"카타야마  {katayama['badge']}",
-        f"피터 린치  {lynch['badge']}",
-        f"그레이엄  {graham['badge']}",
+        f"🇺🇸 달리오  {dalio['badge']}",
+        f"🇺🇸 버핏  {buffett['badge']}",
+        f"🇯🇵 코테가와  {kotegawa['badge']}",
+        f"🇯🇵 카타야마  {katayama['badge']}",
+        f"🇺🇸 피터 린치  {lynch['badge']}",
+        f"🇺🇸 그레이엄  {graham['badge']}",
     ])
 
     def _render_tab(subtitle: str, result: dict) -> None:
@@ -3479,7 +3479,7 @@ def render_stock_advisor_panel(stock: Stock) -> None:
 
 
 def render_dalio_advice(stocks: list[Stock], use_live: bool) -> None:
-    st.title("레이 달리오의 조언")
+    st.title("🇺🇸 레이 달리오의 조언")
     st.caption("브리지워터 어소시에이츠 창업자 · 올웨더 포트폴리오 · 경제 사이클 이론")
 
     st.info(
@@ -3585,7 +3585,7 @@ def render_dalio_advice(stocks: list[Stock], use_live: bool) -> None:
 
 
 def render_buffett_advice(stocks: list[Stock], use_live: bool) -> None:
-    st.title("워렌 버핏의 조언")
+    st.title("🇺🇸 워렌 버핏의 조언")
     st.caption("버크셔 해서웨이 CEO · 가치투자의 대가 · 장기 보유 전략")
 
     st.info(
@@ -3708,7 +3708,7 @@ def render_buffett_advice(stocks: list[Stock], use_live: bool) -> None:
 
 
 def render_kotegawa_advice(stocks: list[Stock], use_live: bool) -> None:
-    st.title("코테가와 다카시의 조언")
+    st.title("🇯🇵 코테가와 다카시의 조언")
     st.caption("是川高志(BNF) · 일본 개인투자자 전설 · 1,600만 원 → 160억 원 수익 달성")
 
     st.info(
