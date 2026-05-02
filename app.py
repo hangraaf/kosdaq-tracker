@@ -383,45 +383,46 @@ PERIODS = {"1개월": 22, "3개월": 65, "6개월": 130, "1년": 252, "2년": 50
 
 BH_CSS = """
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Serif+KR:wght@400;600&family=Noto+Sans+Mono:wght@300;400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&family=Nanum+Gothic+Coding:wght@400;700&family=Nanum+Myeongjo:wght@400;700;800&display=swap');
 
-/* ── MUJI Dark — 무인양품 다크 에디션 ─────────────
-   따뜻한 어스톤 배경 · 세리프 제목 · 최소 장식 · 넉넉한 여백
+/* ── 오프화이트 라이트 테마 — 나눔고딕 ──────────
+   따뜻한 오프화이트 배경 · 나눔고딕 본문 · 나눔명조 제목
+   깔끔한 그리드 · 최소 장식
    ─────────────────────────────────────────────── */
 :root {
-  /* 배경 — 따뜻한 우드 다크 */
-  --bg:       #1A1816;
-  --surf:     #222018;
-  --surf2:    #2A2720;
-  --surf-warm:#2E2B24;
-  --grid:     #36332A;
-  --border:   #403C32;
-  --border2:  #4C4840;
+  /* 배경 — 따뜻한 오프화이트 */
+  --bg:       #F5F1EB;
+  --surf:     #EDE9E2;
+  --surf2:    #E5E0D8;
+  --surf-warm:#DDD8D0;
+  --grid:     #D4CFC6;
+  --border:   #C2BCB4;
+  --border2:  #ABA5A0;
 
-  /* 색상 — 자연 어스톤 팔레트 */
-  --red:      #B85848;      /* 테라코타 (상승) */
-  --blue:     #4878A8;      /* 인디고 슬레이트 (하락) */
-  --yellow:   #8C7248;      /* 웜 어스 브라운 (메인 강조) */
-  --cyan:     #6A8470;      /* 세이지 그린 (보조) */
-  --magenta:  #786880;      /* 덤 라벤더 (예비) */
+  /* 색상 — 라이트 배경용 진한 어스톤 */
+  --red:      #C03828;      /* 테라코타 (상승) */
+  --blue:     #2858A0;      /* 딥 인디고 (하락) */
+  --yellow:   #9C7030;      /* 웜 앰버 (메인 강조) */
+  --cyan:     #3A6858;      /* 딥 세이지 (보조) */
+  --magenta:  #685878;      /* 덤 라벤더 (예비) */
 
-  /* 텍스트 — 따뜻한 아이보리 계열 */
-  --white:    #EDE8DF;      /* 따뜻한 오프화이트 */
-  --fg:       #C4BAB0;      /* 웜 라이트 그레이 */
-  --muted:    #7A726A;      /* 따뜻한 뮤트 */
-  --muted2:   #504840;
+  /* 텍스트 — 어두운 웜 계열 */
+  --white:    #1C1916;      /* 기본 텍스트 (거의 검정) */
+  --fg:       #3D3830;      /* 보조 텍스트 */
+  --muted:    #7A726A;      /* 흐린 텍스트 */
+  --muted2:   #A8A09A;      /* 더 흐린 텍스트 */
 
-  /* 글로우 없음 — 무인양품은 장식 거부 */
+  /* 글로우 없음 */
   --glow-y:   none;
   --glow-r:   none;
   --glow-b:   none;
   --glow-c:   none;
 
-  /* 타이포 — Noto Serif KR(제목) + Noto Sans KR(본문) */
-  --serif:    'Noto Serif KR', 'Nanum Myeongjo', serif;
-  --font:     'Noto Sans KR', 'Nanum Gothic', sans-serif;
-  --mono:     'Noto Sans Mono', 'Share Tech Mono', monospace;
-  color-scheme: dark;
+  /* 타이포 — 나눔명조(제목) + 나눔고딕(본문) + 나눔고딕코딩(숫자) */
+  --serif:    'Nanum Myeongjo', serif;
+  --font:     'Nanum Gothic', sans-serif;
+  --mono:     'Nanum Gothic Coding', 'Nanum Gothic', monospace;
+  color-scheme: light;
 }
 
 /* ── Base ────────────────────────────────────── */
@@ -440,7 +441,7 @@ body, .stApp {
 }
 [data-testid="stSidebar"] label {
   font-family: var(--font) !important;
-  font-weight: 500 !important;
+  font-weight: 700 !important;
   font-size: 0.9rem !important;
   color: var(--fg) !important;
 }
@@ -449,7 +450,7 @@ body, .stApp {
 h1 {
   font-family: var(--serif) !important;
   font-size: 1.5rem !important;
-  font-weight: 600 !important;
+  font-weight: 800 !important;
   letter-spacing: 0.01em !important;
   border-left: 3px solid var(--yellow) !important;
   padding-left: 16px !important;
@@ -459,7 +460,7 @@ h1 {
 h2 {
   font-family: var(--serif) !important;
   font-size: 1.1rem !important;
-  font-weight: 600 !important;
+  font-weight: 700 !important;
   letter-spacing: 0.01em !important;
   color: var(--fg) !important;
   margin-top: 28px !important;
@@ -467,7 +468,7 @@ h2 {
 }
 h3 {
   font-family: var(--font) !important;
-  font-weight: 500 !important;
+  font-weight: 700 !important;
   font-size: 0.95rem !important;
   color: var(--fg) !important;
   letter-spacing: 0.01em !important;
@@ -488,13 +489,13 @@ div[data-testid="stMetric"] label {
   letter-spacing: 0.08em !important;
   text-transform: uppercase !important;
   color: var(--muted) !important;
-  font-weight: 500 !important;
+  font-weight: 700 !important;
   white-space: normal !important;
 }
 div[data-testid="stMetric"] [data-testid="stMetricValue"] {
   font-family: var(--mono) !important;
   font-size: 1.1rem !important;
-  font-weight: 300 !important;
+  font-weight: 700 !important;
   letter-spacing: 0.02em !important;
   color: var(--white) !important;
   overflow: visible !important;
@@ -516,9 +517,9 @@ div[data-testid="stMetric"] [data-testid="stMetricDelta"] {
 
 /* ── Buttons ─────────────────────────────────── */
 .stButton > button {
-  border-radius: 0 !important;
+  border-radius: 2px !important;
   font-family: var(--font) !important;
-  font-weight: 500 !important;
+  font-weight: 700 !important;
   font-size: 0.85rem !important;
   letter-spacing: 0.04em !important;
   text-transform: none !important;
@@ -526,7 +527,7 @@ div[data-testid="stMetric"] [data-testid="stMetricDelta"] {
 }
 .stButton > button[kind="primary"] {
   background: var(--yellow) !important;
-  color: var(--bg) !important;
+  color: #FFFFFF !important;
   border: 1px solid var(--yellow) !important;
 }
 .stButton > button[kind="primary"]:hover {
@@ -535,20 +536,20 @@ div[data-testid="stMetric"] [data-testid="stMetricDelta"] {
   border-color: var(--yellow) !important;
 }
 .stButton > button[kind="secondary"] {
-  background: transparent !important;
+  background: var(--surf2) !important;
   color: var(--fg) !important;
   border: 1px solid var(--border2) !important;
 }
 .stButton > button[kind="secondary"]:hover {
   border-color: var(--yellow) !important;
-  color: var(--fg) !important;
+  color: var(--yellow) !important;
 }
 
 /* ── Inputs ──────────────────────────────────── */
 .stTextInput input, .stNumberInput input {
-  background: var(--surf2) !important;
+  background: #FFFFFF !important;
   border: 1px solid var(--border2) !important;
-  border-radius: 0 !important;
+  border-radius: 2px !important;
   color: var(--white) !important;
   font-family: var(--font) !important;
   font-size: 0.9rem !important;
@@ -556,14 +557,15 @@ div[data-testid="stMetric"] [data-testid="stMetricDelta"] {
 }
 .stTextInput input:focus, .stNumberInput input:focus {
   border-color: var(--yellow) !important;
-  box-shadow: none !important;
+  box-shadow: 0 0 0 2px rgba(156,112,48,0.15) !important;
   outline: none !important;
 }
 [data-baseweb="select"] > div {
-  background: var(--surf2) !important;
+  background: #FFFFFF !important;
   border: 1px solid var(--border2) !important;
-  border-radius: 0 !important;
+  border-radius: 2px !important;
   font-family: var(--font) !important;
+  color: var(--white) !important;
 }
 
 /* ── Tabs ────────────────────────────────────── */
@@ -575,7 +577,7 @@ div[data-testid="stMetric"] [data-testid="stMetricDelta"] {
 [data-testid="stTabs"] [data-baseweb="tab"] {
   background: transparent !important;
   font-family: var(--font) !important;
-  font-weight: 500 !important;
+  font-weight: 700 !important;
   font-size: 0.88rem !important;
   letter-spacing: 0.02em !important;
   text-transform: none !important;
@@ -586,19 +588,19 @@ div[data-testid="stMetric"] [data-testid="stMetricDelta"] {
 [data-testid="stTabs"] [aria-selected="true"] {
   color: var(--white) !important;
   border-bottom: 2px solid var(--yellow) !important;
-  font-weight: 700 !important;
+  font-weight: 800 !important;
 }
 
 /* ── Expanders ───────────────────────────────── */
 [data-testid="stExpander"] {
   border: 1px solid var(--border) !important;
   border-left: 2px solid var(--border2) !important;
-  border-radius: 0 !important;
+  border-radius: 2px !important;
   background: var(--surf) !important;
 }
 [data-testid="stExpander"] summary {
   font-family: var(--font) !important;
-  font-weight: 500 !important;
+  font-weight: 700 !important;
   font-size: 0.92rem !important;
   letter-spacing: 0.01em !important;
   color: var(--fg) !important;
@@ -612,7 +614,7 @@ div[data-testid="stMetric"] [data-testid="stMetricDelta"] {
 [data-testid="stDataFrame"] th {
   font-family: var(--font) !important;
   font-size: 0.72rem !important;
-  font-weight: 500 !important;
+  font-weight: 700 !important;
   letter-spacing: 0.06em !important;
   text-transform: uppercase !important;
   background: var(--grid) !important;
@@ -621,7 +623,7 @@ div[data-testid="stMetric"] [data-testid="stMetricDelta"] {
 
 /* ── Alerts ──────────────────────────────────── */
 [data-testid="stAlert"] {
-  border-radius: 0 !important;
+  border-radius: 2px !important;
   border-width: 1px !important;
   border-left-width: 3px !important;
 }
@@ -653,7 +655,7 @@ blockquote {
 hr {
   border-color: var(--border) !important;
   margin: 32px 0 !important;
-  opacity: 0.6 !important;
+  opacity: 0.8 !important;
 }
 
 /* ── Sidebar 검색 결과 버튼 ──────────────────── */
@@ -694,14 +696,29 @@ hr {
   color: var(--fg) !important;
 }
 
+/* ── Grid 컨테이너 통일 ──────────────────────── */
+[data-testid="stHorizontalBlock"] {
+  gap: 16px !important;
+  align-items: stretch !important;
+}
+[data-testid="column"] {
+  padding: 0 !important;
+}
+.block-container {
+  padding-top: 2rem !important;
+  padding-bottom: 2rem !important;
+  max-width: 1200px !important;
+}
+
 /* ── Stock cards ─────────────────────────────── */
 .bh-card {
-  background: var(--surf2);
+  background: #FFFFFF;
   border: 1px solid var(--border);
   border-left: 3px solid var(--border2);
   padding: 18px 16px 14px;
   min-height: 155px;
   margin-bottom: 4px;
+  border-radius: 2px;
 }
 .bh-card.up   { border-left-color: var(--red); }
 .bh-card.down { border-left-color: var(--blue); }
@@ -709,7 +726,7 @@ hr {
 .bh-tag {
   font-family: var(--font);
   font-size: 0.68rem;
-  font-weight: 400;
+  font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--muted);
@@ -718,7 +735,7 @@ hr {
 .bh-name {
   font-family: var(--font);
   font-size: 1.0rem;
-  font-weight: 700;
+  font-weight: 800;
   margin: 0 0 10px;
   color: var(--white);
   letter-spacing: 0;
@@ -726,11 +743,11 @@ hr {
 .bh-price {
   font-family: var(--mono);
   font-size: 1.15rem;
-  font-weight: 300;
+  font-weight: 700;
   letter-spacing: 0.03em;
   color: var(--fg);
 }
-.bh-delta { font-family: var(--mono); font-size: 0.82rem; margin-top: 4px; font-weight: 300; }
+.bh-delta { font-family: var(--mono); font-size: 0.82rem; margin-top: 4px; font-weight: 700; }
 .bh-delta.up   { color: var(--red); }
 .bh-delta.down { color: var(--blue); }
 .bh-delta.flat { color: var(--muted); }
@@ -753,21 +770,22 @@ hr {
   justify-content: center;
   font-family: var(--serif);
   font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--bg);
+  font-weight: 700;
+  color: #FFFFFF;
+  border-radius: 2px;
 }
 .bh-logo-text { line-height: 1.3; }
 .bh-logo-title {
   font-family: var(--serif);
   font-size: 0.88rem;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: 0.03em;
   color: var(--white);
 }
 .bh-logo-sub {
   font-family: var(--font);
   font-size: 0.65rem;
-  font-weight: 300;
+  font-weight: 400;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--muted);
@@ -778,7 +796,7 @@ hr {
 .bh-section-label {
   font-family: var(--font);
   font-size: 0.7rem;
-  font-weight: 500;
+  font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--muted);
@@ -794,12 +812,13 @@ hr {
   display: inline-block;
   font-family: var(--font);
   font-size: 0.65rem;
-  font-weight: 400;
+  font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   padding: 2px 7px;
   border: 1px solid var(--border2);
   color: var(--muted);
+  border-radius: 2px;
 }
 .bh-pill.live {
   border-color: var(--yellow);
@@ -810,7 +829,7 @@ hr {
 .bh-subtitle {
   font-family: var(--font);
   font-size: 0.82rem;
-  font-weight: 300;
+  font-weight: 400;
   letter-spacing: 0.02em;
   color: var(--muted);
   margin-bottom: 24px;
@@ -2224,22 +2243,23 @@ def render_chart(stock: Stock, period_label: str, use_live: bool) -> tuple[pd.Da
 
     # ── 레이아웃 ─────────────────────────────────────
     fig.update_layout(
-        template="plotly_dark",
+        template="plotly_white",
         height=860,
         margin=dict(l=10, r=60, t=50, b=10),
         xaxis_rangeslider_visible=False,
         legend=dict(
             orientation="h", yanchor="bottom", y=1.02,
-            xanchor="left", x=0, font=dict(size=11),
-            bgcolor="rgba(0,0,0,0)",
+            xanchor="left", x=0, font=dict(size=11, color="#3D3830"),
+            bgcolor="rgba(245,241,235,0.9)",
         ),
-        paper_bgcolor="rgba(13,17,23,1)",
-        plot_bgcolor="rgba(22,27,34,1)",
-        font=dict(color="#c9d1d9"),
-        hoverlabel=dict(bgcolor="#1c2128", font_size=12, namelength=-1),
+        paper_bgcolor="rgba(245,241,235,1)",
+        plot_bgcolor="rgba(237,233,226,1)",
+        font=dict(color="#3D3830", family="Nanum Gothic"),
+        hoverlabel=dict(bgcolor="#FFFFFF", font_size=12, namelength=-1, font_color="#1C1916"),
     )
-    fig.update_yaxes(tickformat=",", row=1, col=1)
-    fig.update_yaxes(title_text="RSI", range=[0, 100], row=4, col=1)
+    fig.update_yaxes(tickformat=",", row=1, col=1, gridcolor="#D4CFC6", zerolinecolor="#C2BCB4")
+    fig.update_yaxes(title_text="RSI", range=[0, 100], row=4, col=1, gridcolor="#D4CFC6")
+    fig.update_xaxes(gridcolor="#D4CFC6", showgrid=False)
     fig.update_layout(clickmode="event+select")
 
     event = st.plotly_chart(
@@ -2287,10 +2307,13 @@ def render_forecast(df: pd.DataFrame, stock: Stock) -> None:
         )
     )
     fig.update_layout(
-        template="plotly_dark",
+        template="plotly_white",
         height=340,
         title=f"{stock.name} 다요인 예측",
         margin=dict(l=10, r=10, t=48, b=10),
+        paper_bgcolor="rgba(245,241,235,1)",
+        plot_bgcolor="rgba(237,233,226,1)",
+        font=dict(color="#3D3830", family="Nanum Gothic"),
     )
     st.plotly_chart(fig, use_container_width=True)
 
