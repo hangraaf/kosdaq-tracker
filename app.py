@@ -1934,8 +1934,8 @@ def render_stocks_page(stocks: list[Stock], use_live: bool, keyword: str = "") -
                 f'{sec["count"]}개 종목</div>'
                 f'<div style="font-weight:700;font-size:0.95rem;color:var(--white);margin-bottom:6px;">'
                 f'{sec["sector"]}</div>'
-                f'<div style="font-family:var(--font);font-size:1.05rem;color:{color};'
-                f'text-shadow:0 0 8px {color};">{arrow} {rate:+.2f}%</div>'
+                f'<div style="font-family:var(--font);font-size:1.05rem;color:{color};">'
+                f'{arrow} {rate:+.2f}%</div>'
                 f'</div>',
                 unsafe_allow_html=True,
             )
