@@ -1823,6 +1823,291 @@ def render_forecast(df: pd.DataFrame, stock: Stock) -> None:
     st.caption("뉴스/실적/수급/공시/지수/업종 외부 요인은 data/external_signals.json 점수를 반영합니다. 신뢰구간은 최근 종가 변동성 기반의 통계적 범위입니다.")
 
 
+# ─── 캔들 패턴 분석 ─────────────────────────────────────────────────────────
+
+def _cp_body(r: pd.Series) -> float:
+    return abs(float(r["close"]) - float(r["open"]))
+
+def _cp_upper(r: pd.Series) -> float:
+    return float(r["high"]) - max(float(r["open"]), float(r["close"]))
+
+def _cp_lower(r: pd.Series) -> float:
+    return min(float(r["open"]), float(r["close"])) - float(r["low"])
+
+def _cp_range(r: pd.Series) -> float:
+    return float(r["high"]) - float(r["low"])
+
+def _cp_mid(r: pd.Series) -> float:
+    return (float(r["open"]) + float(r["close"])) / 2
+
+def _bull(r: pd.Series) -> bool:
+    return float(r["close"]) > float(r["open"])
+
+def _bear(r: pd.Series) -> bool:
+    return float(r["close"]) < float(r["open"])
+
+def _doji(r: pd.Series) -> bool:
+    rng = _cp_range(r)
+    return rng > 0 and _cp_body(r) <= rng * 0.1
+
+
+def analyze_candle_patterns(df: pd.DataFrame) -> list[dict]:
+    """최근 캔들에서 주요 1·2·3봉 패턴을 감지."""
+    if len(df) < 3:
+        return []
+
+    c1, c2, c3 = df.iloc[-3], df.iloc[-2], df.iloc[-1]
+    patterns: list[dict] = []
+
+    # ── 1봉 패턴 (최신 캔들 기준) ────────────────────────
+    rng = _cp_range(c3)
+    if rng > 0:
+        body = _cp_body(c3)
+        upper = _cp_upper(c3)
+        lower = _cp_lower(c3)
+
+        if _doji(c3):
+            patterns.append({
+                "name": "도지", "english": "Doji", "signal": "중립", "candles": 1, "strength": "중",
+                "desc": "시가와 종가가 거의 같습니다. 매수·매도 세력이 팽팽한 균형 상태로 추세 전환 가능성이 있습니다.",
+            })
+        elif _bull(c3) and body >= rng * 0.7:
+            patterns.append({
+                "name": "장대양봉", "english": "Long White Candle", "signal": "매수", "candles": 1, "strength": "강",
+                "desc": "강한 매수세로 종가가 고가 근처에서 마감됐습니다. 상승 모멘텀이 강하게 살아있는 신호입니다.",
+            })
+        elif _bear(c3) and body >= rng * 0.7:
+            patterns.append({
+                "name": "장대음봉", "english": "Long Black Candle", "signal": "매도", "candles": 1, "strength": "강",
+                "desc": "강한 매도세로 종가가 저가 근처에서 마감됐습니다. 하락 압력이 거센 신호입니다.",
+            })
+        elif body > 0 and lower >= body * 2 and upper <= body * 0.5:
+            recent = df.iloc[-6:-1] if len(df) >= 6 else df.iloc[:-1]
+            trend_down = float(recent["close"].iloc[-1]) < float(recent["close"].iloc[0])
+            if trend_down:
+                patterns.append({
+                    "name": "망치형", "english": "Hammer", "signal": "매수", "candles": 1, "strength": "중",
+                    "desc": "하락 추세 마지막에 나타난 망치형! 아래꼬리가 길어 저가에서 강한 매수가 들어왔음을 의미합니다. 반등 가능성에 주목하세요.",
+                })
+            else:
+                patterns.append({
+                    "name": "교수형", "english": "Hanging Man", "signal": "매도", "candles": 1, "strength": "중",
+                    "desc": "상승 추세 후 망치 모양의 봉이 나타났습니다. 매도세 유입 경고 신호입니다.",
+                })
+        elif body > 0 and upper >= body * 2 and lower <= body * 0.5:
+            recent = df.iloc[-6:-1] if len(df) >= 6 else df.iloc[:-1]
+            trend_down = float(recent["close"].iloc[-1]) < float(recent["close"].iloc[0])
+            if trend_down:
+                patterns.append({
+                    "name": "역망치형", "english": "Inverted Hammer", "signal": "매수", "candles": 1, "strength": "약",
+                    "desc": "하락 추세 말에 위꼬리가 긴 봉이 나타났습니다. 매수 시도 신호로 다음 봉에서 양봉 확인이 필요합니다.",
+                })
+            else:
+                patterns.append({
+                    "name": "유성형", "english": "Shooting Star", "signal": "매도", "candles": 1, "strength": "강",
+                    "desc": "상승 추세에서 나타난 유성형! 위꼬리가 길어 고점에서 매도세가 강함을 의미합니다. 하락 반전 경고입니다.",
+                })
+
+    # ── 2봉 패턴 ─────────────────────────────────────────
+    p1, p2 = c2, c3
+
+    if abs(float(p1["low"]) - float(p2["low"])) <= float(p1["low"]) * 0.002 and _bear(p1) and _bull(p2):
+        patterns.append({
+            "name": "집게바닥", "english": "Tweezer Bottom", "signal": "매수", "candles": 2, "strength": "중",
+            "desc": "두 캔들의 저가가 같은 지점에서 지지됐습니다. 강한 지지선 형성 신호로 추가 하락이 막힌 것을 의미합니다.",
+        })
+
+    if abs(float(p1["high"]) - float(p2["high"])) <= float(p1["high"]) * 0.002 and _bull(p1) and _bear(p2):
+        patterns.append({
+            "name": "집게천장", "english": "Tweezer Top", "signal": "매도", "candles": 2, "strength": "중",
+            "desc": "두 캔들의 고가가 같은 지점에서 저항을 받았습니다. 강한 저항선 형성 신호로 추가 상승이 막힌 것을 의미합니다.",
+        })
+
+    if (_bear(p1) and _bull(p2)
+            and float(p2["open"]) <= float(p1["close"])
+            and float(p2["close"]) >= float(p1["open"])):
+        patterns.append({
+            "name": "상승장악형", "english": "Bullish Engulfing", "signal": "매수", "candles": 2, "strength": "강",
+            "desc": "오늘 양봉이 어제 음봉을 완전히 감쌌습니다! 강력한 매수 반전 신호입니다. 초보자가 반드시 알아야 할 핵심 패턴입니다.",
+        })
+
+    if (_bull(p1) and _bear(p2)
+            and float(p2["open"]) >= float(p1["close"])
+            and float(p2["close"]) <= float(p1["open"])):
+        patterns.append({
+            "name": "하락장악형", "english": "Bearish Engulfing", "signal": "매도", "candles": 2, "strength": "강",
+            "desc": "오늘 음봉이 어제 양봉을 완전히 감쌌습니다. 강력한 매도 반전 신호입니다. 하락 전환에 주의하세요!",
+        })
+
+    p1b = _cp_body(p1)
+    p2b = _cp_body(p2)
+    if (p1b > 0 and _bear(p1) and _bull(p2) and p2b <= p1b * 0.5
+            and float(p2["open"]) >= min(float(p1["open"]), float(p1["close"]))
+            and float(p2["close"]) <= max(float(p1["open"]), float(p1["close"]))):
+        patterns.append({
+            "name": "상승하라미", "english": "Bullish Harami", "signal": "매수", "candles": 2, "strength": "중",
+            "desc": "큰 음봉 안에 작은 양봉이 품겨 있습니다(하라미=임신). 하락 추세 약화 신호로 추세 전환을 살펴보세요.",
+        })
+
+    if (p1b > 0 and _bull(p1) and _bear(p2) and p2b <= p1b * 0.5
+            and float(p2["open"]) <= max(float(p1["open"]), float(p1["close"]))
+            and float(p2["close"]) >= min(float(p1["open"]), float(p1["close"]))):
+        patterns.append({
+            "name": "하락하라미", "english": "Bearish Harami", "signal": "매도", "candles": 2, "strength": "중",
+            "desc": "큰 양봉 안에 작은 음봉이 품겨 있습니다. 상승 추세 약화 신호입니다.",
+        })
+
+    if (_bear(p1) and _bull(p2)
+            and float(p2["open"]) < float(p1["low"])
+            and float(p2["close"]) > _cp_mid(p1)
+            and float(p2["close"]) < float(p1["open"])):
+        patterns.append({
+            "name": "관통형", "english": "Piercing Line", "signal": "매수", "candles": 2, "strength": "중",
+            "desc": "음봉 아래에서 시작한 양봉이 절반 이상 올라왔습니다. 상승 반전 가능성 신호입니다.",
+        })
+
+    if (_bull(p1) and _bear(p2)
+            and float(p2["open"]) > float(p1["high"])
+            and float(p2["close"]) < _cp_mid(p1)
+            and float(p2["close"]) > float(p1["open"])):
+        patterns.append({
+            "name": "먹구름덮개", "english": "Dark Cloud Cover", "signal": "매도", "candles": 2, "strength": "중",
+            "desc": "양봉 위에서 시작한 음봉이 절반 아래까지 내려왔습니다. 하락 반전 경고 신호입니다.",
+        })
+
+    # ── 3봉 패턴 ─────────────────────────────────────────
+    c1_bear = _bear(c1) and _cp_body(c1) >= _cp_range(c1) * 0.5
+    c1_bull = _bull(c1) and _cp_body(c1) >= _cp_range(c1) * 0.5
+    c2_small = (_cp_body(c2) <= _cp_range(c2) * 0.35) if _cp_range(c2) > 0 else True
+    c3_bull_mid = _bull(c3) and float(c3["close"]) >= _cp_mid(c1)
+    c3_bear_mid = _bear(c3) and float(c3["close"]) <= _cp_mid(c1)
+
+    if c1_bear and c2_small and c3_bull_mid:
+        name = "샛별 도지" if _doji(c2) else "모닝스타"
+        english = "Morning Doji Star" if _doji(c2) else "Morning Star"
+        desc = (
+            "모닝스타 변형 — 가운데 봉이 도지(시가≈종가)입니다. 더 강한 반전 신호로 간주됩니다."
+            if _doji(c2) else
+            "하락 추세의 바닥에서 나타나는 반전 3봉 패턴! ① 큰 음봉 ② 작은 몸통 ③ 큰 양봉. 새벽별처럼 반등을 예고합니다."
+        )
+        patterns.append({"name": name, "english": english, "signal": "매수", "candles": 3, "strength": "강", "desc": desc})
+
+    if c1_bull and c2_small and c3_bear_mid:
+        patterns.append({
+            "name": "이브닝스타", "english": "Evening Star", "signal": "매도", "candles": 3, "strength": "강",
+            "desc": "상승 추세 고점에서 나타나는 반전 패턴. ① 큰 양봉 ② 작은 몸통 ③ 큰 음봉. 저녁별처럼 하락을 예고합니다.",
+        })
+
+    if (_bull(c1) and _bull(c2) and _bull(c3)
+            and float(c2["close"]) > float(c1["close"])
+            and float(c3["close"]) > float(c2["close"])
+            and float(c2["open"]) >= float(c1["open"])
+            and float(c3["open"]) >= float(c2["open"])):
+        patterns.append({
+            "name": "적삼병", "english": "Three White Soldiers", "signal": "매수", "candles": 3, "strength": "강",
+            "desc": "3개의 양봉이 연속으로 더 높게 마감! 강한 상승 추세 형성 신호입니다. 붉은 병사 셋이 행진하듯 주가가 오릅니다.",
+        })
+
+    if (_bear(c1) and _bear(c2) and _bear(c3)
+            and float(c2["close"]) < float(c1["close"])
+            and float(c3["close"]) < float(c2["close"])
+            and float(c2["open"]) <= float(c1["open"])
+            and float(c3["open"]) <= float(c2["open"])):
+        patterns.append({
+            "name": "흑삼병", "english": "Three Black Crows", "signal": "매도", "candles": 3, "strength": "강",
+            "desc": "3개의 음봉이 연속으로 더 낮게 마감! 강한 하락 추세 신호입니다. 검은 까마귀 셋이 하락을 예고합니다.",
+        })
+
+    return patterns
+
+
+def render_candle_pattern_section(df: pd.DataFrame) -> None:
+    """차트 아래 캔들 패턴 분석 알림창."""
+    st.markdown('<div class="bh-section-label">캔들 패턴 분석</div>', unsafe_allow_html=True)
+
+    opt1, opt2, opt3 = st.columns(3)
+    show_1 = opt1.checkbox("1봉 패턴 (단일봉)", value=True, key="cp_show1")
+    show_2 = opt2.checkbox("2봉 패턴", value=True, key="cp_show2")
+    show_3 = opt3.checkbox("3봉 패턴", value=True, key="cp_show3")
+
+    patterns = analyze_candle_patterns(df)
+    shown = [p for p in patterns if
+             (p["candles"] == 1 and show_1) or
+             (p["candles"] == 2 and show_2) or
+             (p["candles"] == 3 and show_3)]
+
+    if not shown:
+        st.markdown(
+            '<div style="background:var(--surf2);border:2px solid var(--border2);'
+            'border-left:4px solid var(--muted);padding:14px 18px;'
+            'font-size:0.85rem;color:var(--muted);">'
+            '선택한 봉 수 범위에서 특징적인 패턴이 감지되지 않았습니다.</div>',
+            unsafe_allow_html=True,
+        )
+    else:
+        _sig_color = {"매수": "var(--red)", "매도": "var(--blue)", "중립": "var(--yellow)"}
+        _sig_badge = {"매수": "▲ 매수 신호", "매도": "▼ 매도 신호", "중립": "— 중립"}
+        _str_label = {"강": "🔴 강한 신호", "중": "🟡 보통 신호", "약": "⚪ 약한 신호"}
+        for p in shown:
+            sc = _sig_color[p["signal"]]
+            sb = _sig_badge[p["signal"]]
+            sl = _str_label[p["strength"]]
+            st.markdown(
+                f'<div style="background:var(--surf2);border:2px solid var(--border2);'
+                f'border-left:5px solid {sc};padding:14px 18px;margin-bottom:10px;">'
+                f'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px;">'
+                f'<div><span style="font-weight:800;font-size:1rem;color:var(--white);">{p["name"]}</span>'
+                f'&nbsp;<span style="font-family:var(--mono);font-size:0.66rem;color:var(--muted);">'
+                f'{p["english"]} · {p["candles"]}봉</span></div>'
+                f'<div style="display:flex;gap:8px;align-items:center;">'
+                f'<span style="font-family:var(--mono);font-size:0.72rem;color:{sc};'
+                f'border:1px solid {sc};padding:2px 8px;">{sb}</span>'
+                f'<span style="font-size:0.7rem;color:var(--muted);">{sl}</span>'
+                f'</div></div>'
+                f'<div style="font-size:0.86rem;color:var(--fg);line-height:1.55;">{p["desc"]}</div>'
+                f'</div>',
+                unsafe_allow_html=True,
+            )
+
+    with st.expander("📖 캔들봉 종류 가이드 (초보자 필독)", expanded=False):
+        st.markdown("""
+**캔들봉(봉차트)이란?**
+각 캔들은 하루의 주가를 나타냅니다.
+
+| 구성요소 | 의미 |
+|---------|------|
+| **몸통** | 시가(시작가)와 종가(마감가) 사이 |
+| **윗꼬리** | 몸통 위로 올라간 선 → 장중 최고가 |
+| **아랫꼬리** | 몸통 아래로 내려간 선 → 장중 최저가 |
+| **🔴 양봉** | 종가 > 시가 (주가 오른 날) |
+| **🔵 음봉** | 종가 < 시가 (주가 내린 날) |
+
+---
+
+**초보자 필수 패턴 14가지**
+
+| 패턴 | 봉 수 | 신호 | 핵심 특징 |
+|------|:-----:|:----:|---------|
+| 장대양봉 | 1 | 매수 | 꼬리 없이 긴 양봉, 강한 상승 |
+| 장대음봉 | 1 | 매도 | 꼬리 없이 긴 음봉, 강한 하락 |
+| 도지 | 1 | 중립 | 시가≈종가, 추세 전환 가능성 |
+| 망치형 | 1 | 매수 | 하락 말기 아래꼬리 긴 봉 → 반등 기대 |
+| 역망치형 | 1 | 매수 | 하락 말기 위꼬리 긴 봉 → 다음 봉 확인 필요 |
+| 교수형 | 1 | 매도 | 상승 말기 망치 모양 → 경계 신호 |
+| 유성형 | 1 | 매도 | 상승 말기 위꼬리 긴 봉 → 강한 하락 경고 |
+| 집게바닥 | 2 | 매수 | 두 봉의 저가가 동일한 지지선 |
+| 집게천장 | 2 | 매도 | 두 봉의 고가가 동일한 저항선 |
+| 상승장악형 | 2 | 매수 | 양봉이 음봉을 완전히 감쌈 → 강한 반전 |
+| 하락장악형 | 2 | 매도 | 음봉이 양봉을 완전히 감쌈 → 강한 반전 |
+| 모닝스타 | 3 | 매수 | 음봉+소봉+양봉, 바닥 반전의 새벽별 |
+| 이브닝스타 | 3 | 매도 | 양봉+소봉+음봉, 천장 반전의 저녁별 |
+| 적삼병 | 3 | 매수 | 연속 3양봉 → 강한 상승 추세 |
+| 흑삼병 | 3 | 매도 | 연속 3음봉 → 강한 하락 추세 |
+
+> ⚠️ **주의**: 패턴은 확률적 신호입니다. 단독으로 매매 결정하지 말고, **거래량·이동평균선·뉴스**와 함께 종합 판단하세요.
+        """)
+
+
 def render_chart_page(market: str, use_live: bool, keyword: str = "", sectors: list[str] | None = None) -> None:
     st.title("종목별 차트")
 
@@ -1922,6 +2207,11 @@ def render_chart_page(market: str, use_live: bool, keyword: str = "", sectors: l
         st.error(f"차트 렌더링 오류: {exc}")
         return
     st.caption(f"차트 데이터 출처: {source} · {datetime.now().strftime('%H:%M:%S')} 기준")
+    st.divider()
+    try:
+        render_candle_pattern_section(df)
+    except Exception as exc:
+        st.warning(f"패턴 분석 오류: {exc}")
     st.divider()
     try:
         render_forecast(df, stock)
