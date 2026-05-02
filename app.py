@@ -2791,11 +2791,11 @@ def _dalio_stock_analysis(stock: Stock, row: dict) -> dict:
         reasons.append(f"{stock.sector} 섹터 — 변동성 높음, 포트폴리오 비중 5% 이하 권장")
 
     if score > 0.3:
-        verdict, badge = "사라", "🟢"
+        verdict, badge = "매수", "🟢"
     elif score > 0:
         verdict, badge = "관망", "🟡"
     else:
-        verdict, badge = "팔아라", "🔴"
+        verdict, badge = "매도", "🔴"
 
     return {"verdict": verdict, "badge": badge, "score": score, "reasons": reasons}
 
@@ -2853,11 +2853,11 @@ def _buffett_stock_analysis(stock: Stock, row: dict) -> dict:
         reasons.append(f"현재 +{profit_rate:.1f}% 수익 — 내재가치 재평가 후 보유 여부 재검토")
 
     if score > 0.5:
-        verdict, badge = "사라", "🟢"
+        verdict, badge = "매수", "🟢"
     elif score > 0.2:
         verdict, badge = "관망", "🟡"
     else:
-        verdict, badge = "팔아라", "🔴"
+        verdict, badge = "매도", "🔴"
 
     return {"verdict": verdict, "badge": badge, "score": score, "reasons": reasons}
 
@@ -2904,11 +2904,11 @@ def _kotegawa_stock_analysis(stock: Stock, row: dict) -> dict:
         reasons.append(f"{stock.sector} — 테마 사이클 활성 섹터. 모멘텀 포착 기회")
 
     if score > 0.35:
-        verdict, badge = "사라", "🟢"
+        verdict, badge = "매수", "🟢"
     elif score > 0:
         verdict, badge = "관망", "🟡"
     else:
-        verdict, badge = "팔아라", "🔴"
+        verdict, badge = "매도", "🔴"
 
     return {"verdict": verdict, "badge": badge, "score": score, "reasons": reasons}
 
@@ -2996,11 +2996,11 @@ def _katayama_stock_analysis(stock: Stock, row: dict) -> dict:
         reasons.append(f"현재 {profit_rate:.1f}% 손실 — 성장 스토리 훼손 여부 즉시 재점검 필요")
 
     if score > 0.45:
-        verdict, badge = "사라", "🟢"
+        verdict, badge = "매수", "🟢"
     elif score > 0.15:
         verdict, badge = "관망", "🟡"
     else:
-        verdict, badge = "팔아라", "🔴"
+        verdict, badge = "매도", "🔴"
 
     return {"verdict": verdict, "badge": badge, "score": score, "reasons": reasons}
 
@@ -3074,11 +3074,11 @@ def _lynch_stock_analysis(stock: Stock, row: dict) -> dict:
         reasons.append(f"현재 {profit_rate:.1f}% 손실 — 스토리 훼손인지 일시적 하락인지 재점검 필요")
 
     if score > 0.45:
-        verdict, badge = "사라", "🟢"
+        verdict, badge = "매수", "🟢"
     elif score > 0.15:
         verdict, badge = "관망", "🟡"
     else:
-        verdict, badge = "팔아라", "🔴"
+        verdict, badge = "매도", "🔴"
 
     return {"verdict": verdict, "badge": badge, "score": score, "reasons": reasons}
 
@@ -3174,11 +3174,11 @@ def _graham_stock_analysis(stock: Stock, row: dict) -> dict:
         reasons.append(f"현재 +{profit_rate:.1f}% — 안전마진 소진됐을 수 있음. 차익 실현 여부 검토")
 
     if score > 0.5:
-        verdict, badge = "사라", "🟢"
+        verdict, badge = "매수", "🟢"
     elif score > 0.2:
         verdict, badge = "관망", "🟡"
     else:
-        verdict, badge = "팔아라", "🔴"
+        verdict, badge = "매도", "🔴"
 
     return {"verdict": verdict, "badge": badge, "score": score, "reasons": reasons}
 
@@ -3222,7 +3222,7 @@ def render_portfolio_advisor_summary(rows: list[dict]) -> None:
                 ("피터 린치",      "10루타 · PEG · 생활 밀착형",    lynch),
                 ("벤저민 그레이엄", "안전마진 · 방어적 가치투자",    graham),
             ]
-            vcolor = {"사라": "var(--red)", "관망": "var(--yellow)", "팔아라": "var(--blue)"}
+            vcolor = {"매수": "var(--red)", "관망": "var(--yellow)", "매도": "var(--blue)"}
             # 3열 2행으로 배치
             for i in range(0, len(analyses), 3):
                 cols = st.columns(3)
@@ -3399,7 +3399,7 @@ def render_stock_advisor_panel(stock: Stock) -> None:
 
     def _render_tab(subtitle: str, result: dict) -> None:
         st.caption(subtitle)
-        vcolor = {"사라": "var(--red)", "관망": "var(--yellow)", "팔아라": "var(--blue)"}
+        vcolor = {"매수": "var(--red)", "관망": "var(--yellow)", "매도": "var(--blue)"}
         vc = vcolor.get(result["verdict"], "#888")
         st.markdown(
             f"<div style='font-size:2rem;font-weight:900;color:{vc};"
