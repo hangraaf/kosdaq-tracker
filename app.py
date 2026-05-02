@@ -637,6 +637,32 @@ hr {
   margin: 28px 0 !important;
 }
 
+/* ── Sidebar 검색 자동완성 결과 버튼 ──────────── */
+[data-testid="stSidebar"] .stButton > button {
+  text-align: left !important;
+  justify-content: flex-start !important;
+  font-size: 0.82rem !important;
+  font-weight: 600 !important;
+  background: var(--surf) !important;
+  border: 1px solid var(--border2) !important;
+  border-left: 3px solid var(--yellow) !important;
+  color: var(--white) !important;
+  padding: 6px 10px !important;
+  height: auto !important;
+  min-height: 0 !important;
+  margin-bottom: 2px !important;
+  border-radius: 0 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+[data-testid="stSidebar"] .stButton > button:hover {
+  background: var(--surf2) !important;
+  border-left-color: var(--cyan) !important;
+  color: var(--cyan) !important;
+  box-shadow: var(--glow-c) !important;
+}
+
 /* ── Toggle ──────────────────────────────────── */
 [data-testid="stToggle"] span[data-checked="true"] {
   background: var(--cyan) !important;
@@ -1256,6 +1282,31 @@ def render_sidebar() -> tuple[str, str, str, list[str], bool, int]:
 
     st.sidebar.markdown('<div class="bh-section-label">종목 검색</div>', unsafe_allow_html=True)
     keyword = st.sidebar.text_input("검색", placeholder="종목명 · 코드  예) 삼성전자, 005930", label_visibility="collapsed")
+
+    # ── 자동완성 검색 결과 ──────────────────────────
+    kw = keyword.strip()
+    if kw:
+        matches = filtered_stocks("전체", kw, [])[:10]
+        if not matches:
+            st.sidebar.markdown(
+                '<div style="font-size:0.78rem;color:var(--muted);padding:6px 2px;">'
+                '검색 결과가 없습니다.</div>',
+                unsafe_allow_html=True,
+            )
+        else:
+            st.sidebar.markdown(
+                f'<div style="font-size:0.64rem;letter-spacing:0.1em;text-transform:uppercase;'
+                f'color:var(--muted);padding:4px 2px 2px;">'
+                f'검색 결과 {len(matches)}개</div>',
+                unsafe_allow_html=True,
+            )
+            for stk in matches:
+                mkt_icon = "🔴" if stk.market == "KOSPI" else "🔵"
+                label = f"{mkt_icon} {stk.name}   {stk.code}  ·  {stk.sector}"
+                if st.sidebar.button(label, key=f"qs-{stk.code}", use_container_width=True):
+                    st.session_state["selected_code"] = stk.code
+                    st.session_state["menu_override"] = "차트"
+                    st.rerun()
 
     st.sidebar.markdown('<div class="bh-section-label">업종 필터</div>', unsafe_allow_html=True)
     market_stocks = current_market_stocks(market)
