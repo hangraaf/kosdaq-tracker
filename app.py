@@ -1463,42 +1463,254 @@ def toggle_favorite(stock: Stock) -> None:
     write_json(FAVORITES_FILE, favorites)
 
 
-def render_stocks_page(stocks: list[Stock], market: str, use_live: bool) -> None:
-    st.title(f"{market} 종목 현황")
+_NEWS_POOL = [
+    ("📊", "거시경제", "Fed, 연내 금리 인하 가능성 시사… 달러 약세 전환", "긍정"),
+    ("📊", "거시경제", "한은 기준금리 동결… 내수 부진 우려 지속", "중립"),
+    ("📊", "거시경제", "원/달러 환율 1,380원대 유지… 수출주 마진 개선 기대", "긍정"),
+    ("📊", "거시경제", "미 소비자물가 예상치 하회… 인플레 둔화 신호", "긍정"),
+    ("💹", "수급", "외국인 3거래일 연속 순매수… 반도체·방산 집중", "긍정"),
+    ("💹", "수급", "기관, 2차전지·바이오 대규모 매집 포착", "긍정"),
+    ("💹", "수급", "개인 투자자 코스닥 대규모 순매도… 수급 공백 우려", "부정"),
+    ("💹", "수급", "공매도 잔고 급감… 숏커버링 매수세 기대감 고조", "긍정"),
+    ("⚡", "테마", "AI 반도체 수요 폭증… 국내 HBM·패키징 장비주 강세", "긍정"),
+    ("⚡", "테마", "글로벌 EV 판매 둔화… 2차전지 섹터 단기 조정", "부정"),
+    ("⚡", "테마", "K-방산 수출 신기록… 유럽·중동 계약 잇따라", "긍정"),
+    ("⚡", "테마", "협동로봇 도입 가속화… 레인보우로보틱스 등 로봇주 주목", "긍정"),
+    ("⚡", "테마", "K-뷰티 미국 시장 점유율 확대… 화장품 수출주 랠리", "긍정"),
+    ("⚡", "테마", "중국 소비 회복 기대… K-소비재·화장품 반등 시도", "긍정"),
+    ("📋", "실적", "삼성전자 반도체 영업이익 서프라이즈… 메모리 회복 확인", "긍정"),
+    ("📋", "실적", "국내 바이오 대형사, 글로벌 기술 수출 계약 체결", "긍정"),
+    ("📋", "실적", "조선 빅3 수주잔고 사상 최대… 실적 가시성 높아져", "긍정"),
+    ("📋", "실적", "주요 자동차 그룹 글로벌 점유율 사상 최고치 경신", "긍정"),
+    ("🏛", "정책", "정부 기업 밸류업 프로그램 2기 발표… 저PBR주 재주목", "긍정"),
+    ("🏛", "정책", "공매도 전면 재개 일정 조율 중… 시장 영향 예의주시", "중립"),
+    ("🌐", "글로벌", "미·중 무역협상 재개… 소부장·디스플레이 수혜 기대", "긍정"),
+    ("🌐", "글로벌", "중동 지정학 리스크 재부각… 유가 상승·방산주 강세", "중립"),
+    ("🌐", "글로벌", "일본 엔화 강세 전환… 원화 동반 강세 가능성 주목", "중립"),
+]
+
+
+def _today_news(n: int = 4) -> list[dict]:
+    d = date.today()
+    seed = int(hashlib.sha256(f"{d.year}{d.month}{d.day}news".encode()).hexdigest()[:10], 16)
+    rng = np.random.default_rng(seed % (2**32))
+    idx = rng.choice(len(_NEWS_POOL), size=min(n, len(_NEWS_POOL)), replace=False)
+    return [
+        {"icon": _NEWS_POOL[i][0], "tag": _NEWS_POOL[i][1],
+         "title": _NEWS_POOL[i][2], "sentiment": _NEWS_POOL[i][3]}
+        for i in idx
+    ]
+
+
+def _sector_leaderboard(use_live: bool, top_n: int = 5) -> list[dict]:
+    """전체 종목 snapshot 기반 섹터 평균 등락률 계산."""
+    sector_rates: dict[str, list[float]] = {}
+    for stock in all_stocks():
+        snap = stock_snapshot(stock, use_live)
+        sector_rates.setdefault(stock.sector, []).append(snap["change_rate"])
+    results = [
+        {"sector": s, "avg_rate": sum(v) / len(v), "count": len(v)}
+        for s, v in sector_rates.items() if len(v) >= 1
+    ]
+    return sorted(results, key=lambda x: -x["avg_rate"])[:top_n]
+
+
+def _top_stock_picks(use_live: bool, n: int = 6) -> list[dict]:
+    """등락률 상위 종목."""
+    picks = []
+    for stock in all_stocks():
+        snap = stock_snapshot(stock, use_live)
+        picks.append({"stock": stock, "snap": snap})
+    return sorted(picks, key=lambda x: -x["snap"]["change_rate"])[:n]
+
+
+def _portfolio_mini_summary(use_live: bool) -> dict | None:
+    portfolio = read_json(PORTFOLIO_FILE, [])
+    if not portfolio:
+        return None
+    rows = []
+    for item in portfolio:
+        stock = find_stock(item["code"])
+        if stock is None:
+            continue
+        current = stock_snapshot(stock, use_live)["price"]
+        qty = int(item["quantity"])
+        buy = int(item["buy_price"])
+        invested = qty * buy
+        evaluated = qty * current
+        profit = evaluated - invested
+        profit_rate = profit / invested * 100 if invested else 0.0
+        rows.append({**item, "current": current, "invested": invested,
+                     "evaluated": evaluated, "profit": profit, "profit_rate": profit_rate})
+    if not rows:
+        return None
+    total_inv  = sum(r["invested"]  for r in rows)
+    total_eval = sum(r["evaluated"] for r in rows)
+    total_pft  = total_eval - total_inv
+    total_rate = total_pft / total_inv * 100 if total_inv else 0.0
+    best  = max(rows, key=lambda r: r["profit_rate"])
+    worst = min(rows, key=lambda r: r["profit_rate"])
+    return {
+        "rows": rows, "total_inv": total_inv, "total_eval": total_eval,
+        "total_pft": total_pft, "total_rate": total_rate,
+        "best": best, "worst": worst,
+    }
+
+
+def render_stocks_page(stocks: list[Stock], use_live: bool) -> None:
+    today_str = date.today().strftime("%Y년 %m월 %d일")
+    st.title("오늘의 종목")
     st.markdown(
-        '<div class="bh-subtitle">'
-        "왼쪽 사이드바에서 시장(코스피·코스닥)과 업종을 선택하거나 종목명을 검색하세요."
-        "</div>",
+        f'<div class="bh-subtitle">{today_str} · 데모 시뮬레이션 기반 — '
+        '실시간 반영은 KIS API 연동 시 활성화됩니다.</div>',
         unsafe_allow_html=True,
     )
 
-    with st.expander("주식 용어 빠른 안내 — 처음이라면 펼쳐보세요", expanded=False):
-        g1, g2, g3, g4 = st.columns(4)
-        g1.markdown(
-            "**등락률**  \n오늘 주가가 전날보다 얼마나 올랐거나 내렸는지를 %로 나타냅니다.  \n"
-            "🔴 +는 상승, 🔵 −는 하락입니다."
-        )
-        g2.markdown(
-            "**현재가**  \n지금 이 순간 해당 주식 1주의 가격입니다.  \n"
-            "데모 모드에서는 시뮬레이션 값이 표시됩니다."
-        )
-        g3.markdown(
-            "**거래량**  \n오늘 하루 동안 사고팔린 주식 수입니다.  \n"
-            "거래량이 많을수록 많은 사람이 관심을 갖고 있다는 신호입니다."
-        )
-        g4.markdown(
-            "**시가총액**  \n회사 전체의 가치를 나타냅니다.  \n"
-            "현재가 × 총 주식 수로 계산하며, 숫자가 클수록 큰 회사입니다."
-        )
+    # ── 오늘의 이슈 & 뉴스 ───────────────────────
+    st.markdown('<div class="bh-section-label">오늘의 이슈 &amp; 뉴스</div>', unsafe_allow_html=True)
+    news_items = _today_news(4)
+    sent_color = {"긍정": "var(--red)", "부정": "var(--blue)", "중립": "var(--yellow)"}
+    sent_label = {"긍정": "▲ 긍정", "부정": "▼ 부정", "중립": "— 중립"}
+    nc1, nc2 = st.columns(2)
+    for i, news in enumerate(news_items):
+        col = nc1 if i % 2 == 0 else nc2
+        sc = sent_color.get(news["sentiment"], "var(--muted)")
+        sl = sent_label.get(news["sentiment"], "—")
+        with col:
+            st.markdown(
+                f'<div style="background:var(--surf2);border:2px solid var(--border2);'
+                f'border-left:4px solid {sc};padding:12px 14px;margin-bottom:10px;">'
+                f'<div style="font-family:var(--mono);font-size:0.6rem;letter-spacing:0.14em;'
+                f'text-transform:uppercase;color:var(--cyan);margin-bottom:5px;">'
+                f'{news["icon"]} {news["tag"]}'
+                f'<span style="float:right;color:{sc};">{sl}</span></div>'
+                f'<div style="font-size:0.88rem;font-weight:600;color:var(--white);line-height:1.4;">'
+                f'{news["title"]}</div>'
+                f'</div>',
+                unsafe_allow_html=True,
+            )
 
-    render_market_overview(stocks, use_live)
     st.divider()
 
-    tab_cards, tab_table = st.tabs(["카드 보기", "표 보기"])
-    with tab_cards:
-        render_stock_cards(stocks, use_live)
-    with tab_table:
-        render_stock_table(stocks, use_live)
+    # ── 떠오르는 섹터 TOP 5 ──────────────────────
+    st.markdown('<div class="bh-section-label">떠오르는 섹터 TOP 5</div>', unsafe_allow_html=True)
+    sectors = _sector_leaderboard(use_live, top_n=5)
+    sec_cols = st.columns(5)
+    for col, sec in zip(sec_cols, sectors):
+        rate = sec["avg_rate"]
+        color = "var(--red)" if rate > 0 else ("var(--blue)" if rate < 0 else "var(--muted)")
+        arrow = "▲" if rate > 0 else ("▼" if rate < 0 else "—")
+        with col:
+            st.markdown(
+                f'<div style="background:var(--surf2);border:2px solid var(--border2);'
+                f'border-top:4px solid {color};padding:14px 12px;text-align:center;">'
+                f'<div style="font-family:var(--mono);font-size:0.6rem;letter-spacing:0.12em;'
+                f'text-transform:uppercase;color:var(--muted);margin-bottom:6px;">'
+                f'{sec["count"]}개 종목</div>'
+                f'<div style="font-weight:700;font-size:0.95rem;color:var(--white);margin-bottom:6px;">'
+                f'{sec["sector"]}</div>'
+                f'<div style="font-family:var(--mono);font-size:1.05rem;color:{color};'
+                f'text-shadow:0 0 8px {color};">{arrow} {rate:+.2f}%</div>'
+                f'</div>',
+                unsafe_allow_html=True,
+            )
+
+    st.divider()
+
+    # ── 오늘의 종목 Pick ─────────────────────────
+    st.markdown('<div class="bh-section-label">오늘의 종목 Pick — 상승 상위 6</div>', unsafe_allow_html=True)
+    picks = _top_stock_picks(use_live, n=6)
+    pick_cols = st.columns(6)
+    for col, pick in zip(pick_cols, picks):
+        stk  = pick["stock"]
+        snap = pick["snap"]
+        cr   = snap["change_rate"]
+        color = "var(--red)" if cr > 0 else "var(--blue)"
+        with col:
+            st.markdown(
+                f'<div style="background:var(--surf2);border:2px solid var(--border2);'
+                f'border-left:4px solid {color};padding:12px 10px;min-height:130px;">'
+                f'<div style="font-family:var(--mono);font-size:0.58rem;letter-spacing:0.1em;'
+                f'text-transform:uppercase;color:var(--cyan);margin-bottom:4px;">'
+                f'{stk.market} · {stk.sector}</div>'
+                f'<div style="font-weight:700;font-size:0.88rem;color:var(--white);margin-bottom:8px;">'
+                f'{stk.name}</div>'
+                f'<div style="font-family:var(--mono);font-size:0.95rem;color:var(--yellow);">'
+                f'{money(snap["price"])}</div>'
+                f'<div style="font-family:var(--mono);font-size:0.82rem;color:{color};'
+                f'text-shadow:0 0 6px {color};">▲ {cr:+.2f}%</div>'
+                f'</div>',
+                unsafe_allow_html=True,
+            )
+            if col.button("차트", key=f"pick-chart-{stk.code}", use_container_width=True):
+                st.session_state["selected_code"] = stk.code
+                st.session_state["menu_override"] = "차트"
+                st.rerun()
+
+    st.divider()
+
+    # ── 내 포트폴리오 현황 ────────────────────────
+    st.markdown('<div class="bh-section-label">내 포트폴리오 현황</div>', unsafe_allow_html=True)
+    summary = _portfolio_mini_summary(use_live)
+    if summary is None:
+        st.markdown(
+            '<div style="background:var(--surf2);border:2px solid var(--border2);'
+            'border-left:4px solid var(--yellow);padding:16px 18px;'
+            'font-family:var(--mono);font-size:0.85rem;color:var(--muted);">'
+            '포트폴리오가 비어 있습니다. ◈ 포트폴리오 메뉴에서 종목을 추가하세요.</div>',
+            unsafe_allow_html=True,
+        )
+    else:
+        pm1, pm2, pm3, pm4 = st.columns(4)
+        pm1.metric("투자원금", money_compact(summary["total_inv"]),
+                   help="내가 주식을 살 때 쓴 총 금액")
+        pm2.metric("평가금액", money_compact(summary["total_eval"]),
+                   money_signed(summary["total_pft"]),
+                   help="현재 주가로 환산한 총 가치")
+        pm3.metric("총 수익률", signed_pct(summary["total_rate"]),
+                   help="투자원금 대비 현재 손익")
+        pm4.metric("보유 종목수", f"{len(summary['rows'])}개",
+                   help="포트폴리오에 담긴 종목 수")
+
+        b = summary["best"]
+        w = summary["worst"]
+        bc1, bc2 = st.columns(2)
+        bc1.markdown(
+            f'<div style="background:var(--surf2);border:2px solid var(--border2);'
+            f'border-left:4px solid var(--red);padding:10px 14px;margin-top:6px;">'
+            f'<div style="font-family:var(--mono);font-size:0.6rem;letter-spacing:0.12em;'
+            f'text-transform:uppercase;color:var(--cyan);">최고 수익 종목</div>'
+            f'<div style="font-weight:700;font-size:0.95rem;color:var(--white);margin:4px 0;">'
+            f'{b["name"]}</div>'
+            f'<div style="font-family:var(--mono);color:var(--red);">'
+            f'▲ {b["profit_rate"]:+.2f}% &nbsp; {money_signed(b["profit"])}</div>'
+            f'</div>',
+            unsafe_allow_html=True,
+        )
+        bc2.markdown(
+            f'<div style="background:var(--surf2);border:2px solid var(--border2);'
+            f'border-left:4px solid var(--blue);padding:10px 14px;margin-top:6px;">'
+            f'<div style="font-family:var(--mono);font-size:0.6rem;letter-spacing:0.12em;'
+            f'text-transform:uppercase;color:var(--cyan);">최저 수익 종목</div>'
+            f'<div style="font-weight:700;font-size:0.95rem;color:var(--white);margin:4px 0;">'
+            f'{w["name"]}</div>'
+            f'<div style="font-family:var(--mono);color:var(--blue);">'
+            f'▼ {w["profit_rate"]:+.2f}% &nbsp; {money_signed(w["profit"])}</div>'
+            f'</div>',
+            unsafe_allow_html=True,
+        )
+
+    st.divider()
+
+    # ── 전체 종목 목록 ───────────────────────────
+    with st.expander("전체 종목 목록 보기", expanded=False):
+        render_market_overview(stocks, use_live)
+        st.divider()
+        tab_cards, tab_table = st.tabs(["카드 보기", "표 보기"])
+        with tab_cards:
+            render_stock_cards(stocks, use_live)
+        with tab_table:
+            render_stock_table(stocks, use_live)
 
 
 def select_stock_widget(market: str, label: str = "종목 선택") -> Stock:
@@ -2627,7 +2839,7 @@ def main() -> None:
 
     stocks = filtered_stocks(market, keyword, sectors)
     if menu == "종목":
-        render_stocks_page(stocks, market, use_live)
+        render_stocks_page(stocks, use_live)
     elif menu == "차트":
         render_chart_page(market, use_live)
     elif menu == "관심종목":
