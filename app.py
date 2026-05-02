@@ -1724,31 +1724,41 @@ def render_chart(stock: Stock, period_label: str, use_live: bool) -> tuple[pd.Da
         rows=4,
         cols=1,
         shared_xaxes=True,
-        vertical_spacing=0.06,
-        row_heights=[0.55, 0.15, 0.16, 0.14],
+        vertical_spacing=0.04,
+        row_heights=[0.52, 0.16, 0.16, 0.16],
+        subplot_titles=(
+            f"📈 {stock.name} 가격 차트  (🔴양봉=상승 / 🔵음봉=하락)",
+            "📊 거래량  (봉 클수록 매매 활발)",
+            "📉 MACD  (막대 0선 위=매수세 강함 / 아래=매도세 강함)",
+            "⚡ RSI  (70↑ 과매수 주의  ·  30↓ 과매도→반등 기대)",
+        ),
     )
 
-    # ── 볼린저밴드 영역 (범례 1개, 선은 숨김) ───────
+    # ── 볼린저밴드 ───────────────────────────────────
     fig.add_trace(
         go.Scatter(
             x=pd.concat([df["date"], df["date"].iloc[::-1]]),
             y=pd.concat([df["bb_upper"], df["bb_lower"].iloc[::-1]]),
-            fill="toself", fillcolor="rgba(88,166,255,0.08)",
+            fill="toself", fillcolor="rgba(88,166,255,0.07)",
             line=dict(color="rgba(0,0,0,0)"),
-            hoverinfo="skip", name="볼린저밴드",
+            hoverinfo="skip", name="볼린저밴드 (가격 범위)",
         ),
         row=1, col=1,
     )
     fig.add_trace(
-        go.Scatter(x=df["date"], y=df["bb_upper"],
-                   line=dict(color="rgba(88,166,255,0.35)", width=1, dash="dot"),
-                   hoverinfo="skip", showlegend=False, name="BB상단"),
+        go.Scatter(
+            x=df["date"], y=df["bb_upper"], name="BB상단",
+            line=dict(color="#58a6ff", width=0.8, dash="dot"), opacity=0.6,
+            hovertemplate="<b>볼린저밴드 상단</b><br>%{x}<br>%{y:,.0f}원<br><i>주가가 이 선 근처면 과매수 구간</i><extra></extra>",
+        ),
         row=1, col=1,
     )
     fig.add_trace(
-        go.Scatter(x=df["date"], y=df["bb_lower"],
-                   line=dict(color="rgba(88,166,255,0.35)", width=1, dash="dot"),
-                   hoverinfo="skip", showlegend=False, name="BB하단"),
+        go.Scatter(
+            x=df["date"], y=df["bb_lower"], name="BB하단",
+            line=dict(color="#58a6ff", width=0.8, dash="dot"), opacity=0.6,
+            hovertemplate="<b>볼린저밴드 하단</b><br>%{x}<br>%{y:,.0f}원<br><i>주가가 이 선 근처면 과매도 구간</i><extra></extra>",
+        ),
         row=1, col=1,
     )
 
@@ -1757,7 +1767,7 @@ def render_chart(stock: Stock, period_label: str, use_live: bool) -> tuple[pd.Da
         go.Candlestick(
             x=df["date"],
             open=df["open"], high=df["high"], low=df["low"], close=df["close"],
-            name="캔들",
+            name="캔들 (일봉)",
             increasing_line_color="#f85149", increasing_fillcolor="#f85149",
             decreasing_line_color="#3fb950", decreasing_fillcolor="#3fb950",
         ),
@@ -1765,11 +1775,32 @@ def render_chart(stock: Stock, period_label: str, use_live: bool) -> tuple[pd.Da
     )
 
     # ── 이동평균선 ───────────────────────────────────
-    fig.add_trace(go.Scatter(x=df["date"], y=df["ma5"],  name="MA5",  line=dict(color="#f2cc60", width=1.4)), row=1, col=1)
-    fig.add_trace(go.Scatter(x=df["date"], y=df["ma20"], name="MA20", line=dict(color="#58a6ff", width=1.4)), row=1, col=1)
-    fig.add_trace(go.Scatter(x=df["date"], y=df["ma60"], name="MA60", line=dict(color="#a371f7", width=1.4)), row=1, col=1)
+    fig.add_trace(
+        go.Scatter(
+            x=df["date"], y=df["ma5"], name="MA5 (단기·5일)",
+            line=dict(color="#f2cc60", width=1.5),
+            hovertemplate="<b>MA5 단기 이동평균</b><br>%{x}<br>%{y:,.0f}원<br><i>최근 5일 종가 평균. 단기 추세 파악용</i><extra></extra>",
+        ),
+        row=1, col=1,
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=df["date"], y=df["ma20"], name="MA20 (중기·20일)",
+            line=dict(color="#58a6ff", width=1.5),
+            hovertemplate="<b>MA20 중기 이동평균</b><br>%{x}<br>%{y:,.0f}원<br><i>최근 20일 평균. 골든/데드크로스 기준선</i><extra></extra>",
+        ),
+        row=1, col=1,
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=df["date"], y=df["ma60"], name="MA60 (장기·60일)",
+            line=dict(color="#a371f7", width=1.5),
+            hovertemplate="<b>MA60 장기 이동평균</b><br>%{x}<br>%{y:,.0f}원<br><i>최근 60일(약 3개월) 평균. 큰 추세 판단용</i><extra></extra>",
+        ),
+        row=1, col=1,
+    )
 
-    # ── 골든/데드크로스 — 마커만, 텍스트는 hover ───
+    # ── 골든/데드크로스 마커 + 차트 위 텍스트 ───────
     valid = df.dropna(subset=["ma5", "ma20"])
     if len(valid) >= 2:
         prev_diff = (valid["ma5"] - valid["ma20"]).shift(1)
@@ -1780,11 +1811,14 @@ def render_chart(stock: Stock, period_label: str, use_live: bool) -> tuple[pd.Da
             fig.add_trace(
                 go.Scatter(
                     x=golden["date"], y=golden["ma5"],
-                    mode="markers",
-                    marker=dict(symbol="triangle-up", size=13, color="#ffd700",
-                                line=dict(color="#1a1a2e", width=1.5)),
-                    hovertemplate="<b>골든크로스</b><br>%{x}<br>MA5: %{y:,.0f}<extra></extra>",
-                    name="골든크로스▲",
+                    mode="markers+text",
+                    marker=dict(symbol="triangle-up", size=14, color="#ffd700",
+                                line=dict(color="#fff", width=1)),
+                    text=["골든크로스"] * len(golden),
+                    textposition="bottom center",
+                    textfont=dict(size=9, color="#ffd700"),
+                    hovertemplate="<b>🟡 골든크로스 (매수 신호)</b><br>%{x}<br>MA5가 MA20을 위로 돌파<br><i>단기 평균이 중기 평균을 넘어서는 순간.<br>상승 추세 시작 신호로 봅니다.</i><extra></extra>",
+                    name="골든크로스 (매수신호)",
                 ),
                 row=1, col=1,
             )
@@ -1792,11 +1826,14 @@ def render_chart(stock: Stock, period_label: str, use_live: bool) -> tuple[pd.Da
             fig.add_trace(
                 go.Scatter(
                     x=dead["date"], y=dead["ma5"],
-                    mode="markers",
-                    marker=dict(symbol="triangle-down", size=13, color="#79c0ff",
-                                line=dict(color="#1a1a2e", width=1.5)),
-                    hovertemplate="<b>데드크로스</b><br>%{x}<br>MA5: %{y:,.0f}<extra></extra>",
-                    name="데드크로스▼",
+                    mode="markers+text",
+                    marker=dict(symbol="triangle-down", size=14, color="#79c0ff",
+                                line=dict(color="#fff", width=1)),
+                    text=["데드크로스"] * len(dead),
+                    textposition="top center",
+                    textfont=dict(size=9, color="#79c0ff"),
+                    hovertemplate="<b>🔵 데드크로스 (매도 신호)</b><br>%{x}<br>MA5가 MA20을 아래로 돌파<br><i>단기 평균이 중기 평균 아래로 꺾이는 순간.<br>하락 추세 시작 신호로 봅니다.</i><extra></extra>",
+                    name="데드크로스 (매도신호)",
                 ),
                 row=1, col=1,
             )
@@ -1805,21 +1842,24 @@ def render_chart(stock: Stock, period_label: str, use_live: bool) -> tuple[pd.Da
     last_close = float(df["close"].iloc[-1])
     fig.add_hline(
         y=last_close,
-        line_dash="dash", line_color="rgba(242,204,96,0.6)", line_width=1,
-        annotation_text=f" {last_close:,.0f}원",
+        line_dash="dash", line_color="#f2cc60", line_width=1.2,
+        annotation_text=f"현재가 {last_close:,.0f}원",
         annotation_position="top right",
         annotation_font_size=11, annotation_font_color="#f2cc60",
         row=1, col=1,
     )
 
-    # ── 거래량 (양봉=빨강, 음봉=초록) ───────────────
+    # ── 거래량 (양봉일=빨강, 음봉일=초록) ───────────
     vol_colors = [
         "#f85149" if float(c) >= float(o) else "#3fb950"
         for c, o in zip(df["close"], df["open"])
     ]
     fig.add_trace(
-        go.Bar(x=df["date"], y=df["volume"], name="거래량",
-               marker_color=vol_colors, opacity=0.75, showlegend=False),
+        go.Bar(
+            x=df["date"], y=df["volume"], name="거래량",
+            marker_color=vol_colors, opacity=0.85,
+            hovertemplate="<b>거래량</b><br>%{x}<br>%{y:,.0f}주<br><i>이날 사고팔린 주식 수.<br>봉이 클수록 시장의 관심이 높은 날.</i><extra></extra>",
+        ),
         row=2, col=1,
     )
 
@@ -1829,65 +1869,75 @@ def render_chart(stock: Stock, period_label: str, use_live: bool) -> tuple[pd.Da
         for v in df["histogram"].fillna(0)
     ]
     fig.add_trace(
-        go.Bar(x=df["date"], y=df["histogram"], name="MACD막대",
-               marker_color=hist_colors, opacity=0.7, showlegend=False),
+        go.Bar(
+            x=df["date"], y=df["histogram"], name="MACD 막대",
+            marker_color=hist_colors, opacity=0.8,
+            hovertemplate="<b>MACD 막대</b><br>%{x}<br>%{y:.2f}<br><i>빨강=매수세 우세 / 초록=매도세 우세.<br>막대가 커질수록 추세가 강해지는 중.</i><extra></extra>",
+        ),
         row=3, col=1,
     )
     fig.add_trace(
-        go.Scatter(x=df["date"], y=df["macd"],   name="MACD",
-                   line=dict(color="#58a6ff", width=1.4), showlegend=False),
+        go.Scatter(
+            x=df["date"], y=df["macd"], name="MACD선",
+            line=dict(color="#58a6ff", width=1.5),
+            hovertemplate="<b>MACD선</b><br>%{x}<br>%{y:.2f}<br><i>12일 평균 - 26일 평균.<br>시그널선과 교차 시 매수/매도 신호.</i><extra></extra>",
+        ),
         row=3, col=1,
     )
     fig.add_trace(
-        go.Scatter(x=df["date"], y=df["signal"], name="시그널",
-                   line=dict(color="#f85149", width=1.4), showlegend=False),
+        go.Scatter(
+            x=df["date"], y=df["signal"], name="시그널선",
+            line=dict(color="#f85149", width=1.5),
+            hovertemplate="<b>시그널선</b><br>%{x}<br>%{y:.2f}<br><i>MACD의 9일 평균.<br>MACD가 이 선을 위로 넘으면 매수 신호.</i><extra></extra>",
+        ),
         row=3, col=1,
     )
-    fig.add_hline(y=0, line_color="rgba(255,255,255,0.15)", line_width=1, row=3, col=1)
+    fig.add_hline(y=0, line_dash="solid", line_color="rgba(255,255,255,0.2)", line_width=1, row=3, col=1)
 
     # ── RSI ─────────────────────────────────────────
-    fig.add_hrect(y0=70, y1=100, row=4, col=1, fillcolor="rgba(248,81,73,0.10)",  line_width=0)
-    fig.add_hrect(y0=0,  y1=30,  row=4, col=1, fillcolor="rgba(63,185,80,0.10)",  line_width=0)
+    fig.add_hrect(y0=70, y1=100, row=4, col=1, fillcolor="rgba(248,81,73,0.12)", line_width=0)
+    fig.add_hrect(y0=0,  y1=30,  row=4, col=1, fillcolor="rgba(63,185,80,0.12)",  line_width=0)
     fig.add_trace(
-        go.Scatter(x=df["date"], y=df["rsi"], name="RSI",
-                   line=dict(color="#e8c849", width=1.6), showlegend=False),
+        go.Scatter(
+            x=df["date"], y=df["rsi"], name="RSI(14)",
+            line=dict(color="#e8c849", width=1.8),
+            hovertemplate=(
+                "<b>RSI</b>  %{y:.1f}<br>%{x}<br>"
+                "<i>0~100 사이 값. 14일 기준 과매수·과매도 지표.<br>"
+                "70 이상 → 너무 올랐을 수 있음 (매도 고려)<br>"
+                "30 이하 → 너무 떨어졌을 수 있음 (매수 고려)</i>"
+                "<extra></extra>"
+            ),
+        ),
         row=4, col=1,
     )
-    fig.add_hline(y=70, line_dash="dot", line_color="rgba(248,81,73,0.6)", line_width=1,
-                  annotation_text="과매수 70", annotation_font_size=9,
-                  annotation_font_color="rgba(248,81,73,0.8)", annotation_position="right",
+    fig.add_hline(y=70, line_dash="dot", line_color="#f85149", line_width=1,
+                  annotation_text="과매수(70)", annotation_font_size=10,
+                  annotation_font_color="#f85149", annotation_position="right",
                   row=4, col=1)
-    fig.add_hline(y=30, line_dash="dot", line_color="rgba(63,185,80,0.6)", line_width=1,
-                  annotation_text="과매도 30", annotation_font_size=9,
-                  annotation_font_color="rgba(63,185,80,0.8)", annotation_position="right",
+    fig.add_hline(y=30, line_dash="dot", line_color="#3fb950", line_width=1,
+                  annotation_text="과매도(30)", annotation_font_size=10,
+                  annotation_font_color="#3fb950", annotation_position="right",
                   row=4, col=1)
-
-    # ── Y축 레이블 (패널 설명) ───────────────────────
-    fig.update_yaxes(title_text="가격(원)", title_font_size=10, tickformat=",", row=1, col=1)
-    fig.update_yaxes(title_text="거래량",   title_font_size=10, row=2, col=1)
-    fig.update_yaxes(title_text="MACD",    title_font_size=10, row=3, col=1)
-    fig.update_yaxes(title_text="RSI",     title_font_size=10, range=[0, 100], row=4, col=1)
 
     # ── 레이아웃 ─────────────────────────────────────
     fig.update_layout(
         template="plotly_dark",
         height=860,
-        margin=dict(l=55, r=65, t=30, b=10),
+        margin=dict(l=10, r=60, t=50, b=10),
         xaxis_rangeslider_visible=False,
         legend=dict(
-            orientation="h",
-            yanchor="bottom", y=1.01,
-            xanchor="left", x=0,
-            font=dict(size=11),
+            orientation="h", yanchor="bottom", y=1.02,
+            xanchor="left", x=0, font=dict(size=11),
             bgcolor="rgba(0,0,0,0)",
-            itemwidth=40,
         ),
         paper_bgcolor="rgba(13,17,23,1)",
         plot_bgcolor="rgba(22,27,34,1)",
-        font=dict(color="#c9d1d9", size=11),
+        font=dict(color="#c9d1d9"),
         hoverlabel=dict(bgcolor="#1c2128", font_size=12, namelength=-1),
-        hovermode="x unified",
     )
+    fig.update_yaxes(tickformat=",", row=1, col=1)
+    fig.update_yaxes(title_text="RSI", range=[0, 100], row=4, col=1)
 
     st.plotly_chart(fig, use_container_width=True)
     return df, source
