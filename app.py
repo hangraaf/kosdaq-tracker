@@ -1567,237 +1567,243 @@ _NEWS_POOL = [
 ]
 
 
-# ── 날짜별 종목 뉴스 템플릿 (섹터별) ────────────────────────────────────────
-_DATE_NEWS_TEMPLATES: dict[str, list[tuple]] = {
-    "반도체": [
-        ("📡", "실적",  "{name}, {q}분기 D램·낸드 판가 상승으로 영업이익 서프라이즈", "긍정"),
-        ("🤖", "AI",    "AI 서버 HBM 수요 폭발적 증가…{name} 공급 우선권 확보", "긍정"),
-        ("🌐", "규제",  "美 반도체 대중 수출 규제 강화…{name} 중국 매출 비중 재점검", "부정"),
-        ("📉", "재고",  "글로벌 반도체 재고 조정 우려…{name} 단기 가격 압박", "부정"),
-        ("🔬", "기술",  "{name}, 차세대 {nm}nm 공정 수율 개선…경쟁사 격차 확대", "긍정"),
-        ("💹", "수급",  "외국인 {name} {amt}억 순매수…지수 편입 기대감 반영", "긍정"),
-        ("⚠️", "리스크", "전력 인프라 병목 심화…데이터센터 반도체 발주 지연 가능성", "부정"),
-        ("🏭", "설비",  "{name}, 평택 {line}라인 가동률 90% 돌파…생산 정상화", "긍정"),
-    ],
-    "전자": [
-        ("📱", "신제품", "{name} 신형 폴더블 출시…전작 대비 판매 초기 반응 긍정적", "긍정"),
-        ("🌐", "글로벌", "{name} 북미·유럽 프리미엄 가전 시장 점유율 확대", "긍정"),
-        ("📉", "경쟁",  "중국 업체 저가 공세 심화…{name} 중저가 라인업 수익성 압박", "부정"),
-        ("🔋", "부품",  "{name}, 배터리·디스플레이 내재화율 확대로 원가 개선", "긍정"),
-        ("💹", "수급",  "기관 {name} 대규모 순매수…실적 개선 선반영 해석", "긍정"),
-    ],
-    "바이오": [
-        ("💊", "임상",  "{name}, {drug} 글로벌 임상 {phase}상 주요 결과 발표 임박", "긍정"),
-        ("📋", "수출",  "{name}, 글로벌 빅파마와 기술수출 계약…마일스톤 {amt}억", "긍정"),
-        ("⚠️", "임상",  "{name} 핵심 파이프라인 임상 실패…주가 하방 리스크 부각", "부정"),
-        ("🏛", "허가",  "{name}, FDA 신약 허가 신청 접수…승인 시 글로벌 매출 기대", "긍정"),
-        ("🔬", "R&D",   "{name} 신규 항체-약물 접합체(ADC) 플랫폼 공개", "긍정"),
-        ("💹", "수급",  "외국인 바이오 섹터 집중 매수…{name} 수혜 최대", "긍정"),
-    ],
-    "제약": [
-        ("💊", "실적",  "{name} 주력 제품 국내 점유율 {pct}%…신제품 출시 기대감", "긍정"),
-        ("🌐", "수출",  "{name} 개량신약 미국 제네릭 시장 진출 준비 완료", "긍정"),
-        ("📋", "허가",  "{name}, 복합제 신제품 식약처 허가 획득…매출 기여 전망", "긍정"),
-        ("⚠️", "리스크", "주요 제품 특허 만료 임박…{name} 제네릭 경쟁 노출 우려", "부정"),
-    ],
-    "2차전지": [
-        ("🔋", "수주",  "{name}, 글로벌 완성차 {x}GWh 규모 장기 공급 계약 체결", "긍정"),
-        ("📉", "수요",  "글로벌 EV 판매 성장 둔화…{name} 가동률 하향 조정 우려", "부정"),
-        ("🔬", "기술",  "{name} 전고체 배터리 시제품 공개…2027년 양산 목표", "긍정"),
-        ("💹", "수급",  "유럽계 기관 2차전지 비중 확대…{name} 최대 수혜", "긍정"),
-        ("🌐", "정책",  "미 IRA 배터리 보조금 세부 지침 확정…{name} 적격 판정", "긍정"),
-        ("⚠️", "경쟁",  "중국 CATL 저가 공세 지속…{name} 유럽 수주 경쟁 심화", "부정"),
-    ],
-    "인터넷": [
-        ("💻", "트래픽", "{name} 월간 활성 이용자 역대 최고…광고 매출 상향 조정", "긍정"),
-        ("🤖", "AI",    "{name}, 자체 AI 모델 출시…검색·커머스 경쟁력 강화", "긍정"),
-        ("📉", "광고",  "경기 둔화 우려…{name} 디지털 광고 단가 하락 압력", "부정"),
-        ("🌐", "해외",  "{name} 동남아 시장 진출 가속…글로벌 사용자 {x}억 돌파", "긍정"),
-        ("🏛", "규제",  "플랫폼 독과점 규제 입법 추진…{name} 사업모델 불확실성", "부정"),
-    ],
-    "게임": [
-        ("🎮", "신작",  "{name} 기대작 '{title}' 사전예약 {x}만 돌파", "긍정"),
-        ("🌐", "글로벌", "{name} 신작 북미·유럽 동시 출시…글로벌 IP 확장", "긍정"),
-        ("📉", "흥행",  "{name} 주력 타이틀 MAU 감소…신작 출시까지 공백 우려", "부정"),
-        ("💹", "수급",  "게임 섹터 외국인 순매수 전환…{name} 수혜", "긍정"),
-        ("🤖", "AI",    "{name}, AI 생성 콘텐츠 도입으로 개발 비용 30% 절감", "긍정"),
-    ],
-    "엔터": [
-        ("🎤", "앨범",  "{name} 산하 아티스트 글로벌 차트 1위…팬덤 확장 확인", "긍정"),
-        ("🌐", "해외",  "{name} 일본·미국 투어 매진…IP 수익 다각화 가속", "긍정"),
-        ("📉", "공백",  "주력 아티스트 군 입대 일정 확정…{name} 단기 실적 공백", "부정"),
-        ("💊", "리스크", "{name} 소속 아티스트 논란…브랜드 가치 하락 우려", "부정"),
-        ("🤖", "IP",    "{name}, AI 활용 버추얼 아이돌 론칭…새 수익원 창출", "긍정"),
-    ],
-    "금융": [
-        ("🏦", "실적",  "{name}, NIM 개선으로 분기 이자이익 역대 최대 경신", "긍정"),
-        ("🏛", "정책",  "금융당국 은행세 강화 논의…{name} 수익성 영향 불가피", "부정"),
-        ("💹", "배당",  "{name} 자사주 매입·소각 확대 발표…주주환원 강화", "긍정"),
-        ("⚠️", "건전성", "가계대출 연체율 상승…{name} 충당금 적립 부담 확대", "부정"),
-        ("🌐", "해외",  "{name} 동남아 법인 흑자 전환…해외 실적 기여 본격화", "긍정"),
-    ],
-    "자동차": [
-        ("🚗", "판매",  "{name} 글로벌 판매 {x}만대 돌파…전기차 비중 {pct}%", "긍정"),
-        ("🔋", "전기차", "{name} 전용 전기차 플랫폼 공개…항속거리 700km 목표", "긍정"),
-        ("📉", "수요",  "미국·유럽 자동차 수요 둔화…{name} 가이던스 하향 우려", "부정"),
-        ("🌐", "관세",  "미국 수입차 관세 인상 우려…{name} 현지 생산 확대 검토", "부정"),
-        ("💹", "수급",  "기관 자동차 섹터 비중 확대…{name} 저PBR 매력 부각", "긍정"),
-    ],
-    "화학": [
-        ("🏭", "스프레드", "{name} 주력 제품 스프레드 회복세…원가 부담 완화", "긍정"),
-        ("🌐", "중국",  "중국 화학 업체 증설 부담…{name} 단기 마진 압박", "부정"),
-        ("🔋", "소재",  "{name}, EV 배터리 소재 진출…신성장 동력 확보", "긍정"),
-        ("📉", "업황",  "글로벌 석화 업황 부진 장기화…{name} 실적 가시성 낮아", "부정"),
-    ],
-    "철강": [
-        ("🏭", "가격",  "철강 가격 반등 신호…{name} 2분기 수익성 회복 기대", "긍정"),
-        ("🌐", "중국",  "중국 철강 저가 수출 지속…{name} 판가 방어 부담", "부정"),
-        ("💹", "수급",  "조선·건설 수요 회복…{name} 후판 판매량 증가 전망", "긍정"),
-    ],
-    "통신": [
-        ("📡", "5G",    "{name} 5G 가입자 {x}만 돌파…ARPU 개선 효과 본격화", "긍정"),
-        ("🏛", "규제",  "통신 요금 인하 압력 지속…{name} 매출 성장 제약 우려", "부정"),
-        ("💹", "배당",  "{name} 배당수익률 {pct}%…고금리 환경에서도 방어주 매력", "긍정"),
-        ("🤖", "AI",    "{name}, AI·클라우드 B2B 솔루션 수주 확대…비통신 매출 성장", "긍정"),
-    ],
-    "IT서비스": [
-        ("🤖", "AI",    "{name}, 생성형 AI 도입 컨설팅 수주 급증…매출 가이던스 상향", "긍정"),
-        ("☁️", "클라우드", "{name} 퍼블릭 클라우드 전환 프로젝트 대형 수주", "긍정"),
-        ("📉", "경쟁",  "글로벌 IT 서비스 업체 국내 진출 공세…{name} 마진 압박", "부정"),
-    ],
-    "미디어": [
-        ("🎬", "콘텐츠", "{name} OTT 오리지널 시리즈 글로벌 흥행…구독자 급증", "긍정"),
-        ("📉", "광고",  "경기 침체 우려로 방송 광고 집행 감소…{name} 수익 압박", "부정"),
-        ("🌐", "수출",  "{name} 드라마·예능 포맷 해외 판권 수출 확대", "긍정"),
-    ],
-    "건설": [
-        ("🏗️", "수주",  "{name} 해외 플랜트 {amt}억 대형 수주 발표", "긍정"),
-        ("📉", "부동산", "국내 부동산 경기 침체…{name} 분양 매출 감소 우려", "부정"),
-        ("💹", "수급",  "건설 섹터 밸류업 수혜 기대…{name} 자사주 매입 검토", "긍정"),
-    ],
-}
-_DATE_NEWS_TEMPLATES["전자부품"] = _DATE_NEWS_TEMPLATES["전자"]
-_DATE_NEWS_TEMPLATES["로봇"] = [
-    ("🤖", "수주",  "{name}, 완성차·물류 대기업 협동로봇 공급 계약 체결", "긍정"),
-    ("🔬", "기술",  "{name} 자율주행 로봇 신모델 공개…기존 대비 정밀도 2배", "긍정"),
-    ("🌐", "해외",  "{name} 북미·유럽 로봇 전시회 수출 상담 {x}건 진행", "긍정"),
-    ("📉", "경쟁",  "글로벌 로봇 업체 가격 인하 공세…{name} 마진 방어 과제", "부정"),
-]
-_DATE_NEWS_TEMPLATES["방산"] = [
-    ("🛡️", "수출",  "{name} 유럽·중동 {weapon} 수출 계약 {amt}억 체결", "긍정"),
-    ("🏛", "예산",  "정부 국방 예산 증액…{name} 국내 수주 파이프라인 확대", "긍정"),
-    ("🌐", "지정학", "중동 긴장 고조…{name} 방산 수요 확대 기대", "긍정"),
-]
-
-
-def _stock_date_news(stock: "Stock", date_str: str, df: pd.DataFrame, n: int = 4) -> list[dict]:
-    """종목·날짜·당일 등락 방향을 반영한 뉴스 생성."""
-    seed_val = int(hashlib.sha256(f"{stock.code}{date_str}".encode()).hexdigest()[:10], 16)
-    rng = np.random.default_rng(seed_val % (2**32))
-
-    # 해당 날짜의 등락 방향 확인
-    direction = "flat"
-    try:
-        row = df[df["date"].astype(str).str.startswith(date_str[:10])]
-        if not row.empty:
-            chg = float(row.iloc[0]["close"]) - float(row.iloc[0]["open"])
-            direction = "up" if chg > 0 else ("down" if chg < 0 else "flat")
-    except Exception:
-        pass
-
-    templates = _DATE_NEWS_TEMPLATES.get(stock.sector, _NEWS_POOL[:8])  # type: ignore[arg-type]
-
-    # 등락 방향에 따라 긍정/부정 뉴스 가중치 조정
-    if direction == "up":
-        pool = [t for t in templates if t[3] in ("긍정", "중립")] or templates
-    elif direction == "down":
-        pool = [t for t in templates if t[3] in ("부정", "중립")] or templates
-    else:
-        pool = templates
-
-    picked = [pool[i % len(pool)] for i in rng.choice(len(pool), size=min(n, len(pool)), replace=False)]
-
-    # 템플릿 변수 치환
-    nums = {"q": rng.integers(1, 5), "x": rng.integers(10, 300),
-            "nm": rng.choice([3, 4, 5]), "amt": rng.integers(100, 9000),
-            "pct": rng.integers(5, 45), "line": rng.integers(1, 5),
-            "phase": rng.integers(2, 3), "drug": rng.choice(["ADC", "GLP-1", "mRNA", "항체"]),
-            "weapon": rng.choice(["K2 전차", "K9 자주포", "레드백 장갑차", "FA-50"]),
-            "title": rng.choice(["프로젝트 R", "영원한 제국", "새벽의 전사", "드래곤 나이트"])}
-    result = []
-    for icon, tag, tmpl, sent in picked:
-        title = tmpl.format(name=stock.name, **{k: v for k, v in nums.items() if f"{{{k}}}" in tmpl})
-        result.append({"icon": icon, "tag": tag, "title": title, "sentiment": sent})
-    return result
-
-
 def render_date_news_panel(stock: "Stock", date_str: str, df: pd.DataFrame) -> None:
-    """차트에서 날짜 클릭 시 표시되는 당일 이슈 뉴스 패널."""
+    """차트 날짜 클릭 → 실제 차트 데이터 기반 기술적 분석 + 실제 뉴스 링크."""
+    # ── 날짜 파싱 ──────────────────────────────────
     try:
         dt = datetime.strptime(date_str[:10], "%Y-%m-%d")
-        date_label = dt.strftime("%Y년 %m월 %d일 (%a)").replace(
-            "Mon","월").replace("Tue","화").replace("Wed","수").replace(
-            "Thu","목").replace("Fri","금").replace("Sat","토").replace("Sun","일")
+        day_map = {"Mon":"월","Tue":"화","Wed":"수","Thu":"목","Fri":"금","Sat":"토","Sun":"일"}
+        date_label = dt.strftime("%Y년 %m월 %d일") + f" ({day_map.get(dt.strftime('%a'), '')})"
+        ds = dt.strftime("%Y.%m.%d")   # 네이버 검색용 날짜
     except Exception:
         date_label = date_str[:10]
+        ds = date_str[:10].replace("-", ".")
 
-    # 당일 OHLCV 요약
-    ohlcv_html = ""
-    try:
-        row = df[df["date"].astype(str).str.startswith(date_str[:10])]
-        if not row.empty:
-            r = row.iloc[0]
-            chg = float(r["close"]) - float(r["open"])
-            chg_pct = chg / float(r["open"]) * 100
-            c = "var(--red)" if chg >= 0 else "var(--blue)"
-            arrow = "▲" if chg >= 0 else "▼"
-            ohlcv_html = (
-                f'<div style="display:flex;gap:18px;font-family:var(--mono);font-size:0.8rem;'
-                f'margin-top:6px;flex-wrap:wrap;">'
-                f'<span>시가 <b>{float(r["open"]):,.0f}</b></span>'
-                f'<span>고가 <b style="color:var(--red)">{float(r["high"]):,.0f}</b></span>'
-                f'<span>저가 <b style="color:var(--blue)">{float(r["low"]):,.0f}</b></span>'
-                f'<span>종가 <b style="color:{c}">{float(r["close"]):,.0f}</b></span>'
-                f'<span style="color:{c}">{arrow} {chg_pct:+.2f}%</span>'
-                f'<span style="color:var(--muted)">거래량 {int(r["volume"]):,}주</span>'
-                f'</div>'
-            )
-    except Exception:
-        pass
+    # ── 해당 날짜 행 추출 ──────────────────────────
+    row_mask = df["date"].astype(str).str.startswith(date_str[:10])
+    row_df = df[row_mask]
+    if row_df.empty:
+        st.info(f"{date_str[:10]} 데이터가 없습니다.")
+        return
+    idx = row_df.index[0]
+    r = row_df.iloc[0]
+    o, h, l, c = float(r["open"]), float(r["high"]), float(r["low"]), float(r["close"])
+    vol = int(r["volume"])
 
+    chg = c - o
+    chg_pct = chg / o * 100 if o else 0
+    price_color = "var(--red)" if chg >= 0 else "var(--blue)"
+    arrow = "▲" if chg >= 0 else "▼"
+
+    # ── 헤더 카드 ──────────────────────────────────
     st.markdown(
         f'<div style="background:var(--surf2);border:2px solid var(--border2);'
-        f'border-left:5px solid var(--yellow);padding:16px 20px;margin-bottom:4px;">'
-        f'<div style="font-family:var(--mono);font-size:0.62rem;letter-spacing:0.14em;'
-        f'text-transform:uppercase;color:var(--yellow);margin-bottom:4px;">📅 날짜별 이슈 뉴스</div>'
-        f'<div style="font-weight:800;font-size:1rem;color:var(--white);">{stock.name} · {date_label}</div>'
-        f'{ohlcv_html}'
-        f'</div>',
+        f'border-left:5px solid var(--yellow);padding:14px 20px;margin-bottom:12px;">'
+        f'<div style="font-family:var(--mono);font-size:0.6rem;letter-spacing:0.14em;'
+        f'text-transform:uppercase;color:var(--yellow);margin-bottom:4px;">📅 날짜별 기술적 분석</div>'
+        f'<div style="font-weight:800;font-size:1rem;color:var(--white);margin-bottom:8px;">'
+        f'{stock.name} ({stock.code}) · {date_label}</div>'
+        f'<div style="display:flex;gap:20px;font-family:var(--mono);font-size:0.82rem;flex-wrap:wrap;">'
+        f'<span>시가 <b>{o:,.0f}</b></span>'
+        f'<span>고가 <b style="color:var(--red)">{h:,.0f}</b></span>'
+        f'<span>저가 <b style="color:var(--blue)">{l:,.0f}</b></span>'
+        f'<span>종가 <b style="color:{price_color}">{c:,.0f}</b></span>'
+        f'<span style="color:{price_color};font-weight:700;">{arrow} {chg_pct:+.2f}%&nbsp;({chg:+,.0f}원)</span>'
+        f'<span style="color:var(--muted)">거래량 {vol:,}주</span>'
+        f'</div></div>',
         unsafe_allow_html=True,
     )
 
-    news_items = _stock_date_news(stock, date_str, df, n=4)
-    sent_color = {"긍정": "var(--red)", "부정": "var(--blue)", "중립": "var(--yellow)"}
-    sent_label = {"긍정": "▲ 긍정", "부정": "▼ 부정", "중립": "— 중립"}
-    nc1, nc2 = st.columns(2)
-    for i, news in enumerate(news_items):
-        col = nc1 if i % 2 == 0 else nc2
-        sc = sent_color.get(news["sentiment"], "var(--muted)")
-        sl = sent_label.get(news["sentiment"], "—")
-        with col:
+    # ── 기술적 분석 카드 생성 ──────────────────────
+    signals: list[tuple[str, str, str, str]] = []   # (icon, tag, msg, level)
+
+    # 1) 캔들 모양 분석
+    body  = abs(c - o)
+    rng_  = h - l if h != l else 1
+    upper = h - max(o, c)
+    lower = min(o, c) - l
+    if body / rng_ >= 0.7:
+        signals.append(("🕯️", "캔들 패턴",
+            f"{'장대양봉' if chg >= 0 else '장대음봉'} — 몸통이 전체 범위의 {body/rng_*100:.0f}%. "
+            f"{'강한 매수세로 마감. 추세 지속 가능성 주목.' if chg >= 0 else '강한 매도세. 추가 하락 경계.'}",
+            "pos" if chg >= 0 else "neg"))
+    elif body / rng_ <= 0.1:
+        signals.append(("🕯️", "캔들 패턴",
+            "도지(Doji) — 시가와 종가가 거의 같음. 매수·매도 세력 균형. 추세 전환 가능성 확인 필요.",
+            "neu"))
+    elif lower >= body * 2 and upper <= body * 0.5:
+        signals.append(("🕯️", "캔들 패턴",
+            f"{'망치형(Hammer)' if chg < 0 else '교수형(Hanging Man)'} — 아래꼬리 길고 몸통 작음. "
+            f"{'하락 추세에서 나타나면 반등 신호.' if chg < 0 else '상승 추세에서 나타나면 반전 경계.'}",
+            "pos" if chg < 0 else "neg"))
+    elif upper >= body * 2 and lower <= body * 0.5:
+        signals.append(("🕯️", "캔들 패턴",
+            f"{'유성형(Shooting Star)' if chg >= 0 else '역망치형(Inverted Hammer)'} — 위꼬리 길고 몸통 작음. "
+            f"{'상승 후 매도세 유입 경고.' if chg >= 0 else '하락 후 매수 시도. 다음 봉 확인 필요.'}",
+            "neg" if chg >= 0 else "pos"))
+    else:
+        signals.append(("🕯️", "캔들 모양",
+            f"당일 변동폭 {rng_:,.0f}원 ({rng_/o*100:.1f}%), 몸통 비중 {body/rng_*100:.0f}%. "
+            "특별한 반전 신호 없음.",
+            "neu"))
+
+    # 2) 거래량
+    vol_avg = float(df["volume"].rolling(20).mean().iloc[idx]) if idx >= 19 else float(df["volume"].mean())
+    vol_ratio = vol / vol_avg if vol_avg else 1
+    if vol_ratio >= 2.5:
+        signals.append(("📊", "거래량",
+            f"거래량 폭증 — 평균(20일) 대비 {vol_ratio:.1f}배. "
+            f"{'매수세 급격 유입. 모멘텀 확인.' if chg >= 0 else '대량 매도. 투매 또는 세력 이탈 가능성.'}",
+            "pos" if chg >= 0 else "neg"))
+    elif vol_ratio >= 1.5:
+        signals.append(("📊", "거래량",
+            f"거래량 증가 — 평균 대비 {vol_ratio:.1f}배. 시장 관심 증가.",
+            "neu"))
+    elif vol_ratio < 0.5:
+        signals.append(("📊", "거래량",
+            f"거래량 급감 — 평균 대비 {vol_ratio:.1f}배. 관망세 짙음. 신뢰도 낮은 움직임.",
+            "neu"))
+    else:
+        signals.append(("📊", "거래량",
+            f"거래량 평이 — 평균 대비 {vol_ratio:.1f}배. 특이 수급 없음.",
+            "neu"))
+
+    # 3) 이동평균 대비 위치
+    ma5_val  = df["ma5"].iloc[idx]  if not pd.isna(df["ma5"].iloc[idx])  else None
+    ma20_val = df["ma20"].iloc[idx] if not pd.isna(df["ma20"].iloc[idx]) else None
+    ma60_val = df["ma60"].iloc[idx] if not pd.isna(df["ma60"].iloc[idx]) else None
+    ma_parts = []
+    if ma5_val:
+        diff = (c - ma5_val) / ma5_val * 100
+        ma_parts.append(f"MA5 {diff:+.1f}%")
+    if ma20_val:
+        diff = (c - ma20_val) / ma20_val * 100
+        ma_parts.append(f"MA20 {diff:+.1f}%")
+    if ma60_val:
+        diff = (c - ma60_val) / ma60_val * 100
+        ma_parts.append(f"MA60 {diff:+.1f}%")
+    if ma_parts:
+        all_above = all(c > v for v in [ma5_val, ma20_val, ma60_val] if v)
+        all_below = all(c < v for v in [ma5_val, ma20_val, ma60_val] if v)
+        if all_above:
+            signals.append(("📈", "이동평균",
+                f"종가가 MA5·MA20·MA60 전부 위 — {', '.join(ma_parts)}. 강한 상승 배열. 추세 추종 매수 구간.",
+                "pos"))
+        elif all_below:
+            signals.append(("📉", "이동평균",
+                f"종가가 MA5·MA20·MA60 전부 아래 — {', '.join(ma_parts)}. 하락 배열. 반등 확인 전 매수 자제.",
+                "neg"))
+        else:
+            signals.append(("〰️", "이동평균",
+                f"이동평균 혼재 — {', '.join(ma_parts)}. 방향성 불분명. 다음 봉 추세 확인 필요.",
+                "neu"))
+
+    # 4) RSI
+    rsi_val = df["rsi"].iloc[idx] if not pd.isna(df["rsi"].iloc[idx]) else None
+    if rsi_val is not None:
+        if rsi_val >= 70:
+            signals.append(("⚡", "RSI",
+                f"RSI {rsi_val:.1f} — 과매수 구간(70↑). 단기 조정 가능성. 신규 매수 주의.",
+                "neg"))
+        elif rsi_val <= 30:
+            signals.append(("⚡", "RSI",
+                f"RSI {rsi_val:.1f} — 과매도 구간(30↓). 기술적 반등 기대. 단, 추세 하락 중엔 추가 하락 가능.",
+                "pos"))
+        else:
+            signals.append(("⚡", "RSI",
+                f"RSI {rsi_val:.1f} — 중립 구간(30~70). 과열·침체 없음. 방향성은 다른 지표로 판단.",
+                "neu"))
+
+    # 5) MACD
+    macd_val = df["macd"].iloc[idx]      if not pd.isna(df["macd"].iloc[idx])      else None
+    hist_val = df["histogram"].iloc[idx] if not pd.isna(df["histogram"].iloc[idx]) else None
+    if macd_val is not None and hist_val is not None:
+        # 전일 히스토그램 방향
+        prev_hist = df["histogram"].iloc[idx - 1] if idx > 0 and not pd.isna(df["histogram"].iloc[idx - 1]) else None
+        if hist_val > 0 and macd_val > 0:
+            msg = f"MACD {macd_val:.2f}, 히스토그램 {hist_val:+.2f} — 매수 모멘텀 우세."
+            if prev_hist is not None and prev_hist < 0:
+                msg += " 히스토그램이 음→양 전환. 상승 전환 신호!"
+            signals.append(("📉", "MACD", msg, "pos"))
+        elif hist_val < 0 and macd_val < 0:
+            msg = f"MACD {macd_val:.2f}, 히스토그램 {hist_val:+.2f} — 매도 모멘텀 우세."
+            if prev_hist is not None and prev_hist > 0:
+                msg += " 히스토그램이 양→음 전환. 하락 전환 신호!"
+            signals.append(("📉", "MACD", msg, "neg"))
+        else:
+            signals.append(("📉", "MACD",
+                f"MACD {macd_val:.2f}, 히스토그램 {hist_val:+.2f} — 방향 전환 구간. 다음 봉 확인 필요.",
+                "neu"))
+
+    # 6) 볼린저밴드
+    bb_u = df["bb_upper"].iloc[idx] if not pd.isna(df["bb_upper"].iloc[idx]) else None
+    bb_l = df["bb_lower"].iloc[idx] if not pd.isna(df["bb_lower"].iloc[idx]) else None
+    bb_m = df["bb_mid"].iloc[idx]   if not pd.isna(df["bb_mid"].iloc[idx])   else None
+    if bb_u and bb_l and bb_m:
+        if c > bb_u:
+            signals.append(("🎯", "볼린저밴드",
+                f"종가({c:,.0f})가 밴드 상단({bb_u:,.0f}) 돌파. 강한 상승세지만 단기 과열 주의.",
+                "neg"))
+        elif c < bb_l:
+            signals.append(("🎯", "볼린저밴드",
+                f"종가({c:,.0f})가 밴드 하단({bb_l:,.0f}) 이탈. 강한 하락세. 반등 타이밍 모니터링.",
+                "pos"))
+        else:
+            bw = (bb_u - bb_l) / bb_m * 100
+            pos = (c - bb_l) / (bb_u - bb_l) * 100
+            signals.append(("🎯", "볼린저밴드",
+                f"밴드 내({pos:.0f}% 위치). 밴드폭 {bw:.1f}%. "
+                f"{'밴드 상단 근접 — 저항 가능성.' if pos > 75 else '밴드 하단 근접 — 지지 가능성.' if pos < 25 else '밴드 중앙 — 방향성 대기.'}",
+                "neu"))
+
+    # ── 분석 카드 렌더링 ───────────────────────────
+    level_color = {"pos": "var(--red)", "neg": "var(--blue)", "neu": "var(--yellow)"}
+    cols = st.columns(2)
+    for i, (icon, tag, msg, level) in enumerate(signals):
+        lc = level_color.get(level, "var(--muted)")
+        with cols[i % 2]:
             st.markdown(
                 f'<div style="background:var(--surf);border:1px solid var(--border2);'
-                f'border-left:4px solid {sc};padding:10px 14px;margin-bottom:8px;">'
-                f'<div style="font-family:var(--mono);font-size:0.58rem;letter-spacing:0.12em;'
+                f'border-left:4px solid {lc};padding:10px 14px;margin-bottom:8px;">'
+                f'<div style="font-family:var(--mono);font-size:0.58rem;letter-spacing:0.1em;'
                 f'text-transform:uppercase;color:var(--cyan);margin-bottom:4px;">'
-                f'{news["icon"]} {news["tag"]}'
-                f'<span style="float:right;color:{sc};font-size:0.7rem;">{sl}</span></div>'
-                f'<div style="font-size:0.85rem;font-weight:600;color:var(--white);line-height:1.45;">'
-                f'{news["title"]}</div>'
+                f'{icon} {tag}</div>'
+                f'<div style="font-size:0.82rem;color:var(--fg);line-height:1.5;">{msg}</div>'
                 f'</div>',
                 unsafe_allow_html=True,
             )
-    st.caption("※ 데모 시뮬레이션 뉴스입니다. 실제 투자 결정에 활용하지 마세요.")
+
+    # ── 실제 뉴스 링크 ────────────────────────────
+    st.markdown('<div class="bh-section-label">실제 뉴스 · 공시 바로가기</div>', unsafe_allow_html=True)
+    name_enc = stock.name.replace(" ", "+")
+    links = [
+        ("📰", "네이버 뉴스 검색",
+         f"https://search.naver.com/search.naver?where=news&query={name_enc}+주가&sm=tab_opt&sort=1&pd=3&ds={ds}&de={ds}",
+         f"{stock.name} 관련 {ds} 뉴스를 네이버에서 검색합니다."),
+        ("💹", "네이버 금융 종목 페이지",
+         f"https://finance.naver.com/item/main.naver?code={stock.code}",
+         "재무정보·공시·주주현황·배당 등 종합 정보 확인."),
+        ("📋", "DART 전자공시 검색",
+         f"https://dart.fss.or.kr/dsab001/search.ax?textCrpNm={name_enc}",
+         "금융감독원 전자공시 — 사업보고서·주요사항보고 등 공식 공시 조회."),
+        ("🏦", "KRX 종목 정보",
+         f"https://www.krx.co.kr/main/main.jsp",
+         "한국거래소 공식 시세·거래 통계 조회."),
+    ]
+    link_cols = st.columns(4)
+    for col, (icon, label, url, desc) in zip(link_cols, links):
+        with col:
+            st.markdown(
+                f'<a href="{url}" target="_blank" style="text-decoration:none;">'
+                f'<div style="background:var(--surf2);border:1px solid var(--border2);'
+                f'border-top:3px solid var(--yellow);padding:10px 12px;text-align:center;'
+                f'cursor:pointer;transition:border-color 0.15s;">'
+                f'<div style="font-size:1.3rem;margin-bottom:4px;">{icon}</div>'
+                f'<div style="font-size:0.75rem;font-weight:700;color:var(--yellow);">{label}</div>'
+                f'<div style="font-size:0.68rem;color:var(--muted);margin-top:4px;line-height:1.35;">{desc}</div>'
+                f'</div></a>',
+                unsafe_allow_html=True,
+            )
 
 
 def _today_news(n: int = 4) -> list[dict]:
