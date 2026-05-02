@@ -383,40 +383,44 @@ PERIODS = {"1개월": 22, "3개월": 65, "6개월": 130, "1년": 252, "2년": 50
 
 BH_CSS = """
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Nanum+Square:wght@400;700;800&family=Nanum+Gothic:wght@400;700;800&family=Share+Tech+Mono&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Noto+Serif+KR:wght@400;600&family=Noto+Sans+Mono:wght@300;400&display=swap');
 
-/* ── Refined Dark Slate ───────────────────────── */
+/* ── MUJI Dark — 무인양품 다크 에디션 ─────────────
+   따뜻한 어스톤 배경 · 세리프 제목 · 최소 장식 · 넉넉한 여백
+   ─────────────────────────────────────────────── */
 :root {
-  /* 배경 — 따뜻한 슬레이트 다크 */
-  --bg:       #111113;
-  --surf:     #18191E;
-  --surf2:    #1F2027;
-  --surf-warm:#1E1B18;      /* 웜 틴트 서피스 */
-  --grid:     #26272E;
-  --border:   #303138;
-  --border2:  #3A3B45;
+  /* 배경 — 따뜻한 우드 다크 */
+  --bg:       #1A1816;
+  --surf:     #222018;
+  --surf2:    #2A2720;
+  --surf-warm:#2E2B24;
+  --grid:     #36332A;
+  --border:   #403C32;
+  --border2:  #4C4840;
 
-  /* 의미 색상 — 채도 낮춘 전문가용 */
-  --red:      #C84848;      /* 뮤트 레드 (상승, 한국 관례) */
-  --blue:     #3878B0;      /* 뮤트 블루 (하락) */
-  --yellow:   #B87830;      /* 웜 앰버 (메인 강조) */
-  --cyan:     #5888A0;      /* 슬레이트 블루 (보조) */
-  --magenta:  #7860A0;      /* 소프트 퍼플 (미사용/예비) */
+  /* 색상 — 자연 어스톤 팔레트 */
+  --red:      #B85848;      /* 테라코타 (상승) */
+  --blue:     #4878A8;      /* 인디고 슬레이트 (하락) */
+  --yellow:   #8C7248;      /* 웜 어스 브라운 (메인 강조) */
+  --cyan:     #6A8470;      /* 세이지 그린 (보조) */
+  --magenta:  #786880;      /* 덤 라벤더 (예비) */
 
-  /* 텍스트 */
-  --white:    #E4E4E8;
-  --fg:       #B0B0BC;
-  --muted:    #707080;
-  --muted2:   #4A4A58;
+  /* 텍스트 — 따뜻한 아이보리 계열 */
+  --white:    #EDE8DF;      /* 따뜻한 오프화이트 */
+  --fg:       #C4BAB0;      /* 웜 라이트 그레이 */
+  --muted:    #7A726A;      /* 따뜻한 뮤트 */
+  --muted2:   #504840;
 
-  /* 글로우 — 최소화 (입체감만) */
-  --glow-y:   0 1px 6px rgba(184,120,48,0.18);
-  --glow-r:   0 1px 6px rgba(200,72,72,0.18);
-  --glow-b:   0 1px 6px rgba(56,120,176,0.18);
-  --glow-c:   0 1px 6px rgba(88,136,160,0.15);
+  /* 글로우 없음 — 무인양품은 장식 거부 */
+  --glow-y:   none;
+  --glow-r:   none;
+  --glow-b:   none;
+  --glow-c:   none;
 
-  --font:     'Nanum Square', 'NanumSquare', 'Nanum Gothic', sans-serif;
-  --mono:     'Share Tech Mono', 'Nanum Gothic', 'NanumGothic', monospace;
+  /* 타이포 — Noto Serif KR(제목) + Noto Sans KR(본문) */
+  --serif:    'Noto Serif KR', 'Nanum Myeongjo', serif;
+  --font:     'Noto Sans KR', 'Nanum Gothic', sans-serif;
+  --mono:     'Noto Sans Mono', 'Share Tech Mono', monospace;
   color-scheme: dark;
 }
 
@@ -425,70 +429,73 @@ body, .stApp {
   background: var(--bg) !important;
   color: var(--white) !important;
   font-family: var(--font) !important;
+  font-weight: 400 !important;
+  line-height: 1.7 !important;
 }
 
 /* ── Sidebar ─────────────────────────────────── */
 [data-testid="stSidebar"] {
   background: var(--surf) !important;
-  border-right: 3px solid var(--grid) !important;
+  border-right: 1px solid var(--border) !important;
 }
 [data-testid="stSidebar"] label {
-  font-weight: 600 !important;
-  color: var(--white) !important;
+  font-family: var(--font) !important;
+  font-weight: 500 !important;
+  font-size: 0.9rem !important;
+  color: var(--fg) !important;
 }
 
-/* ── Typography — 통일 타입 스케일 ────────────────
-   페이지 제목  h1: 1.5rem
-   섹션 서브    h2: 1.05rem  (★ 기존 0.68rem 버그 수정)
-   카드 서브    h3: 0.95rem
-   본문          body: 0.9rem (Streamlit 기본)
-   보조 레이블   label/tag: 0.72rem uppercase
-   마이크로      badge/pill: 0.65rem
-   ───────────────────────────────────────────── */
+/* ── Typography ──────────────────────────────── */
 h1 {
-  font-family: var(--font) !important;
+  font-family: var(--serif) !important;
   font-size: 1.5rem !important;
-  font-weight: 800 !important;
-  letter-spacing: -0.01em !important;
-  border-left: 4px solid var(--yellow) !important;
-  padding-left: 14px !important;
-  margin-bottom: 6px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.01em !important;
+  border-left: 3px solid var(--yellow) !important;
+  padding-left: 16px !important;
+  margin-bottom: 8px !important;
   color: var(--white) !important;
 }
 h2 {
-  font-family: var(--font) !important;
-  font-size: 1.05rem !important;
-  font-weight: 700 !important;
-  letter-spacing: 0em !important;
+  font-family: var(--serif) !important;
+  font-size: 1.1rem !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.01em !important;
   color: var(--fg) !important;
-  margin-top: 24px !important;
-  margin-bottom: 8px !important;
+  margin-top: 28px !important;
+  margin-bottom: 10px !important;
 }
-h3 { font-family: var(--font) !important; font-weight: 700 !important; font-size: 0.95rem !important; color: var(--fg) !important; }
+h3 {
+  font-family: var(--font) !important;
+  font-weight: 500 !important;
+  font-size: 0.95rem !important;
+  color: var(--fg) !important;
+  letter-spacing: 0.01em !important;
+}
 
 /* ── Metric blocks ───────────────────────────── */
 div[data-testid="stMetric"] {
   background: var(--surf2) !important;
-  border: 1px solid var(--border2) !important;
-  border-top: 3px solid var(--yellow) !important;
+  border: 1px solid var(--border) !important;
+  border-top: 2px solid var(--yellow) !important;
   border-radius: 0 !important;
-  padding: 12px 14px !important;
+  padding: 14px 16px !important;
   overflow: visible !important;
 }
 div[data-testid="stMetric"] label {
   font-family: var(--font) !important;
   font-size: 0.72rem !important;
-  letter-spacing: 0.05em !important;
+  letter-spacing: 0.08em !important;
   text-transform: uppercase !important;
   color: var(--muted) !important;
-  font-weight: 700 !important;
+  font-weight: 500 !important;
   white-space: normal !important;
 }
 div[data-testid="stMetric"] [data-testid="stMetricValue"] {
   font-family: var(--mono) !important;
   font-size: 1.1rem !important;
-  font-weight: 400 !important;
-  letter-spacing: 0.01em !important;
+  font-weight: 300 !important;
+  letter-spacing: 0.02em !important;
   color: var(--white) !important;
   overflow: visible !important;
   white-space: nowrap !important;
@@ -503,7 +510,7 @@ div[data-testid="stMetricValue"] {
 }
 div[data-testid="stMetric"] [data-testid="stMetricDelta"] {
   font-family: var(--mono) !important;
-  font-size: 0.83rem !important;
+  font-size: 0.82rem !important;
   white-space: nowrap !important;
 }
 
@@ -511,11 +518,11 @@ div[data-testid="stMetric"] [data-testid="stMetricDelta"] {
 .stButton > button {
   border-radius: 0 !important;
   font-family: var(--font) !important;
-  font-weight: 700 !important;
+  font-weight: 500 !important;
   font-size: 0.85rem !important;
   letter-spacing: 0.04em !important;
-  text-transform: uppercase !important;
-  transition: all 0.15s !important;
+  text-transform: none !important;
+  transition: all 0.2s !important;
 }
 .stButton > button[kind="primary"] {
   background: var(--yellow) !important;
@@ -523,7 +530,7 @@ div[data-testid="stMetric"] [data-testid="stMetricDelta"] {
   border: 1px solid var(--yellow) !important;
 }
 .stButton > button[kind="primary"]:hover {
-  background: var(--surf2) !important;
+  background: transparent !important;
   color: var(--yellow) !important;
   border-color: var(--yellow) !important;
 }
@@ -534,17 +541,18 @@ div[data-testid="stMetric"] [data-testid="stMetricDelta"] {
 }
 .stButton > button[kind="secondary"]:hover {
   border-color: var(--yellow) !important;
-  color: var(--yellow) !important;
+  color: var(--fg) !important;
 }
 
 /* ── Inputs ──────────────────────────────────── */
 .stTextInput input, .stNumberInput input {
   background: var(--surf2) !important;
-  border: 2px solid var(--border2) !important;
+  border: 1px solid var(--border2) !important;
   border-radius: 0 !important;
   color: var(--white) !important;
   font-family: var(--font) !important;
-  font-size: 0.86rem !important;
+  font-size: 0.9rem !important;
+  font-weight: 400 !important;
 }
 .stTextInput input:focus, .stNumberInput input:focus {
   border-color: var(--yellow) !important;
@@ -553,43 +561,44 @@ div[data-testid="stMetric"] [data-testid="stMetricDelta"] {
 }
 [data-baseweb="select"] > div {
   background: var(--surf2) !important;
-  border: 2px solid var(--border2) !important;
+  border: 1px solid var(--border2) !important;
   border-radius: 0 !important;
   font-family: var(--font) !important;
 }
 
 /* ── Tabs ────────────────────────────────────── */
 [data-testid="stTabs"] [data-baseweb="tab-list"] {
-  background: var(--surf) !important;
-  border-bottom: 2px solid var(--border2) !important;
+  background: transparent !important;
+  border-bottom: 1px solid var(--border2) !important;
   gap: 0 !important;
 }
 [data-testid="stTabs"] [data-baseweb="tab"] {
   background: transparent !important;
   font-family: var(--font) !important;
-  font-weight: 700 !important;
-  font-size: 0.85rem !important;
-  letter-spacing: 0.03em !important;
+  font-weight: 500 !important;
+  font-size: 0.88rem !important;
+  letter-spacing: 0.02em !important;
   text-transform: none !important;
-  padding: 10px 20px !important;
+  padding: 10px 22px !important;
   border-radius: 0 !important;
   color: var(--muted) !important;
 }
 [data-testid="stTabs"] [aria-selected="true"] {
-  color: var(--yellow) !important;
+  color: var(--white) !important;
   border-bottom: 2px solid var(--yellow) !important;
+  font-weight: 700 !important;
 }
 
 /* ── Expanders ───────────────────────────────── */
 [data-testid="stExpander"] {
-  border: 1px solid var(--border2) !important;
-  border-left: 3px solid var(--border2) !important;
+  border: 1px solid var(--border) !important;
+  border-left: 2px solid var(--border2) !important;
   border-radius: 0 !important;
   background: var(--surf) !important;
 }
 [data-testid="stExpander"] summary {
   font-family: var(--font) !important;
-  font-weight: 700 !important;
+  font-weight: 500 !important;
   font-size: 0.92rem !important;
   letter-spacing: 0.01em !important;
   color: var(--fg) !important;
@@ -597,14 +606,14 @@ div[data-testid="stMetric"] [data-testid="stMetricDelta"] {
 
 /* ── Dataframe ───────────────────────────────── */
 [data-testid="stDataFrame"] {
-  border: 2px solid var(--border2) !important;
+  border: 1px solid var(--border) !important;
   border-radius: 0 !important;
 }
 [data-testid="stDataFrame"] th {
   font-family: var(--font) !important;
   font-size: 0.72rem !important;
-  font-weight: 700 !important;
-  letter-spacing: 0.05em !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.06em !important;
   text-transform: uppercase !important;
   background: var(--grid) !important;
   color: var(--muted) !important;
@@ -613,20 +622,21 @@ div[data-testid="stMetric"] [data-testid="stMetricDelta"] {
 /* ── Alerts ──────────────────────────────────── */
 [data-testid="stAlert"] {
   border-radius: 0 !important;
-  border-width: 2px !important;
-  border-left-width: 4px !important;
+  border-width: 1px !important;
+  border-left-width: 3px !important;
 }
 
 /* ── Blockquotes ─────────────────────────────── */
 blockquote {
-  border-left: 3px solid var(--yellow) !important;
+  border-left: 2px solid var(--yellow) !important;
   background: var(--surf2) !important;
-  padding: 12px 18px !important;
-  margin: 12px 0 !important;
+  padding: 14px 20px !important;
+  margin: 16px 0 !important;
   color: var(--fg) !important;
-  font-family: var(--font) !important;
-  font-size: 0.86rem !important;
+  font-family: var(--serif) !important;
+  font-size: 0.9rem !important;
   font-weight: 400 !important;
+  font-style: italic !important;
 }
 
 /* ── Caption ─────────────────────────────────── */
@@ -634,32 +644,31 @@ blockquote {
   font-family: var(--font) !important;
   color: var(--muted) !important;
   font-size: 0.76rem !important;
-  letter-spacing: 0.01em !important;
-  background: var(--surf-warm) !important;
-  padding: 3px 8px !important;
-  display: inline-block !important;
+  letter-spacing: 0.02em !important;
+  padding: 2px 0 !important;
+  background: transparent !important;
 }
 
 /* ── Divider ─────────────────────────────────── */
 hr {
-  border-color: var(--border2) !important;
-  margin: 28px 0 !important;
+  border-color: var(--border) !important;
+  margin: 32px 0 !important;
+  opacity: 0.6 !important;
 }
 
-/* ── Sidebar 검색 자동완성 결과 버튼 ──────────── */
+/* ── Sidebar 검색 결과 버튼 ──────────────────── */
 [data-testid="stSidebar"] .stButton > button {
   text-align: left !important;
   justify-content: flex-start !important;
   font-size: 0.88rem !important;
-  font-weight: 600 !important;
-  background: var(--surf) !important;
-  border: 1px solid var(--border2) !important;
-  border-left: 3px solid var(--yellow) !important;
-  color: var(--white) !important;
-  padding: 6px 10px !important;
+  font-weight: 400 !important;
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1px solid var(--border) !important;
+  color: var(--fg) !important;
+  padding: 8px 4px !important;
   height: auto !important;
   min-height: 0 !important;
-  margin-bottom: 2px !important;
   border-radius: 0 !important;
   white-space: nowrap !important;
   overflow: hidden !important;
@@ -667,8 +676,9 @@ hr {
 }
 [data-testid="stSidebar"] .stButton > button:hover {
   background: var(--surf2) !important;
-  border-left-color: var(--yellow) !important;
   color: var(--yellow) !important;
+  border-bottom-color: var(--yellow) !important;
+  padding-left: 8px !important;
 }
 
 /* ── Toggle ──────────────────────────────────── */
@@ -679,62 +689,48 @@ hr {
 /* ── Radio ───────────────────────────────────── */
 [data-testid="stRadio"] label {
   font-family: var(--font) !important;
-  font-weight: 700 !important;
+  font-weight: 400 !important;
   font-size: 0.9rem !important;
+  color: var(--fg) !important;
 }
 
-/* ── Stock cards — 몬드리안 컬러 블록 ────────── */
+/* ── Stock cards ─────────────────────────────── */
 .bh-card {
   background: var(--surf2);
-  border: 2px solid var(--border2);
-  border-left: 5px solid var(--border2);
-  border-top: 1px solid var(--grid);
-  padding: 16px 16px 14px;
-  min-height: 160px;
-  margin-bottom: 2px;
-  position: relative;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--border2);
+  padding: 18px 16px 14px;
+  min-height: 155px;
+  margin-bottom: 4px;
 }
-.bh-card::before {
-  content: '';
-  position: absolute;
-  top: 0; right: 0;
-  width: 6px; height: 6px;
-  background: var(--border2);
-}
-.bh-card.up {
-  border-left-color: var(--red);
-}
-.bh-card.up::before   { background: var(--red); }
-.bh-card.down {
-  border-left-color: var(--blue);
-}
-.bh-card.down::before { background: var(--blue); }
+.bh-card.up   { border-left-color: var(--red); }
+.bh-card.down { border-left-color: var(--blue); }
 
 .bh-tag {
   font-family: var(--font);
   font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
+  font-weight: 400;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--muted);
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 .bh-name {
   font-family: var(--font);
   font-size: 1.0rem;
   font-weight: 700;
-  margin: 0 0 8px;
+  margin: 0 0 10px;
   color: var(--white);
-  letter-spacing: -0.01em;
+  letter-spacing: 0;
 }
 .bh-price {
   font-family: var(--mono);
-  font-size: 1.2rem;
-  font-weight: 400;
-  letter-spacing: 0.02em;
+  font-size: 1.15rem;
+  font-weight: 300;
+  letter-spacing: 0.03em;
   color: var(--fg);
 }
-.bh-delta { font-family: var(--mono); font-size: 0.82rem; margin-top: 4px; }
+.bh-delta { font-family: var(--mono); font-size: 0.82rem; margin-top: 4px; font-weight: 300; }
 .bh-delta.up   { color: var(--red); }
 .bh-delta.down { color: var(--blue); }
 .bh-delta.flat { color: var(--muted); }
@@ -742,67 +738,66 @@ hr {
 /* ── Sidebar 로고 ────────────────────────────── */
 .bh-logo {
   display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  margin-bottom: 20px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid var(--border2);
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border);
 }
 .bh-logo-mark {
-  width: 36px; height: 36px;
+  width: 34px; height: 34px;
   background: var(--yellow);
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: var(--mono);
-  font-size: 0.95rem;
-  font-weight: 700;
+  font-family: var(--serif);
+  font-size: 0.85rem;
+  font-weight: 600;
   color: var(--bg);
 }
-.bh-logo-text { line-height: 1.15; }
+.bh-logo-text { line-height: 1.3; }
 .bh-logo-title {
-  font-family: var(--font);
-  font-size: 0.9rem;
-  font-weight: 800;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
+  font-family: var(--serif);
+  font-size: 0.88rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
   color: var(--white);
 }
 .bh-logo-sub {
   font-family: var(--font);
-  font-size: 0.68rem;
-  font-weight: 400;
-  letter-spacing: 0.05em;
+  font-size: 0.65rem;
+  font-weight: 300;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--muted);
-  margin-top: 3px;
+  margin-top: 2px;
 }
 
 /* ── Section label ───────────────────────────── */
 .bh-section-label {
   font-family: var(--font);
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.10em;
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--cyan);
-  background: var(--surf-warm);
-  border-left: 3px solid var(--cyan);
-  padding: 4px 10px;
-  margin: 20px 0 10px;
-  display: inline-block;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 4px;
+  margin: 24px 0 12px;
+  display: block;
+  background: transparent;
 }
 
 /* ── Status pill ─────────────────────────────── */
 .bh-pill {
   display: inline-block;
   font-family: var(--font);
-  font-size: 0.64rem;
-  font-weight: 700;
+  font-size: 0.65rem;
+  font-weight: 400;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  padding: 3px 8px;
+  padding: 2px 7px;
   border: 1px solid var(--border2);
   color: var(--muted);
 }
@@ -814,15 +809,15 @@ hr {
 /* ── Page subtitle ───────────────────────────── */
 .bh-subtitle {
   font-family: var(--font);
-  font-size: 0.85rem;
-  font-weight: 600;
+  font-size: 0.82rem;
+  font-weight: 300;
   letter-spacing: 0.02em;
-  color: var(--fg);
-  background: var(--surf-warm);
-  border-left: 3px solid var(--yellow);
-  margin-bottom: 20px;
-  padding: 6px 14px 6px 16px;
-  display: inline-block;
+  color: var(--muted);
+  margin-bottom: 24px;
+  padding: 0;
+  display: block;
+  background: transparent;
+  border: none;
 }
 </style>
 """
