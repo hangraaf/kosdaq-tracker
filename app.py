@@ -437,27 +437,34 @@ body, .stApp {
   color: var(--white) !important;
 }
 
-/* ── Typography ──────────────────────────────── */
+/* ── Typography — 통일 타입 스케일 ────────────────
+   페이지 제목  h1: 1.5rem
+   섹션 서브    h2: 1.05rem  (★ 기존 0.68rem 버그 수정)
+   카드 서브    h3: 0.95rem
+   본문          body: 0.9rem (Streamlit 기본)
+   보조 레이블   label/tag: 0.72rem uppercase
+   마이크로      badge/pill: 0.65rem
+   ───────────────────────────────────────────── */
 h1 {
   font-family: var(--font) !important;
-  font-size: 1.4rem !important;
+  font-size: 1.5rem !important;
   font-weight: 800 !important;
   letter-spacing: -0.01em !important;
   border-left: 4px solid var(--yellow) !important;
   padding-left: 14px !important;
-  margin-bottom: 4px !important;
+  margin-bottom: 6px !important;
   color: var(--white) !important;
 }
 h2 {
   font-family: var(--font) !important;
-  font-size: 0.68rem !important;
+  font-size: 1.05rem !important;
   font-weight: 700 !important;
-  letter-spacing: 0.12em !important;
-  text-transform: uppercase !important;
-  color: var(--muted) !important;
+  letter-spacing: 0em !important;
+  color: var(--fg) !important;
   margin-top: 24px !important;
+  margin-bottom: 8px !important;
 }
-h3 { font-family: var(--font) !important; font-weight: 700 !important; font-size: 0.92rem !important; }
+h3 { font-family: var(--font) !important; font-weight: 700 !important; font-size: 0.95rem !important; color: var(--fg) !important; }
 
 /* ── Metric blocks ───────────────────────────── */
 div[data-testid="stMetric"] {
@@ -470,8 +477,8 @@ div[data-testid="stMetric"] {
 }
 div[data-testid="stMetric"] label {
   font-family: var(--font) !important;
-  font-size: 0.67rem !important;
-  letter-spacing: 0.06em !important;
+  font-size: 0.72rem !important;
+  letter-spacing: 0.05em !important;
   text-transform: uppercase !important;
   color: var(--muted) !important;
   font-weight: 700 !important;
@@ -479,7 +486,7 @@ div[data-testid="stMetric"] label {
 }
 div[data-testid="stMetric"] [data-testid="stMetricValue"] {
   font-family: var(--mono) !important;
-  font-size: 1.05rem !important;
+  font-size: 1.1rem !important;
   font-weight: 400 !important;
   letter-spacing: 0.01em !important;
   color: var(--white) !important;
@@ -496,7 +503,7 @@ div[data-testid="stMetricValue"] {
 }
 div[data-testid="stMetric"] [data-testid="stMetricDelta"] {
   font-family: var(--mono) !important;
-  font-size: 0.8rem !important;
+  font-size: 0.83rem !important;
   white-space: nowrap !important;
 }
 
@@ -505,8 +512,8 @@ div[data-testid="stMetric"] [data-testid="stMetricDelta"] {
   border-radius: 0 !important;
   font-family: var(--font) !important;
   font-weight: 700 !important;
-  font-size: 0.76rem !important;
-  letter-spacing: 0.06em !important;
+  font-size: 0.85rem !important;
+  letter-spacing: 0.04em !important;
   text-transform: uppercase !important;
   transition: all 0.15s !important;
 }
@@ -561,9 +568,9 @@ div[data-testid="stMetric"] [data-testid="stMetricDelta"] {
   background: transparent !important;
   font-family: var(--font) !important;
   font-weight: 700 !important;
-  font-size: 0.75rem !important;
-  letter-spacing: 0.06em !important;
-  text-transform: uppercase !important;
+  font-size: 0.85rem !important;
+  letter-spacing: 0.03em !important;
+  text-transform: none !important;
   padding: 10px 20px !important;
   border-radius: 0 !important;
   color: var(--muted) !important;
@@ -583,8 +590,8 @@ div[data-testid="stMetric"] [data-testid="stMetricDelta"] {
 [data-testid="stExpander"] summary {
   font-family: var(--font) !important;
   font-weight: 700 !important;
-  font-size: 0.88rem !important;
-  letter-spacing: 0.02em !important;
+  font-size: 0.92rem !important;
+  letter-spacing: 0.01em !important;
   color: var(--fg) !important;
 }
 
@@ -595,9 +602,9 @@ div[data-testid="stMetric"] [data-testid="stMetricDelta"] {
 }
 [data-testid="stDataFrame"] th {
   font-family: var(--font) !important;
-  font-size: 0.67rem !important;
+  font-size: 0.72rem !important;
   font-weight: 700 !important;
-  letter-spacing: 0.06em !important;
+  letter-spacing: 0.05em !important;
   text-transform: uppercase !important;
   background: var(--grid) !important;
   color: var(--muted) !important;
@@ -626,8 +633,8 @@ blockquote {
 [data-testid="stCaptionContainer"] {
   font-family: var(--font) !important;
   color: var(--muted) !important;
-  font-size: 0.73rem !important;
-  letter-spacing: 0.02em !important;
+  font-size: 0.76rem !important;
+  letter-spacing: 0.01em !important;
   background: var(--surf-warm) !important;
   padding: 3px 8px !important;
   display: inline-block !important;
@@ -643,7 +650,7 @@ hr {
 [data-testid="stSidebar"] .stButton > button {
   text-align: left !important;
   justify-content: flex-start !important;
-  font-size: 0.82rem !important;
+  font-size: 0.88rem !important;
   font-weight: 600 !important;
   background: var(--surf) !important;
   border: 1px solid var(--border2) !important;
@@ -673,7 +680,7 @@ hr {
 [data-testid="stRadio"] label {
   font-family: var(--font) !important;
   font-weight: 700 !important;
-  font-size: 0.88rem !important;
+  font-size: 0.9rem !important;
 }
 
 /* ── Stock cards — 몬드리안 컬러 블록 ────────── */
@@ -705,16 +712,16 @@ hr {
 
 .bh-tag {
   font-family: var(--font);
-  font-size: 0.63rem;
+  font-size: 0.68rem;
   font-weight: 700;
-  letter-spacing: 0.07em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--muted);
   margin-bottom: 6px;
 }
 .bh-name {
   font-family: var(--font);
-  font-size: 0.98rem;
+  font-size: 1.0rem;
   font-weight: 700;
   margin: 0 0 8px;
   color: var(--white);
@@ -756,15 +763,15 @@ hr {
 .bh-logo-text { line-height: 1.15; }
 .bh-logo-title {
   font-family: var(--font);
-  font-size: 0.82rem;
+  font-size: 0.9rem;
   font-weight: 800;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--white);
 }
 .bh-logo-sub {
   font-family: var(--font);
-  font-size: 0.63rem;
+  font-size: 0.68rem;
   font-weight: 400;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -775,9 +782,9 @@ hr {
 /* ── Section label ───────────────────────────── */
 .bh-section-label {
   font-family: var(--font);
-  font-size: 0.68rem;
+  font-size: 0.72rem;
   font-weight: 800;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.10em;
   text-transform: uppercase;
   color: var(--cyan);
   background: var(--surf-warm);
@@ -807,7 +814,7 @@ hr {
 /* ── Page subtitle ───────────────────────────── */
 .bh-subtitle {
   font-family: var(--font);
-  font-size: 0.78rem;
+  font-size: 0.85rem;
   font-weight: 600;
   letter-spacing: 0.02em;
   color: var(--fg);
