@@ -1566,7 +1566,7 @@ def _portfolio_mini_summary(use_live: bool) -> dict | None:
     }
 
 
-def render_stocks_page(stocks: list[Stock], use_live: bool) -> None:
+def render_stocks_page(stocks: list[Stock], use_live: bool, keyword: str = "") -> None:
     today_str = date.today().strftime("%Y년 %m월 %d일")
     st.title("오늘의 종목")
     st.markdown(
@@ -1712,7 +1712,9 @@ def render_stocks_page(stocks: list[Stock], use_live: bool) -> None:
     st.divider()
 
     # ── 전체 종목 목록 ───────────────────────────
-    with st.expander("전체 종목 목록 보기", expanded=False):
+    searching = bool(keyword.strip())
+    expander_label = f'"{keyword.strip()}" 검색 결과 — {len(stocks)}개 종목' if searching else "전체 종목 목록 보기"
+    with st.expander(expander_label, expanded=searching):
         render_market_overview(stocks, use_live)
         st.divider()
         tab_cards, tab_table = st.tabs(["카드 보기", "표 보기"])
@@ -2857,7 +2859,7 @@ def main() -> None:
 
     stocks = filtered_stocks(market, keyword, sectors)
     if menu == "종목":
-        render_stocks_page(stocks, use_live)
+        render_stocks_page(stocks, use_live, keyword)
     elif menu == "차트":
         render_chart_page(market, use_live, keyword, sectors)
     elif menu == "관심종목":
