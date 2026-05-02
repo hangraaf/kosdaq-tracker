@@ -391,6 +391,7 @@ BH_CSS = """
   --bg:       #03030A;
   --surf:     #08080F;
   --surf2:    #0E0E18;
+  --surf-warm:#3b302b;      /* 웜 다크 브라운 — 오렌지 계열 서피스 */
   --grid:     #14141F;      /* 몬드리안 격자선 */
   --border:   #1C1C2A;
   --border2:  #28283C;
@@ -404,8 +405,9 @@ BH_CSS = """
 
   /* 텍스트 */
   --white:    #E8E8F0;
-  --muted:    #42425A;
-  --muted2:   #6060780;
+  --fg:       #C8C8D8;      /* 본문 기본 텍스트 */
+  --muted:    #8C8CA8;      /* 보조 텍스트 — 가독성 확보 */
+  --muted2:   #60607A;      /* 매우 연한 보조 */
 
   /* 글로우 */
   --glow-y:   0 0 8px rgba(255,107,0,0.65), 0 0 24px rgba(255,107,0,0.25);
@@ -629,6 +631,9 @@ blockquote {
   color: var(--muted) !important;
   font-size: 0.73rem !important;
   letter-spacing: 0.02em !important;
+  background: var(--surf-warm) !important;
+  padding: 3px 8px !important;
+  display: inline-block !important;
 }
 
 /* ── Divider ─────────────────────────────────── */
@@ -784,9 +789,11 @@ hr {
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--cyan);
-  border-bottom: 1px solid var(--border2);
-  padding-bottom: 5px;
+  background: var(--surf-warm);
+  border-left: 3px solid var(--cyan);
+  padding: 4px 10px;
   margin: 20px 0 10px;
+  display: inline-block;
 }
 
 /* ── Status pill ─────────────────────────────── */
@@ -811,11 +818,14 @@ hr {
 .bh-subtitle {
   font-family: var(--font);
   font-size: 0.78rem;
-  font-weight: 400;
+  font-weight: 600;
   letter-spacing: 0.02em;
-  color: var(--muted);
-  margin-bottom: 24px;
-  padding-left: 19px;
+  color: var(--fg);
+  background: var(--surf-warm);
+  border-left: 3px solid var(--yellow);
+  margin-bottom: 20px;
+  padding: 6px 14px 6px 16px;
+  display: inline-block;
 }
 </style>
 """
