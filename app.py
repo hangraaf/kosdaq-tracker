@@ -3007,11 +3007,190 @@ def _katayama_stock_analysis(stock: Stock, row: dict) -> dict:
     return {"verdict": verdict, "badge": badge, "score": score, "reasons": reasons}
 
 
+def _lynch_stock_analysis(stock: Stock, row: dict) -> dict:
+    """피터 린치 — 10루타·생활 밀착형 성장주 발굴."""
+    growth_proxy = (seed_for(stock.code, "lynch_growth") % 45) + 5   # 5–49% 성장률
+    pe_proxy     = (seed_for(stock.code, "lynch_pe")     % 40) + 8   # 8–47 PER
+    debt_proxy   = (seed_for(stock.code, "lynch_debt")   % 200) + 30 # 30–229% 부채비율
+    familiar     = seed_for(stock.code, "lynch_fam") % 10            # 0–9 소비자 친숙도
+    profit_rate  = row["profit_rate"]
+
+    score = 0.0
+    reasons: list[str] = []
+
+    # PEG (P/E ÷ 성장률) — 1 이하면 저평가
+    peg = round(pe_proxy / max(growth_proxy, 1), 2)
+    if peg < 0.75:
+        score += 0.4
+        reasons.append(f"PEG {peg:.2f} — 성장 대비 극히 저평가! 린치 최선호 구간 (PEG < 1이 목표)")
+    elif peg < 1.0:
+        score += 0.25
+        reasons.append(f"PEG {peg:.2f} — 성장 대비 적정 가격. 린치 기준 '공정가치' 수준")
+    elif peg < 1.5:
+        score += 0.05
+        reasons.append(f"PEG {peg:.2f} — 다소 높음. 성장 가속 신호 없으면 관망")
+    else:
+        score -= 0.2
+        reasons.append(f"PEG {peg:.2f} — 성장 대비 고평가. 린치는 비싼 성장주를 경계함")
+
+    # 성장률 절대 수준
+    if growth_proxy >= 25:
+        score += 0.2
+        reasons.append(f"성장률 추정 {growth_proxy}% — '패스트 그로어' 범주. 10루타 후보")
+    elif growth_proxy >= 15:
+        score += 0.1
+        reasons.append(f"성장률 추정 {growth_proxy}% — '스토크 그로어' 수준. 꾸준한 성장주")
+    elif growth_proxy >= 8:
+        reasons.append(f"성장률 추정 {growth_proxy}% — '슬로우 그로어'. 배당이 없으면 매력 낮음")
+    else:
+        score -= 0.15
+        reasons.append(f"성장률 추정 {growth_proxy}% — 성장 정체. 린치는 '스탈워트'로도 분류 어려움")
+
+    # 부채비율
+    if debt_proxy < 60:
+        score += 0.15
+        reasons.append(f"부채비율 추정 {debt_proxy}% — 우량한 재무. 불황에도 생존 가능")
+    elif debt_proxy < 120:
+        score += 0.05
+        reasons.append(f"부채비율 추정 {debt_proxy}% — 양호. 이자 커버리지 확인 권장")
+    else:
+        score -= 0.2
+        reasons.append(f"부채비율 추정 {debt_proxy}% — 과도한 부채. 린치는 '빌린 돈으로 성장하는 기업'을 경계")
+
+    # 소비자 친숙도 (린치: '내가 아는 기업에 투자하라')
+    familiar_sectors = {"인터넷", "게임", "엔터", "통신", "미디어", "화장품", "식품"}
+    if stock.sector in familiar_sectors or familiar >= 7:
+        score += 0.1
+        reasons.append(f"{stock.sector} — 소비자가 직접 경험 가능한 섹터. 린치 '아는 것에 투자' 원칙 부합")
+    elif familiar >= 4:
+        reasons.append("일반 투자자에게 다소 생소한 사업 모델. 이해 후 투자 원칙 지킬 것")
+    else:
+        score -= 0.05
+        reasons.append("전문가 영역 비즈니스. 린치는 이해하지 못한 기업에 투자 금지를 강조")
+
+    # P&L
+    if profit_rate > 50:
+        reasons.append(f"현재 +{profit_rate:.1f}% — 텐배거 진행 중? 스토리 유효하면 린치는 '계속 보유'")
+    elif profit_rate < -15:
+        score -= 0.1
+        reasons.append(f"현재 {profit_rate:.1f}% 손실 — 스토리 훼손인지 일시적 하락인지 재점검 필요")
+
+    if score > 0.45:
+        verdict, badge = "사라", "🟢"
+    elif score > 0.15:
+        verdict, badge = "관망", "🟡"
+    else:
+        verdict, badge = "팔아라", "🔴"
+
+    return {"verdict": verdict, "badge": badge, "score": score, "reasons": reasons}
+
+
+def _graham_stock_analysis(stock: Stock, row: dict) -> dict:
+    """벤저민 그레이엄 — 안전마진·방어적 가치투자."""
+    pe_proxy   = (seed_for(stock.code, "graham_pe")   % 35) + 6    # 6–40 PER
+    pb_proxy   = round((seed_for(stock.code, "graham_pb") % 30 + 5) / 10, 1)  # 0.5–3.5 PBR
+    cr_proxy   = round((seed_for(stock.code, "graham_cr") % 25 + 10) / 10, 1) # 1.0–3.5 유동비율
+    div_yield  = round((seed_for(stock.code, "graham_div") % 50) / 10, 1)     # 0.0–4.9% 배당
+    years_prof = (seed_for(stock.code, "graham_yrs") % 10) + 1    # 1–10년 연속 흑자
+    profit_rate = row["profit_rate"]
+
+    score = 0.0
+    reasons: list[str] = []
+
+    # PER — 15배 이하 선호
+    if pe_proxy <= 10:
+        score += 0.35
+        reasons.append(f"PER 추정 {pe_proxy}배 — 극히 저평가. 그레이엄 '바겐 종목' 기준 충족")
+    elif pe_proxy <= 15:
+        score += 0.2
+        reasons.append(f"PER 추정 {pe_proxy}배 — 합리적 가격. 그레이엄 방어적 투자 기준 내")
+    elif pe_proxy <= 25:
+        score -= 0.05
+        reasons.append(f"PER 추정 {pe_proxy}배 — 다소 비쌈. 안전마진 확보 어려운 구간")
+    else:
+        score -= 0.3
+        reasons.append(f"PER 추정 {pe_proxy}배 — 고평가. 그레이엄은 높은 PER 종목을 투기로 간주")
+
+    # PBR — 1.5배 이하 선호 (PER×PBR ≤ 22.5 규칙)
+    if pb_proxy <= 1.0:
+        score += 0.3
+        reasons.append(f"PBR 추정 {pb_proxy}배 — 장부가 이하 거래! 그레이엄 안전마진 극대 구간")
+    elif pb_proxy <= 1.5:
+        score += 0.15
+        reasons.append(f"PBR 추정 {pb_proxy}배 — 적정. PER×PBR={pe_proxy*pb_proxy:.0f} (≤22.5 규칙 확인)")
+    elif pb_proxy <= 2.5:
+        score -= 0.1
+        reasons.append(f"PBR 추정 {pb_proxy}배 — 프리미엄 구간. 자산 대비 안전마진 부족")
+    else:
+        score -= 0.25
+        reasons.append(f"PBR 추정 {pb_proxy}배 — 고평가. 그레이엄은 청산가치 이상 투자를 경계")
+
+    # 유동비율 (재무 안전성)
+    if cr_proxy >= 2.0:
+        score += 0.15
+        reasons.append(f"유동비율 추정 {cr_proxy}배 — 단기 채무 여유 충분. 재정적 안전마진 확보")
+    elif cr_proxy >= 1.5:
+        score += 0.05
+        reasons.append(f"유동비율 추정 {cr_proxy}배 — 적정 수준. 갑작스런 경기 침체 시 점검 필요")
+    else:
+        score -= 0.2
+        reasons.append(f"유동비율 추정 {cr_proxy}배 — 단기 유동성 부족 우려. 그레이엄은 1.5배 미만 경계")
+
+    # 배당 — 방어적 투자자 기준 배당 지속성
+    if div_yield >= 3.0:
+        score += 0.15
+        reasons.append(f"배당수익률 추정 {div_yield}% — 안정적 현금흐름. 방어적 투자자 조건 충족")
+    elif div_yield >= 1.5:
+        score += 0.05
+        reasons.append(f"배당수익률 추정 {div_yield}% — 배당 있음. 지속 가능성과 성장성 함께 확인")
+    else:
+        score -= 0.1
+        reasons.append(f"배당수익률 {div_yield}% — 배당 미흡. 그레이엄 방어적 기준에서 감점 요인")
+
+    # 연속 흑자
+    if years_prof >= 7:
+        score += 0.1
+        reasons.append(f"연속 흑자 추정 {years_prof}년 — 안정적 이익 창출력. 그레이엄 10년 흑자 기준 근접")
+    elif years_prof >= 5:
+        score += 0.05
+        reasons.append(f"연속 흑자 추정 {years_prof}년 — 중간 수준. 불황 시 적자 전환 이력 확인 필요")
+    else:
+        score -= 0.15
+        reasons.append(f"연속 흑자 추정 {years_prof}년 — 이익 안정성 부족. 그레이엄 방어적 기준 미달")
+
+    # 섹터 방어성
+    defensive = {"금융", "통신", "철강", "화학", "자동차부품"}
+    speculative = {"바이오", "게임", "엔터"}
+    if stock.sector in defensive:
+        score += 0.05
+        reasons.append(f"{stock.sector} — 방어적 섹터. 그레이엄 안정 포트폴리오에 적합")
+    elif stock.sector in speculative:
+        score -= 0.1
+        reasons.append(f"{stock.sector} — 투기성 섹터. 그레이엄은 '수익 예측 불가능 기업' 경계")
+
+    # P&L
+    if profit_rate < -20:
+        score -= 0.1
+        reasons.append(f"현재 {profit_rate:.1f}% 손실 — 안전마진 계산 재검토. 저점 매수 기회인지 확인")
+    elif profit_rate > 30:
+        reasons.append(f"현재 +{profit_rate:.1f}% — 안전마진 소진됐을 수 있음. 차익 실현 여부 검토")
+
+    if score > 0.5:
+        verdict, badge = "사라", "🟢"
+    elif score > 0.2:
+        verdict, badge = "관망", "🟡"
+    else:
+        verdict, badge = "팔아라", "🔴"
+
+    return {"verdict": verdict, "badge": badge, "score": score, "reasons": reasons}
+
+
 def render_portfolio_advisor_summary(rows: list[dict]) -> None:
     st.subheader("투자 대가별 종목 분석")
     st.caption(
         "보유 종목 각각을 레이 달리오(리스크 패리티), 워렌 버핏(가치투자), "
-        "코테가와 다카시(모멘텀), 카타야마 아키라(소형 성장주)의 철학으로 분석합니다. "
+        "코테가와 다카시(모멘텀), 카타야마 아키라(소형 성장주), "
+        "피터 린치(10루타·PEG), 벤저민 그레이엄(안전마진)의 철학으로 분석합니다. "
         "재무 수치는 데모 시뮬레이션이므로 실제 투자 전 공시 데이터를 확인하십시오."
     )
 
@@ -3024,6 +3203,8 @@ def render_portfolio_advisor_summary(rows: list[dict]) -> None:
         buffett  = _buffett_stock_analysis(stock, row)
         kotegawa = _kotegawa_stock_analysis(stock, row)
         katayama = _katayama_stock_analysis(stock, row)
+        lynch    = _lynch_stock_analysis(stock, row)
+        graham   = _graham_stock_analysis(stock, row)
 
         profit_label = f"+{row['profit_rate']:.1f}%" if row["profit_rate"] >= 0 else f"{row['profit_rate']:.1f}%"
         profit_money = money_signed(row["profit"])
@@ -3031,52 +3212,66 @@ def render_portfolio_advisor_summary(rows: list[dict]) -> None:
         with st.expander(
             f"{row['name']} ({row['code']}) · {profit_label} · {profit_money} "
             f"| 달리오 {dalio['badge']} 버핏 {buffett['badge']} "
-            f"코테가와 {kotegawa['badge']} 카타야마 {katayama['badge']}",
+            f"코테가와 {kotegawa['badge']} 카타야마 {katayama['badge']} "
+            f"린치 {lynch['badge']} 그레이엄 {graham['badge']}",
             expanded=False,
         ):
             analyses = [
-                ("레이 달리오", "리스크 패리티 · 부채 사이클", dalio),
-                ("워렌 버핏", "가치투자 · 경제적 해자", buffett),
-                ("코테가와 다카시", "모멘텀 · 수급 추세", kotegawa),
-                ("카타야마 아키라", "소형 성장주 · 집중 투자", katayama),
+                ("레이 달리오",    "리스크 패리티 · 부채 사이클",   dalio),
+                ("워렌 버핏",      "가치투자 · 경제적 해자",        buffett),
+                ("코테가와 다카시", "모멘텀 · 수급 추세",            kotegawa),
+                ("카타야마 아키라", "소형 성장주 · 집중 투자",       katayama),
+                ("피터 린치",      "10루타 · PEG · 생활 밀착형",    lynch),
+                ("벤저민 그레이엄", "안전마진 · 방어적 가치투자",    graham),
             ]
-            cols = st.columns(4)
-            for col, (name, subtitle, result) in zip(cols, analyses):
-                with col:
-                    st.markdown(f"**{name}**")
-                    st.caption(subtitle)
-                    vcolor = {"사라": "var(--red)", "관망": "var(--yellow)", "팔아라": "var(--blue)"}
-                    vc = vcolor.get(result["verdict"], "#888")
-                    st.markdown(
-                        f"<div style='font-size:1.5rem;font-weight:900;color:{vc};"
-                        f"letter-spacing:0.05em;margin:6px 0 2px;'>"
-                        f"{result['badge']} {result['verdict']}</div>"
-                        f"<div style='font-size:0.72rem;color:#666;margin-bottom:8px;'>"
-                        f"점수 {result['score']:+.2f}</div>",
-                        unsafe_allow_html=True,
-                    )
-                    st.markdown("---")
-                    for reason in result["reasons"]:
-                        st.markdown(f"- {reason}")
+            vcolor = {"사라": "var(--red)", "관망": "var(--yellow)", "팔아라": "var(--blue)"}
+            # 3열 2행으로 배치
+            for i in range(0, len(analyses), 3):
+                cols = st.columns(3)
+                for col, (name, subtitle, result) in zip(cols, analyses[i:i+3]):
+                    with col:
+                        vc = vcolor.get(result["verdict"], "#888")
+                        st.markdown(
+                            f"<div style='background:var(--surf2);border:1px solid var(--border2);"
+                            f"border-top:3px solid {vc};padding:12px 14px;margin-bottom:8px;'>"
+                            f"<div style='font-weight:800;font-size:0.88rem;color:var(--white);'>{name}</div>"
+                            f"<div style='font-family:var(--mono);font-size:0.6rem;color:var(--muted);"
+                            f"letter-spacing:0.08em;margin-bottom:8px;'>{subtitle}</div>"
+                            f"<div style='font-size:1.4rem;font-weight:900;color:{vc};"
+                            f"text-shadow:0 0 8px {vc};margin-bottom:2px;'>"
+                            f"{result['badge']} {result['verdict']}</div>"
+                            f"<div style='font-family:var(--mono);font-size:0.7rem;color:var(--muted);'>"
+                            f"점수 {result['score']:+.2f}</div>"
+                            f"</div>",
+                            unsafe_allow_html=True,
+                        )
+                        for reason in result["reasons"]:
+                            st.markdown(f"<div style='font-size:0.8rem;color:var(--fg);padding:2px 0;'>• {reason}</div>",
+                                        unsafe_allow_html=True)
 
     # Portfolio-level cross-advisor summary
     st.divider()
     st.markdown("**포트폴리오 종합 의견**")
     valid_stocks = [find_stock(r["code"]) for r in rows if find_stock(r["code"])]
     valid_rows   = [r for r in rows if find_stock(r["code"])]
-    dalio_all    = [_dalio_stock_analysis(s, r) for s, r in zip(valid_stocks, valid_rows)]
-    buffett_all  = [_buffett_stock_analysis(s, r) for s, r in zip(valid_stocks, valid_rows)]
+    dalio_all    = [_dalio_stock_analysis(s, r)    for s, r in zip(valid_stocks, valid_rows)]
+    buffett_all  = [_buffett_stock_analysis(s, r)  for s, r in zip(valid_stocks, valid_rows)]
     kotegawa_all = [_kotegawa_stock_analysis(s, r) for s, r in zip(valid_stocks, valid_rows)]
     katayama_all = [_katayama_stock_analysis(s, r) for s, r in zip(valid_stocks, valid_rows)]
+    lynch_all    = [_lynch_stock_analysis(s, r)    for s, r in zip(valid_stocks, valid_rows)]
+    graham_all   = [_graham_stock_analysis(s, r)   for s, r in zip(valid_stocks, valid_rows)]
 
     def avg_score(analyses: list[dict]) -> float:
         return sum(a["score"] for a in analyses) / len(analyses) if analyses else 0.0
 
-    col1, col2, col3, col4 = st.columns(4)
-    col1.metric("달리오 점수", f"{avg_score(dalio_all):+.2f}",    help="리스크 패리티 관점 평균 (높을수록 분산·방어성 양호)")
-    col2.metric("버핏 점수",   f"{avg_score(buffett_all):+.2f}",  help="가치투자 관점 평균 (높을수록 저평가·고ROE 비중 높음)")
-    col3.metric("코테가와 점수", f"{avg_score(kotegawa_all):+.2f}", help="모멘텀 관점 평균 (높을수록 추세 종목 비중 높음)")
-    col4.metric("카타야마 점수", f"{avg_score(katayama_all):+.2f}", help="성장주 관점 평균 (높을수록 고성장·소형주 비중 높음)")
+    col1, col2, col3 = st.columns(3)
+    col1.metric("달리오 점수",   f"{avg_score(dalio_all):+.2f}",    help="리스크 패리티 관점 평균")
+    col2.metric("버핏 점수",     f"{avg_score(buffett_all):+.2f}",  help="가치투자 관점 평균")
+    col3.metric("코테가와 점수", f"{avg_score(kotegawa_all):+.2f}", help="모멘텀 관점 평균")
+    col4, col5, col6 = st.columns(3)
+    col4.metric("카타야마 점수", f"{avg_score(katayama_all):+.2f}", help="소형 성장주 관점 평균")
+    col5.metric("린치 점수",     f"{avg_score(lynch_all):+.2f}",    help="PEG·10루타 관점 평균")
+    col6.metric("그레이엄 점수", f"{avg_score(graham_all):+.2f}",   help="안전마진·방어 관점 평균")
 
     sectors_in_portfolio = [find_stock(r["code"]).sector for r in rows if find_stock(r["code"])]
     unique_sectors = set(sectors_in_portfolio)
@@ -3184,7 +3379,7 @@ def render_portfolio_page(market: str, use_live: bool) -> None:
 
 
 def render_stock_advisor_panel(stock: Stock) -> None:
-    """세 투자 대가의 관점으로 선택 종목을 분석하는 패널."""
+    """6인 투자 대가의 관점으로 선택 종목을 분석하는 패널."""
     st.subheader("투자 대가별 종목 분석")
     dummy_row = {"profit_rate": 0.0, "profit": 0}
 
@@ -3192,12 +3387,16 @@ def render_stock_advisor_panel(stock: Stock) -> None:
     buffett  = _buffett_stock_analysis(stock, dummy_row)
     kotegawa = _kotegawa_stock_analysis(stock, dummy_row)
     katayama = _katayama_stock_analysis(stock, dummy_row)
+    lynch    = _lynch_stock_analysis(stock, dummy_row)
+    graham   = _graham_stock_analysis(stock, dummy_row)
 
-    tab_d, tab_b, tab_k, tab_ka = st.tabs([
-        f"레이 달리오  {dalio['badge']}",
-        f"워렌 버핏  {buffett['badge']}",
-        f"코테가와 다카시  {kotegawa['badge']}",
-        f"카타야마 아키라  {katayama['badge']}",
+    tab_d, tab_b, tab_k, tab_ka, tab_l, tab_g = st.tabs([
+        f"달리오  {dalio['badge']}",
+        f"버핏  {buffett['badge']}",
+        f"코테가와  {kotegawa['badge']}",
+        f"카타야마  {katayama['badge']}",
+        f"피터 린치  {lynch['badge']}",
+        f"그레이엄  {graham['badge']}",
     ])
 
     def _render_tab(subtitle: str, result: dict) -> None:
@@ -3208,7 +3407,7 @@ def render_stock_advisor_panel(stock: Stock) -> None:
             f"<div style='font-size:2rem;font-weight:900;color:{vc};"
             f"letter-spacing:0.06em;margin:10px 0 4px;'>"
             f"{result['badge']} {result['verdict']}</div>"
-            f"<div style='font-size:0.75rem;color:#666;margin-bottom:12px;'>"
+            f"<div style='font-size:0.75rem;color:var(--muted);margin-bottom:12px;'>"
             f"종합 점수 {result['score']:+.2f}</div>",
             unsafe_allow_html=True,
         )
@@ -3222,27 +3421,37 @@ def render_stock_advisor_panel(stock: Stock) -> None:
             '> *"분산투자는 성배다. 상관관계가 낮은 수익원 15–20개를 찾아라."*  \n'
             '> — 레이 달리오'
         )
-
     with tab_b:
         _render_tab("가치투자 · 경제적 해자 · 장기 보유", buffett)
         st.markdown(
             '> *"훌륭한 기업을 공정한 가격에 사는 것이, 그저 그런 기업을 싼 가격에 사는 것보다 낫다."*  \n'
             '> — 워렌 버핏'
         )
-
     with tab_k:
         _render_tab("모멘텀 · 수급 추세 · 손절 원칙", kotegawa)
         st.markdown(
             '> *"작게 잃고 크게 이겨라. 틀렸을 때 즉시 인정하고 나와라."*  \n'
             '> — 코테가와 다카시(BNF)'
         )
-
     with tab_ka:
         _render_tab("소형 성장주 발굴 · 집중 투자 · 경영진 중시", katayama)
         st.markdown(
             '> *"남들이 모르는 성장 기업을 먼저 찾아라. 기관이 주목하기 전에 사고, '
             '성장 스토리가 끝날 때 팔아라."*  \n'
             '> — 카타야마 아키라(片山晃·五月天)'
+        )
+    with tab_l:
+        _render_tab("10루타 · PEG 지표 · 생활 밀착형 성장주", lynch)
+        st.markdown(
+            '> *"내가 아는 것에 투자하라. 월가보다 당신이 먼저 알 수 있다."*  \n'
+            '> — 피터 린치'
+        )
+    with tab_g:
+        _render_tab("안전마진 · PBR·PER 이중 기준 · 방어적 투자", graham)
+        st.markdown(
+            '> *"투자란 철저한 분석 후 원금을 안전하게 지키면서 적절한 수익을 추구하는 것이다. '
+            '그 외는 모두 투기다."*  \n'
+            '> — 벤저민 그레이엄'
         )
 
     st.caption("재무 수치는 데모 시뮬레이션 값입니다. 실제 투자 전 공시 재무제표를 반드시 확인하십시오.")
