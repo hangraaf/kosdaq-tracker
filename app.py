@@ -1675,19 +1675,22 @@ def render_stocks_page(stocks: list[Stock], use_live: bool, keyword: str = "") -
             unsafe_allow_html=True,
         )
 
-    st.divider()
-
-    # ── 전체 종목 목록 ───────────────────────────
+    # ── 키워드 검색 결과 (검색 중일 때만 표시) ─────
     searching = bool(keyword.strip())
-    expander_label = f'"{keyword.strip()}" 검색 결과 — {len(stocks)}개 종목' if searching else "전체 종목 목록 보기"
-    with st.expander(expander_label, expanded=searching):
-        render_market_overview(stocks, use_live)
+    if searching:
         st.divider()
-        tab_cards, tab_table = st.tabs(["카드 보기", "표 보기"])
-        with tab_cards:
-            render_stock_cards(stocks, use_live)
-        with tab_table:
-            render_stock_table(stocks, use_live)
+        st.markdown(
+            f'<div class="bh-section-label">검색 결과 — "{keyword.strip()}" ({len(stocks)}개)</div>',
+            unsafe_allow_html=True,
+        )
+        if not stocks:
+            st.info("검색된 종목이 없습니다.")
+        else:
+            tab_cards, tab_table = st.tabs(["카드 보기", "표 보기"])
+            with tab_cards:
+                render_stock_cards(stocks, use_live)
+            with tab_table:
+                render_stock_table(stocks, use_live)
 
 
 def select_stock_widget(
