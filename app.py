@@ -990,8 +990,8 @@ def get_chart_data(stock: Stock, days: int, use_live: bool) -> tuple[pd.DataFram
     if use_live:
         try:
             return fetch_live_chart(stock.code, days), "KIS"
-        except KISError as exc:
-            st.warning(f"KIS 일봉 조회 실패: {exc}. 데모 차트로 표시합니다.")
+        except KISError:
+            pass  # 조용히 데모로 fallback — 차트 페이지 caption에서 출처 표시
     return generate_demo_ohlcv(stock.code, stock.base_price, days), "DEMO"
 
 
@@ -1000,8 +1000,8 @@ def stock_snapshot(stock: Stock, use_live: bool) -> dict:
         try:
             live = fetch_live_snapshot(stock.code)
             return {"code": stock.code, "name": stock.name, "market": stock.market, "sector": stock.sector, **live}
-        except KISError as exc:
-            st.warning(f"{stock.name} 현재가 조회 실패: {exc}. 데모 시세로 표시합니다.")
+        except KISError:
+            pass  # 조용히 데모 시세로 fallback
 
     chart = generate_demo_ohlcv(stock.code, stock.base_price, 90)
     last = chart.iloc[-1]
