@@ -385,35 +385,35 @@ BH_CSS = """
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Nanum+Square:wght@400;700;800&family=Nanum+Gothic:wght@400;700;800&family=Share+Tech+Mono&display=swap');
 
-/* ── Mondrian × Cyberpunk token ──────────────── */
+/* ── Refined Dark Slate ───────────────────────── */
 :root {
-  /* 배경 — 심우주 블랙 */
-  --bg:       #03030A;
-  --surf:     #08080F;
-  --surf2:    #0E0E18;
-  --surf-warm:#3b302b;      /* 웜 다크 브라운 — 오렌지 계열 서피스 */
-  --grid:     #14141F;      /* 몬드리안 격자선 */
-  --border:   #1C1C2A;
-  --border2:  #28283C;
+  /* 배경 — 따뜻한 슬레이트 다크 */
+  --bg:       #111113;
+  --surf:     #18191E;
+  --surf2:    #1F2027;
+  --surf-warm:#1E1B18;      /* 웜 틴트 서피스 */
+  --grid:     #26272E;
+  --border:   #303138;
+  --border2:  #3A3B45;
 
-  /* 몬드리안 원색 — 네온 에디션 */
-  --red:      #FF2D55;      /* 핫 네온 레드 (상승) */
-  --blue:     #00A8FF;      /* 일렉트릭 블루 (하락) */
-  --yellow:   #FF6B00;      /* 네온 오렌지 (메인 강조) */
-  --cyan:     #00FFD4;      /* 사이버 틸 (보조 강조) */
-  --magenta:  #FF00CC;      /* 사이버펑크 마젠타 */
+  /* 의미 색상 — 채도 낮춘 전문가용 */
+  --red:      #C84848;      /* 뮤트 레드 (상승, 한국 관례) */
+  --blue:     #3878B0;      /* 뮤트 블루 (하락) */
+  --yellow:   #B87830;      /* 웜 앰버 (메인 강조) */
+  --cyan:     #5888A0;      /* 슬레이트 블루 (보조) */
+  --magenta:  #7860A0;      /* 소프트 퍼플 (미사용/예비) */
 
   /* 텍스트 */
-  --white:    #E8E8F0;
-  --fg:       #C8C8D8;      /* 본문 기본 텍스트 */
-  --muted:    #8C8CA8;      /* 보조 텍스트 — 가독성 확보 */
-  --muted2:   #60607A;      /* 매우 연한 보조 */
+  --white:    #E4E4E8;
+  --fg:       #B0B0BC;
+  --muted:    #707080;
+  --muted2:   #4A4A58;
 
-  /* 글로우 */
-  --glow-y:   0 0 8px rgba(255,107,0,0.65), 0 0 24px rgba(255,107,0,0.25);
-  --glow-r:   0 0 8px rgba(255,45,85,0.6),  0 0 24px rgba(255,45,85,0.20);
-  --glow-b:   0 0 8px rgba(0,168,255,0.55), 0 0 24px rgba(0,168,255,0.18);
-  --glow-c:   0 0 6px rgba(0,255,212,0.45), 0 0 18px rgba(0,255,212,0.12);
+  /* 글로우 — 최소화 (입체감만) */
+  --glow-y:   0 1px 6px rgba(184,120,48,0.18);
+  --glow-r:   0 1px 6px rgba(200,72,72,0.18);
+  --glow-b:   0 1px 6px rgba(56,120,176,0.18);
+  --glow-c:   0 1px 6px rgba(88,136,160,0.15);
 
   --font:     'Nanum Square', 'NanumSquare', 'Nanum Gothic', sans-serif;
   --mono:     'Share Tech Mono', 'Nanum Gothic', 'NanumGothic', monospace;
@@ -440,51 +440,49 @@ body, .stApp {
 /* ── Typography ──────────────────────────────── */
 h1 {
   font-family: var(--font) !important;
-  font-size: 1.45rem !important;
+  font-size: 1.4rem !important;
   font-weight: 800 !important;
   letter-spacing: -0.01em !important;
-  border-left: 5px solid var(--yellow) !important;
+  border-left: 4px solid var(--yellow) !important;
   padding-left: 14px !important;
   margin-bottom: 4px !important;
-  text-shadow: var(--glow-y) !important;
+  color: var(--white) !important;
 }
 h2 {
   font-family: var(--font) !important;
-  font-size: 0.7rem !important;
+  font-size: 0.68rem !important;
   font-weight: 700 !important;
-  letter-spacing: 0.14em !important;
+  letter-spacing: 0.12em !important;
   text-transform: uppercase !important;
-  color: var(--cyan) !important;
-  margin-top: 28px !important;
+  color: var(--muted) !important;
+  margin-top: 24px !important;
 }
-h3 { font-family: var(--font) !important; font-weight: 700 !important; font-size: 0.95rem !important; }
+h3 { font-family: var(--font) !important; font-weight: 700 !important; font-size: 0.92rem !important; }
 
-/* ── Metric blocks — 몬드리안 컬러 블록 ─────── */
+/* ── Metric blocks ───────────────────────────── */
 div[data-testid="stMetric"] {
   background: var(--surf2) !important;
-  border: 2px solid var(--border2) !important;
-  border-top: 4px solid var(--yellow) !important;
+  border: 1px solid var(--border2) !important;
+  border-top: 3px solid var(--yellow) !important;
   border-radius: 0 !important;
   padding: 12px 14px !important;
-  box-shadow: inset 0 0 20px rgba(255,230,0,0.03) !important;
   overflow: visible !important;
 }
 div[data-testid="stMetric"] label {
   font-family: var(--font) !important;
-  font-size: 0.68rem !important;
+  font-size: 0.67rem !important;
   letter-spacing: 0.06em !important;
   text-transform: uppercase !important;
-  color: var(--cyan) !important;
+  color: var(--muted) !important;
   font-weight: 700 !important;
   white-space: normal !important;
 }
 div[data-testid="stMetric"] [data-testid="stMetricValue"] {
   font-family: var(--mono) !important;
-  font-size: 1.08rem !important;
+  font-size: 1.05rem !important;
   font-weight: 400 !important;
   letter-spacing: 0.01em !important;
-  color: var(--yellow) !important;
-  text-shadow: var(--glow-y) !important;
+  color: var(--white) !important;
   overflow: visible !important;
   white-space: nowrap !important;
 }
@@ -514,23 +512,22 @@ div[data-testid="stMetric"] [data-testid="stMetricDelta"] {
 }
 .stButton > button[kind="primary"] {
   background: var(--yellow) !important;
-  color: #03030A !important;
-  border: 2px solid var(--yellow) !important;
-  box-shadow: var(--glow-y) !important;
+  color: var(--bg) !important;
+  border: 1px solid var(--yellow) !important;
 }
 .stButton > button[kind="primary"]:hover {
-  background: #03030A !important;
+  background: var(--surf2) !important;
   color: var(--yellow) !important;
-  box-shadow: var(--glow-y) !important;
+  border-color: var(--yellow) !important;
 }
 .stButton > button[kind="secondary"] {
   background: transparent !important;
-  color: var(--cyan) !important;
-  border: 2px solid var(--border2) !important;
+  color: var(--fg) !important;
+  border: 1px solid var(--border2) !important;
 }
 .stButton > button[kind="secondary"]:hover {
-  border-color: var(--cyan) !important;
-  box-shadow: var(--glow-c) !important;
+  border-color: var(--yellow) !important;
+  color: var(--yellow) !important;
 }
 
 /* ── Inputs ──────────────────────────────────── */
@@ -543,8 +540,9 @@ div[data-testid="stMetric"] [data-testid="stMetricDelta"] {
   font-size: 0.86rem !important;
 }
 .stTextInput input:focus, .stNumberInput input:focus {
-  border-color: var(--cyan) !important;
-  box-shadow: var(--glow-c) !important;
+  border-color: var(--yellow) !important;
+  box-shadow: none !important;
+  outline: none !important;
 }
 [data-baseweb="select"] > div {
   background: var(--surf2) !important;
@@ -572,23 +570,22 @@ div[data-testid="stMetric"] [data-testid="stMetricDelta"] {
 }
 [data-testid="stTabs"] [aria-selected="true"] {
   color: var(--yellow) !important;
-  border-bottom: 3px solid var(--yellow) !important;
-  text-shadow: var(--glow-y) !important;
+  border-bottom: 2px solid var(--yellow) !important;
 }
 
 /* ── Expanders ───────────────────────────────── */
 [data-testid="stExpander"] {
-  border: 2px solid var(--border2) !important;
-  border-left: 3px solid var(--cyan) !important;
+  border: 1px solid var(--border2) !important;
+  border-left: 3px solid var(--border2) !important;
   border-radius: 0 !important;
   background: var(--surf) !important;
 }
 [data-testid="stExpander"] summary {
   font-family: var(--font) !important;
   font-weight: 700 !important;
-  font-size: 0.9rem !important;
+  font-size: 0.88rem !important;
   letter-spacing: 0.02em !important;
-  color: var(--cyan) !important;
+  color: var(--fg) !important;
 }
 
 /* ── Dataframe ───────────────────────────────── */
@@ -598,12 +595,12 @@ div[data-testid="stMetric"] [data-testid="stMetricDelta"] {
 }
 [data-testid="stDataFrame"] th {
   font-family: var(--font) !important;
-  font-size: 0.68rem !important;
+  font-size: 0.67rem !important;
   font-weight: 700 !important;
   letter-spacing: 0.06em !important;
   text-transform: uppercase !important;
   background: var(--grid) !important;
-  color: var(--cyan) !important;
+  color: var(--muted) !important;
 }
 
 /* ── Alerts ──────────────────────────────────── */
@@ -615,13 +612,13 @@ div[data-testid="stMetric"] [data-testid="stMetricDelta"] {
 
 /* ── Blockquotes ─────────────────────────────── */
 blockquote {
-  border-left: 4px solid var(--cyan) !important;
-  background: var(--grid) !important;
+  border-left: 3px solid var(--yellow) !important;
+  background: var(--surf2) !important;
   padding: 12px 18px !important;
   margin: 12px 0 !important;
-  color: var(--cyan) !important;
+  color: var(--fg) !important;
   font-family: var(--font) !important;
-  font-size: 0.88rem !important;
+  font-size: 0.86rem !important;
   font-weight: 400 !important;
 }
 
@@ -663,15 +660,13 @@ hr {
 }
 [data-testid="stSidebar"] .stButton > button:hover {
   background: var(--surf2) !important;
-  border-left-color: var(--cyan) !important;
-  color: var(--cyan) !important;
-  box-shadow: var(--glow-c) !important;
+  border-left-color: var(--yellow) !important;
+  color: var(--yellow) !important;
 }
 
 /* ── Toggle ──────────────────────────────────── */
 [data-testid="stToggle"] span[data-checked="true"] {
-  background: var(--cyan) !important;
-  box-shadow: var(--glow-c) !important;
+  background: var(--yellow) !important;
 }
 
 /* ── Radio ───────────────────────────────────── */
@@ -701,27 +696,25 @@ hr {
 }
 .bh-card.up {
   border-left-color: var(--red);
-  box-shadow: inset 2px 0 12px rgba(255,45,85,0.07);
 }
-.bh-card.up::before   { background: var(--red); box-shadow: var(--glow-r); }
+.bh-card.up::before   { background: var(--red); }
 .bh-card.down {
   border-left-color: var(--blue);
-  box-shadow: inset 2px 0 12px rgba(0,168,255,0.07);
 }
-.bh-card.down::before { background: var(--blue); box-shadow: var(--glow-b); }
+.bh-card.down::before { background: var(--blue); }
 
 .bh-tag {
   font-family: var(--font);
-  font-size: 0.64rem;
+  font-size: 0.63rem;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.07em;
   text-transform: uppercase;
-  color: var(--cyan);
+  color: var(--muted);
   margin-bottom: 6px;
 }
 .bh-name {
   font-family: var(--font);
-  font-size: 1.0rem;
+  font-size: 0.98rem;
   font-weight: 700;
   margin: 0 0 8px;
   color: var(--white);
@@ -729,15 +722,14 @@ hr {
 }
 .bh-price {
   font-family: var(--mono);
-  font-size: 1.25rem;
+  font-size: 1.2rem;
   font-weight: 400;
   letter-spacing: 0.02em;
-  color: var(--yellow);
-  text-shadow: var(--glow-y);
+  color: var(--fg);
 }
 .bh-delta { font-family: var(--mono); font-size: 0.82rem; margin-top: 4px; }
-.bh-delta.up   { color: var(--red);  text-shadow: var(--glow-r); }
-.bh-delta.down { color: var(--blue); text-shadow: var(--glow-b); }
+.bh-delta.up   { color: var(--red); }
+.bh-delta.down { color: var(--blue); }
 .bh-delta.flat { color: var(--muted); }
 
 /* ── Sidebar 로고 ────────────────────────────── */
@@ -747,37 +739,36 @@ hr {
   gap: 10px;
   margin-bottom: 20px;
   padding-bottom: 16px;
-  border-bottom: 2px solid var(--border2);
+  border-bottom: 1px solid var(--border2);
 }
 .bh-logo-mark {
-  width: 38px; height: 38px;
+  width: 36px; height: 36px;
   background: var(--yellow);
-  box-shadow: var(--glow-y);
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   font-family: var(--mono);
-  font-size: 1rem;
-  color: #03030A;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--bg);
 }
 .bh-logo-text { line-height: 1.15; }
 .bh-logo-title {
   font-family: var(--font);
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   font-weight: 800;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--yellow);
-  text-shadow: var(--glow-y);
+  color: var(--white);
 }
 .bh-logo-sub {
   font-family: var(--font);
-  font-size: 0.65rem;
+  font-size: 0.63rem;
   font-weight: 400;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: var(--cyan);
+  color: var(--muted);
   margin-top: 3px;
 }
 
@@ -809,9 +800,8 @@ hr {
   color: var(--muted);
 }
 .bh-pill.live {
-  border-color: var(--cyan);
-  color: var(--cyan);
-  box-shadow: var(--glow-c);
+  border-color: var(--yellow);
+  color: var(--yellow);
 }
 
 /* ── Page subtitle ───────────────────────────── */
@@ -2058,7 +2048,7 @@ def render_chart(stock: Stock, period_label: str, use_live: bool) -> tuple[pd.Da
     fig.add_trace(
         go.Scatter(
             x=df["date"], y=df["bb_upper"], name="BB상단",
-            line=dict(color="#58a6ff", width=0.8, dash="dot"), opacity=0.6,
+            line=dict(color="#5888A8", width=0.8, dash="dot"), opacity=0.6,
             hovertemplate="<b>볼린저밴드 상단</b><br>%{x}<br>%{y:,.0f}원<br><i>주가가 이 선 근처면 과매수 구간</i><extra></extra>",
         ),
         row=1, col=1,
@@ -2066,7 +2056,7 @@ def render_chart(stock: Stock, period_label: str, use_live: bool) -> tuple[pd.Da
     fig.add_trace(
         go.Scatter(
             x=df["date"], y=df["bb_lower"], name="BB하단",
-            line=dict(color="#58a6ff", width=0.8, dash="dot"), opacity=0.6,
+            line=dict(color="#5888A8", width=0.8, dash="dot"), opacity=0.6,
             hovertemplate="<b>볼린저밴드 하단</b><br>%{x}<br>%{y:,.0f}원<br><i>주가가 이 선 근처면 과매도 구간</i><extra></extra>",
         ),
         row=1, col=1,
@@ -2078,8 +2068,8 @@ def render_chart(stock: Stock, period_label: str, use_live: bool) -> tuple[pd.Da
             x=df["date"],
             open=df["open"], high=df["high"], low=df["low"], close=df["close"],
             name="캔들 (일봉)",
-            increasing_line_color="#f85149", increasing_fillcolor="#f85149",
-            decreasing_line_color="#3fb950", decreasing_fillcolor="#3fb950",
+            increasing_line_color="#C84848", increasing_fillcolor="#C84848",
+            decreasing_line_color="#3E9050", decreasing_fillcolor="#3E9050",
         ),
         row=1, col=1,
     )
@@ -2088,7 +2078,7 @@ def render_chart(stock: Stock, period_label: str, use_live: bool) -> tuple[pd.Da
     fig.add_trace(
         go.Scatter(
             x=df["date"], y=df["ma5"], name="MA5 (단기·5일)",
-            line=dict(color="#f2cc60", width=1.5),
+            line=dict(color="#B87830", width=1.5),
             hovertemplate="<b>MA5 단기 이동평균</b><br>%{x}<br>%{y:,.0f}원<br><i>최근 5일 종가 평균. 단기 추세 파악용</i><extra></extra>",
         ),
         row=1, col=1,
@@ -2096,7 +2086,7 @@ def render_chart(stock: Stock, period_label: str, use_live: bool) -> tuple[pd.Da
     fig.add_trace(
         go.Scatter(
             x=df["date"], y=df["ma20"], name="MA20 (중기·20일)",
-            line=dict(color="#58a6ff", width=1.5),
+            line=dict(color="#5888A8", width=1.5),
             hovertemplate="<b>MA20 중기 이동평균</b><br>%{x}<br>%{y:,.0f}원<br><i>최근 20일 평균. 골든/데드크로스 기준선</i><extra></extra>",
         ),
         row=1, col=1,
@@ -2104,7 +2094,7 @@ def render_chart(stock: Stock, period_label: str, use_live: bool) -> tuple[pd.Da
     fig.add_trace(
         go.Scatter(
             x=df["date"], y=df["ma60"], name="MA60 (장기·60일)",
-            line=dict(color="#a371f7", width=1.5),
+            line=dict(color="#7060A8", width=1.5),
             hovertemplate="<b>MA60 장기 이동평균</b><br>%{x}<br>%{y:,.0f}원<br><i>최근 60일(약 3개월) 평균. 큰 추세 판단용</i><extra></extra>",
         ),
         row=1, col=1,
@@ -2122,11 +2112,11 @@ def render_chart(stock: Stock, period_label: str, use_live: bool) -> tuple[pd.Da
                 go.Scatter(
                     x=golden["date"], y=golden["ma5"],
                     mode="markers+text",
-                    marker=dict(symbol="triangle-up", size=14, color="#ffd700",
+                    marker=dict(symbol="triangle-up", size=14, color="#C89020",
                                 line=dict(color="#fff", width=1)),
                     text=["골든크로스"] * len(golden),
                     textposition="bottom center",
-                    textfont=dict(size=9, color="#ffd700"),
+                    textfont=dict(size=9, color="#C89020"),
                     hovertemplate="<b>🟡 골든크로스 (매수 신호)</b><br>%{x}<br>MA5가 MA20을 위로 돌파<br><i>단기 평균이 중기 평균을 넘어서는 순간.<br>상승 추세 시작 신호로 봅니다.</i><extra></extra>",
                     name="골든크로스 (매수신호)",
                 ),
@@ -2137,11 +2127,11 @@ def render_chart(stock: Stock, period_label: str, use_live: bool) -> tuple[pd.Da
                 go.Scatter(
                     x=dead["date"], y=dead["ma5"],
                     mode="markers+text",
-                    marker=dict(symbol="triangle-down", size=14, color="#79c0ff",
+                    marker=dict(symbol="triangle-down", size=14, color="#4878A8",
                                 line=dict(color="#fff", width=1)),
                     text=["데드크로스"] * len(dead),
                     textposition="top center",
-                    textfont=dict(size=9, color="#79c0ff"),
+                    textfont=dict(size=9, color="#4878A8"),
                     hovertemplate="<b>🔵 데드크로스 (매도 신호)</b><br>%{x}<br>MA5가 MA20을 아래로 돌파<br><i>단기 평균이 중기 평균 아래로 꺾이는 순간.<br>하락 추세 시작 신호로 봅니다.</i><extra></extra>",
                     name="데드크로스 (매도신호)",
                 ),
@@ -2152,16 +2142,16 @@ def render_chart(stock: Stock, period_label: str, use_live: bool) -> tuple[pd.Da
     last_close = float(df["close"].iloc[-1])
     fig.add_hline(
         y=last_close,
-        line_dash="dash", line_color="#f2cc60", line_width=1.2,
+        line_dash="dash", line_color="#B87830", line_width=1.2,
         annotation_text=f"현재가 {last_close:,.0f}원",
         annotation_position="top right",
-        annotation_font_size=11, annotation_font_color="#f2cc60",
+        annotation_font_size=11, annotation_font_color="#B87830",
         row=1, col=1,
     )
 
     # ── 거래량 (양봉일=빨강, 음봉일=초록) ───────────
     vol_colors = [
-        "#f85149" if float(c) >= float(o) else "#3fb950"
+        "#C84848" if float(c) >= float(o) else "#3E9050"
         for c, o in zip(df["close"], df["open"])
     ]
     fig.add_trace(
@@ -2175,7 +2165,7 @@ def render_chart(stock: Stock, period_label: str, use_live: bool) -> tuple[pd.Da
 
     # ── MACD ────────────────────────────────────────
     hist_colors = [
-        "#f85149" if float(v) >= 0 else "#3fb950"
+        "#C84848" if float(v) >= 0 else "#3E9050"
         for v in df["histogram"].fillna(0)
     ]
     fig.add_trace(
@@ -2189,7 +2179,7 @@ def render_chart(stock: Stock, period_label: str, use_live: bool) -> tuple[pd.Da
     fig.add_trace(
         go.Scatter(
             x=df["date"], y=df["macd"], name="MACD선",
-            line=dict(color="#58a6ff", width=1.5),
+            line=dict(color="#5888A8", width=1.5),
             hovertemplate="<b>MACD선</b><br>%{x}<br>%{y:.2f}<br><i>12일 평균 - 26일 평균.<br>시그널선과 교차 시 매수/매도 신호.</i><extra></extra>",
         ),
         row=3, col=1,
@@ -2197,7 +2187,7 @@ def render_chart(stock: Stock, period_label: str, use_live: bool) -> tuple[pd.Da
     fig.add_trace(
         go.Scatter(
             x=df["date"], y=df["signal"], name="시그널선",
-            line=dict(color="#f85149", width=1.5),
+            line=dict(color="#C84848", width=1.5),
             hovertemplate="<b>시그널선</b><br>%{x}<br>%{y:.2f}<br><i>MACD의 9일 평균.<br>MACD가 이 선을 위로 넘으면 매수 신호.</i><extra></extra>",
         ),
         row=3, col=1,
@@ -2210,7 +2200,7 @@ def render_chart(stock: Stock, period_label: str, use_live: bool) -> tuple[pd.Da
     fig.add_trace(
         go.Scatter(
             x=df["date"], y=df["rsi"], name="RSI(14)",
-            line=dict(color="#e8c849", width=1.8),
+            line=dict(color="#A89030", width=1.8),
             hovertemplate=(
                 "<b>RSI</b>  %{y:.1f}<br>%{x}<br>"
                 "<i>0~100 사이 값. 14일 기준 과매수·과매도 지표.<br>"
@@ -2221,13 +2211,13 @@ def render_chart(stock: Stock, period_label: str, use_live: bool) -> tuple[pd.Da
         ),
         row=4, col=1,
     )
-    fig.add_hline(y=70, line_dash="dot", line_color="#f85149", line_width=1,
+    fig.add_hline(y=70, line_dash="dot", line_color="#C84848", line_width=1,
                   annotation_text="과매수(70)", annotation_font_size=10,
-                  annotation_font_color="#f85149", annotation_position="right",
+                  annotation_font_color="#C84848", annotation_position="right",
                   row=4, col=1)
-    fig.add_hline(y=30, line_dash="dot", line_color="#3fb950", line_width=1,
+    fig.add_hline(y=30, line_dash="dot", line_color="#3E9050", line_width=1,
                   annotation_text="과매도(30)", annotation_font_size=10,
-                  annotation_font_color="#3fb950", annotation_position="right",
+                  annotation_font_color="#3E9050", annotation_position="right",
                   row=4, col=1)
 
     # ── 레이아웃 ─────────────────────────────────────
@@ -2273,7 +2263,7 @@ def render_forecast(df: pd.DataFrame, stock: Stock) -> None:
     history = history.dropna(subset=["date", "close"]).tail(45)
 
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=history["date"], y=history["close"], name="최근 종가", line=dict(color="#58a6ff")))
+    fig.add_trace(go.Scatter(x=history["date"], y=history["close"], name="최근 종가", line=dict(color="#5888A8")))
     fig.add_trace(
         go.Scatter(
             x=pd.concat([forecast["date"], forecast["date"].iloc[::-1]]),
@@ -2290,7 +2280,7 @@ def render_forecast(df: pd.DataFrame, stock: Stock) -> None:
             x=forecast["date"],
             y=forecast["forecast"],
             name="요인 반영 예측",
-            line=dict(color="#f2cc60", dash="dash"),
+            line=dict(color="#B87830", dash="dash"),
             mode="lines+markers",
         )
     )
