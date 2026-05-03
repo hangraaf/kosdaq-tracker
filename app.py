@@ -2271,18 +2271,23 @@ def select_stock_widget(
     sectors: list[str] | None = None,
     label: str = "종목 선택",
 ) -> Stock:
-    # 키워드가 있으면 전체 종목에서 검색, 없으면 시장 필터 적용
     stocks = filtered_stocks(market, keyword, sectors or [])
     if not stocks:
-        # 검색 결과가 없으면 전체 종목 fallback
         stocks = all_stocks()
-    options = {f"{stock.market} · {stock.name} ({stock.code})": stock for stock in stocks}
+
+    # selected_code 가 현재 목록에 없으면 해당 종목을 맨 앞에 삽입
     selected_code = st.session_state.get("selected_code")
-    default_index = 0
+    if selected_code and not any(s.code == selected_code for s in stocks):
+        target = find_stock(selected_code)
+        if target:
+            stocks = [target] + stocks
+
+    options = {f"{s.market} · {s.name} ({s.code})": s for s in stocks}
     labels = list(options.keys())
+    default_index = 0
     if selected_code:
-        for idx, label_text in enumerate(labels):
-            if selected_code in label_text:
+        for idx, lbl in enumerate(labels):
+            if selected_code in lbl:
                 default_index = idx
                 break
     choice = st.selectbox(label, labels, index=default_index)
