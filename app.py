@@ -1372,7 +1372,7 @@ def current_market_stocks(market_label: str) -> list[Stock]:
 
 
 @st.cache_data(ttl=300)
-def _compute_chart_metrics(codes: tuple[str, ...], days: int) -> dict[str, dict]:
+def _compute_chart_metrics(codes: tuple[str, ...], days: int, use_live: bool = False) -> dict[str, dict]:
     """종목별 스크리닝 지표를 실제 차트 데이터로 계산 (캐시 5분)."""
     out: dict[str, dict] = {}
     for code in codes:
@@ -1380,7 +1380,7 @@ def _compute_chart_metrics(codes: tuple[str, ...], days: int) -> dict[str, dict]
         if not stk:
             continue
         try:
-            raw, _ = get_chart_data(stk, days, False)
+            raw, _ = get_chart_data(stk, days, use_live)
             if raw is None or len(raw) < 15:
                 continue
             df = raw.copy()
@@ -1396,6 +1396,11 @@ def _compute_chart_metrics(codes: tuple[str, ...], days: int) -> dict[str, dict]
             vol_mean = float(df["volume"].mean())
             vol_last = float(df["volume"].iloc[-1])
             cr       = float((df["close"].iloc[-1] / df["close"].iloc[-2] - 1) * 100) if len(df) >= 2 else 0.0
+
+            # 저점 신뢰도: 저점이 2~20봉 전에 형성되어야 "근접" 인정
+            # (0~1봉 전 = 아직 하락 중, 21봉 이상 전 = 이미 반등 완료)
+            bars_from_low = len(df) - 1 - int(df["close"].values.argmin())
+            low_is_recent = 2 <= bars_from_low <= 20
 
             # RSI 14일
             delta = df["close"].diff()
@@ -1430,6 +1435,7 @@ def _compute_chart_metrics(codes: tuple[str, ...], days: int) -> dict[str, dict]
             out[code] = {
                 "low_gap":        (close - low_min)  / low_min  if low_min  > 0 else 1.0,
                 "high_gap":       (high_max - close) / high_max if high_max > 0 else 1.0,
+                "low_is_recent":  low_is_recent,
                 "vol_ratio":      vol_last / vol_mean if vol_mean > 0 else 1.0,
                 "rsi":            rsi,
                 "change_rate":    cr,
@@ -1442,13 +1448,14 @@ def _compute_chart_metrics(codes: tuple[str, ...], days: int) -> dict[str, dict]
     return out
 
 
-def _ai_screen_stocks(query: str, market: str) -> list[dict]:
+def _ai_screen_stocks(query: str, market: str, use_live: bool = False) -> list[dict]:
     """자연어 쿼리로 종목 스크리닝 — 복합 조건 지원."""
     import re
     q = query.lower()
 
-    cnt_m = re.search(r"(\d+)\s*개", query)
-    n = min(int(cnt_m.group(1)), 15) if cnt_m else 5
+    # "3개월" 처럼 기간 표현의 숫자를 제외하고 결과 개수만 파싱
+    cnt_m = re.search(r"(\d+)\s*개(?!월)", query)
+    n = min(int(cnt_m.group(1)), 20) if cnt_m else 5
 
     days = 90
     for label, d in [("1개월", 30), ("3개월", 90), ("6개월", 180), ("1년", 365), ("52주", 365)]:
@@ -1457,7 +1464,7 @@ def _ai_screen_stocks(query: str, market: str) -> list[dict]:
 
     pool    = all_stocks() if market == "전체" else current_market_stocks(market)
     codes   = tuple(s.code for s in pool)
-    metrics = _compute_chart_metrics(codes, days)
+    metrics = _compute_chart_metrics(codes, days, use_live)
 
     SECTOR_KW = {
         "반도체": "반도체", "바이오": "바이오", "게임": "게임",
@@ -1499,7 +1506,9 @@ def _ai_screen_stocks(query: str, market: str) -> list[dict]:
 
         if cond_low:
             gap = m["low_gap"]
-            if gap > 0.15:      # 15% 초과 = 최저가 근접 아님 → 제외
+            if gap > 0.15:              # 15% 초과 → 제외
+                continue
+            if not m["low_is_recent"]:  # 저점이 20봉 이상 전 → 이미 반등한 종목 → 제외
                 continue
             scores.append(1.0 - gap / 0.15)
             reasons.append(f"{days//30}개월 저점 +{gap*100:.1f}%")
@@ -1608,6 +1617,10 @@ def render_sidebar() -> tuple[str, str, str, list[str], bool, int]:
     st.sidebar.markdown('<div class="bh-sidebar-title">시장</div>', unsafe_allow_html=True)
     market = st.sidebar.radio("시장", ["코스피", "코스닥", "전체"], horizontal=True, label_visibility="collapsed")
 
+    # AI 검색보다 먼저 use_live 값을 읽어야 실제 데이터 사용 가능
+    _has_config = get_kis_config() is not None
+    _use_live_now = st.session_state.get("use_live_toggle", _has_config)
+
     # ── AI 검색 ────────────────────────────────────
     st.sidebar.markdown('<div class="bh-sidebar-title">AI 검색</div>', unsafe_allow_html=True)
 
@@ -1623,7 +1636,7 @@ def render_sidebar() -> tuple[str, str, str, list[str], bool, int]:
     if run_query:
         with st.sidebar:
             with st.spinner("분석 중…"):
-                ai_results = _ai_screen_stocks(run_query, market)
+                ai_results = _ai_screen_stocks(run_query, market, _use_live_now)
         if not ai_results:
             st.sidebar.markdown(
                 '<div style="font-size:0.78rem;color:var(--muted);padding:6px 2px;">'
@@ -1697,6 +1710,7 @@ def render_sidebar() -> tuple[str, str, str, list[str], bool, int]:
     use_live = st.sidebar.toggle(
         "실시간 시세 (KIS API)",
         value=has_config,
+        key="use_live_toggle",
         help="한국투자증권 KIS API 키가 설정된 경우 실시간 시세를 조회합니다.",
     )
     refresh_seconds = st.sidebar.selectbox(
