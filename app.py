@@ -1371,7 +1371,7 @@ def current_market_stocks(market_label: str) -> list[Stock]:
     return MARKET_STOCKS[market_label]
 
 
-@st.cache_data(ttl=300)
+@st.cache_data(ttl=300, show_spinner=False)
 def _compute_chart_metrics(codes: tuple[str, ...], days: int, use_live: bool = False) -> dict[str, dict]:
     """종목별 스크리닝 지표를 실제 차트 데이터로 계산 (캐시 5분)."""
     out: dict[str, dict] = {}
