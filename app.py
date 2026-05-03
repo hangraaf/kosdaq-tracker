@@ -1373,7 +1373,7 @@ def current_market_stocks(market_label: str) -> list[Stock]:
 
 @st.cache_data(ttl=300)
 def _compute_chart_metrics(codes: tuple[str, ...], days: int) -> dict[str, dict]:
-    """종목 코드 목록에 대해 실제 차트 데이터로 스크리닝 지표를 계산 (캐시)."""
+    """종목별 스크리닝 지표를 실제 차트 데이터로 계산 (캐시 5분)."""
     out: dict[str, dict] = {}
     for code in codes:
         stk = find_stock(code)
@@ -1381,15 +1381,13 @@ def _compute_chart_metrics(codes: tuple[str, ...], days: int) -> dict[str, dict]
             continue
         try:
             raw, _ = get_chart_data(stk, days, False)
-            if raw is None or len(raw) < 10:
+            if raw is None or len(raw) < 15:
                 continue
             df = raw.copy()
-            df["close"] = pd.to_numeric(df["close"], errors="coerce")
-            df["low"]   = pd.to_numeric(df["low"],   errors="coerce")
-            df["high"]  = pd.to_numeric(df["high"],  errors="coerce")
-            df["volume"]= pd.to_numeric(df["volume"], errors="coerce")
+            for col in ("close", "low", "high", "volume"):
+                df[col] = pd.to_numeric(df[col], errors="coerce")
             df = df.dropna(subset=["close", "low", "high", "volume"])
-            if len(df) < 5:
+            if len(df) < 15:
                 continue
 
             close    = float(df["close"].iloc[-1])
@@ -1397,27 +1395,47 @@ def _compute_chart_metrics(codes: tuple[str, ...], days: int) -> dict[str, dict]
             high_max = float(df["high"].max())
             vol_mean = float(df["volume"].mean())
             vol_last = float(df["volume"].iloc[-1])
+            cr       = float((df["close"].iloc[-1] / df["close"].iloc[-2] - 1) * 100) if len(df) >= 2 else 0.0
 
             # RSI 14일
             delta = df["close"].diff()
             gain  = delta.clip(lower=0).rolling(14, min_periods=1).mean()
             loss  = (-delta.clip(upper=0)).rolling(14, min_periods=1).mean()
             rs    = gain / loss.replace(0, np.nan)
-            rsi   = float((100 - 100 / (1 + rs)).iloc[-1])
-            if np.isnan(rsi):
-                rsi = 50.0
+            rsi_val = float((100 - 100 / (1 + rs)).iloc[-1])
+            rsi = rsi_val if not np.isnan(rsi_val) else 50.0
 
-            # 당일 등락률 (마지막 2개 종가)
-            cr = float((df["close"].iloc[-1] / df["close"].iloc[-2] - 1) * 100) if len(df) >= 2 else 0.0
+            # MACD 히스토그램 (12/26/9)
+            ema12 = df["close"].ewm(span=12, adjust=False).mean()
+            ema26 = df["close"].ewm(span=26, adjust=False).mean()
+            macd_line   = ema12 - ema26
+            signal_line = macd_line.ewm(span=9, adjust=False).mean()
+            hist_series = (macd_line - signal_line).values.astype(float)
+
+            # MACD 히스토그램 저점→상승전환 감지 (최근 10봉 기준)
+            macd_turn_score = 0.0
+            macd_turn_desc  = ""
+            if len(hist_series) >= 10:
+                window  = hist_series[-10:]
+                min_idx = int(np.argmin(window))
+                min_val = float(window[min_idx])
+                last_val = float(window[-1])
+                # 최솟값이 마지막 봉이 아니고 이후 반등했을 때만 상승전환
+                if min_idx < len(window) - 1 and last_val > min_val:
+                    rebound = (last_val - min_val) / (abs(min_val) + 1e-10)
+                    macd_turn_score = min(float(rebound), 2.0) / 2.0
+                    bars_ago = len(window) - 1 - min_idx
+                    macd_turn_desc = f"MACD 히스토그램 {bars_ago}봉 전 저점 후 상승전환"
 
             out[code] = {
-                "low_gap":   (close - low_min)  / low_min  if low_min  > 0 else 1.0,
-                "high_gap":  (high_max - close) / high_max if high_max > 0 else 1.0,
-                "vol_ratio": vol_last / vol_mean if vol_mean > 0 else 1.0,
-                "rsi":       rsi,
-                "change_rate": cr,
-                "low_min":   low_min,
-                "high_max":  high_max,
+                "low_gap":        (close - low_min)  / low_min  if low_min  > 0 else 1.0,
+                "high_gap":       (high_max - close) / high_max if high_max > 0 else 1.0,
+                "vol_ratio":      vol_last / vol_mean if vol_mean > 0 else 1.0,
+                "rsi":            rsi,
+                "change_rate":    cr,
+                "macd_turn_score": macd_turn_score,
+                "macd_turn_desc":  macd_turn_desc,
+                "macd_last":      float(hist_series[-1]) if len(hist_series) > 0 else 0.0,
             }
         except Exception:
             continue
@@ -1425,21 +1443,20 @@ def _compute_chart_metrics(codes: tuple[str, ...], days: int) -> dict[str, dict]
 
 
 def _ai_screen_stocks(query: str, market: str) -> list[dict]:
-    """자연어 쿼리로 종목 스크리닝. 실제 차트 데이터 기반."""
+    """자연어 쿼리로 종목 스크리닝 — 복합 조건 지원."""
     import re
     q = query.lower()
 
     cnt_m = re.search(r"(\d+)\s*개", query)
     n = min(int(cnt_m.group(1)), 15) if cnt_m else 5
 
-    # 기간 파싱
     days = 90
     for label, d in [("1개월", 30), ("3개월", 90), ("6개월", 180), ("1년", 365), ("52주", 365)]:
         if label in q:
             days = d
 
-    pool  = all_stocks() if market == "전체" else current_market_stocks(market)
-    codes = tuple(s.code for s in pool)
+    pool    = all_stocks() if market == "전체" else current_market_stocks(market)
+    codes   = tuple(s.code for s in pool)
     metrics = _compute_chart_metrics(codes, days)
 
     SECTOR_KW = {
@@ -1449,74 +1466,108 @@ def _ai_screen_stocks(query: str, market: str) -> list[dict]:
         "건설": "건설", "조선": "조선", "엔터": "엔터", "로봇": "로보틱스",
     }
 
+    # ── 조건 감지 (복합 조건 동시 처리) ─────────────────────
+    cond_low    = any(k in q for k in ["최저가", "저점", "바닥", "저가"])
+    cond_high   = any(k in q for k in ["최고가", "신고가", "고점", "고가"])
+    cond_vol    = any(k in q for k in ["거래량", "급등", "폭발"])
+    cond_rsi_lo = any(k in q for k in ["과매도"])
+    cond_rsi_hi = any(k in q for k in ["과매수"])
+    cond_up     = any(k in q for k in ["상승", "오르는", "강세", "오름"])
+    cond_down   = any(k in q for k in ["하락", "내리는", "약세", "내림"])
+    cond_div    = any(k in q for k in ["배당"])
+    cond_macd   = any(k in q for k in ["macd", "macd", "히스토그램", "초록봉", "막대"])
+    # MACD + 상승전환 복합 키워드
+    cond_macd_up = cond_macd and any(k in q for k in ["상승", "반등", "오르", "올라", "상승하기", "높아"])
+
+    sector_hit = next((sec for kw, sec in SECTOR_KW.items() if kw in q), None)
+
+    # 아무 조건도 없으면 업종 기반 정렬
+    no_cond = not any([cond_low, cond_high, cond_vol, cond_rsi_lo, cond_rsi_hi,
+                       cond_up, cond_down, cond_div, cond_macd])
+
     results: list[dict] = []
     for stock in pool:
         m = metrics.get(stock.code)
         if not m:
             continue
-        cr    = m["change_rate"]
-        score = 0.0
-        reason = ""
+        if sector_hit and sector_hit not in stock.sector:
+            continue
 
-        # ── 최저가 근접 ──────────────────────────
-        if any(k in q for k in ["최저가", "저점", "바닥", "저가"]):
-            gap    = m["low_gap"]
-            score  = max(0.0, 1.0 - gap)
-            reason = f"{days//30}개월 저점 대비 +{gap*100:.1f}%"
+        cr      = m["change_rate"]
+        scores  : list[float] = []
+        reasons : list[str]   = []
 
-        # ── 최고가 / 신고가 근접 ─────────────────
-        elif any(k in q for k in ["최고가", "신고가", "고점", "고가"]):
-            gap    = m["high_gap"]
-            score  = max(0.0, 1.0 - gap)
-            reason = f"신고가 -{gap*100:.1f}%"
+        if cond_low:
+            gap = m["low_gap"]
+            scores.append(max(0.0, 1.0 - min(gap, 1.0)))
+            reasons.append(f"{days//30}개월 저점 +{gap*100:.1f}%")
 
-        # ── 거래량 급증 ──────────────────────────
-        elif any(k in q for k in ["거래량", "급등", "폭발"]):
-            vol_x  = m["vol_ratio"]
-            score  = min(vol_x / 5.0, 1.0)
-            reason = f"거래량 평균 {vol_x:.1f}배"
+        if cond_high:
+            gap = m["high_gap"]
+            scores.append(max(0.0, 1.0 - min(gap, 1.0)))
+            reasons.append(f"신고가 -{gap*100:.1f}%")
 
-        # ── RSI 과매도 ───────────────────────────
-        elif any(k in q for k in ["과매도"]):
+        if cond_vol:
+            vx = m["vol_ratio"]
+            scores.append(min(vx / 5.0, 1.0))
+            reasons.append(f"거래량 {vx:.1f}배")
+
+        if cond_rsi_lo:
             rsi = m["rsi"]
-            if rsi >= 40:
+            if rsi >= 45:
                 continue
-            score  = (40 - rsi) / 40.0
-            reason = f"RSI {rsi:.0f} — 과매도"
+            scores.append((45 - rsi) / 45.0)
+            reasons.append(f"RSI {rsi:.0f} 과매도")
 
-        # ── RSI 과매수 ───────────────────────────
-        elif any(k in q for k in ["과매수"]):
+        if cond_rsi_hi:
             rsi = m["rsi"]
-            if rsi <= 60:
+            if rsi <= 55:
                 continue
-            score  = (rsi - 60) / 40.0
-            reason = f"RSI {rsi:.0f} — 과매수"
+            scores.append((rsi - 55) / 45.0)
+            reasons.append(f"RSI {rsi:.0f} 과매수")
 
-        # ── 상승 추세 ────────────────────────────
-        elif any(k in q for k in ["상승", "오르는", "강세", "오름"]):
-            score  = max(0.0, cr / 10.0)
-            reason = f"당일 {cr:+.2f}%"
+        if cond_macd_up:
+            ts = m["macd_turn_score"]
+            if ts <= 0:
+                continue          # 상승전환 아닌 종목 제외
+            scores.append(ts)
+            reasons.append(m["macd_turn_desc"] or "MACD 상승전환")
+        elif cond_macd:
+            ts = m["macd_turn_score"]
+            scores.append(ts)
+            reasons.append(f"MACD 히스토그램 {m['macd_last']:+.2f}")
 
-        # ── 하락 추세 ────────────────────────────
-        elif any(k in q for k in ["하락", "내리는", "약세", "내림"]):
-            score  = max(0.0, -cr / 10.0)
-            reason = f"당일 {cr:+.2f}%"
+        if cond_up and not cond_macd:
+            scores.append(max(0.0, cr / 10.0))
+            reasons.append(f"당일 {cr:+.2f}%")
 
-        # ── 배당주 ───────────────────────────────
-        elif any(k in q for k in ["배당"]):
-            div   = round((seed_for(stock.code, "div2") % 50 + 10) / 10, 1)
-            score = div / 6.0
-            reason = f"배당수익률 {div:.1f}%"
+        if cond_down:
+            scores.append(max(0.0, -cr / 10.0))
+            reasons.append(f"당일 {cr:+.2f}%")
 
-        # ── 업종 키워드 ──────────────────────────
-        else:
-            hit = next((sec for kw, sec in SECTOR_KW.items() if kw in q), None)
-            if hit and hit not in stock.sector:
-                continue
-            score  = max(0.0, cr / 10.0)
-            reason = f"{stock.sector}  당일 {cr:+.2f}%"
+        if cond_div:
+            div = round((seed_for(stock.code, "div2") % 50 + 10) / 10, 1)
+            scores.append(div / 6.0)
+            reasons.append(f"배당 {div:.1f}%")
 
-        results.append({"stock": stock, "score": score, "reason": reason, "change_rate": cr})
+        if no_cond:
+            scores.append(max(0.0, cr / 10.0))
+            reasons.append(f"{stock.sector} {cr:+.2f}%")
+
+        if not scores:
+            continue
+
+        # 복합 조건: 모든 점수의 기하평균 (한 조건이 0이면 탈락)
+        final_score = float(np.prod(scores) ** (1.0 / len(scores)))
+        if final_score <= 0:
+            continue
+
+        results.append({
+            "stock":       stock,
+            "score":       final_score,
+            "reason":      "  ·  ".join(reasons),
+            "change_rate": cr,
+        })
 
     results.sort(key=lambda x: -x["score"])
     return results[:n]
