@@ -887,6 +887,41 @@ hr {
   background: transparent;
 }
 
+/* ── AI 검색 칩 ──────────────────────────────── */
+.bh-ai-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin: 8px 0 10px;
+}
+.bh-ai-chip {
+  font-family: var(--font);
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--yellow);
+  border: 1px solid var(--yellow);
+  background: transparent;
+  padding: 3px 8px;
+  cursor: pointer;
+  border-radius: 2px;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+.bh-ai-chip:hover {
+  background: var(--yellow);
+  color: #FFFFFF;
+}
+.bh-ai-result-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surf);
+  font-size: 0.82rem;
+}
+
 /* ── Page subtitle ───────────────────────────── */
 .bh-subtitle {
   font-family: var(--font);
@@ -1336,6 +1371,93 @@ def current_market_stocks(market_label: str) -> list[Stock]:
     return MARKET_STOCKS[market_label]
 
 
+def _ai_screen_stocks(query: str, market: str) -> list[dict]:
+    """자연어 쿼리로 종목 스크리닝. 데모 seed 데이터 기반."""
+    import re
+    q = query.lower()
+
+    m = re.search(r"(\d+)\s*개", query)
+    n = min(int(m.group(1)), 15) if m else 5
+
+    pool = all_stocks() if market == "전체" else current_market_stocks(market)
+
+    results: list[dict] = []
+    for stock in pool:
+        snap = stock_snapshot(stock, False)
+        cr   = snap["change_rate"]
+        score = 0.0
+        reason = ""
+
+        # ── 최저가 근접 ──────────────────────────
+        if any(k in q for k in ["최저가", "저점", "바닥", "저가"]):
+            mths = 3
+            for label, val in [("1개월", 1), ("3개월", 3), ("6개월", 6), ("1년", 12), ("52주", 12)]:
+                if label in q:
+                    mths = val
+            gap = (seed_for(stock.code, f"low{mths}") % 25) / 100
+            score  = 1.0 - gap
+            reason = f"{mths}개월 저점 대비 +{gap*100:.0f}%"
+
+        # ── 최고가 / 신고가 근접 ─────────────────
+        elif any(k in q for k in ["최고가", "신고가", "고점", "고가"]):
+            gap    = (seed_for(stock.code, "high3") % 20) / 100
+            score  = 1.0 - gap
+            reason = f"신고가 -{gap*100:.0f}%"
+
+        # ── 거래량 급증 ──────────────────────────
+        elif any(k in q for k in ["거래량", "급등", "폭발"]):
+            vol_x  = round((seed_for(stock.code, "volx") % 40 + 15) / 10, 1)
+            score  = vol_x / 6.0
+            reason = f"거래량 평균 {vol_x:.1f}배"
+
+        # ── RSI 과매도 ───────────────────────────
+        elif any(k in q for k in ["과매도", "rsi30", "rsi 30"]):
+            rsi    = 18 + (seed_for(stock.code, "rsi_lo") % 14)
+            score  = (34 - rsi) / 16.0
+            reason = f"RSI {rsi} — 과매도 구간"
+
+        # ── RSI 과매수 ───────────────────────────
+        elif any(k in q for k in ["과매수", "rsi70", "rsi 70"]):
+            rsi    = 70 + (seed_for(stock.code, "rsi_hi") % 20)
+            score  = (rsi - 68) / 22.0
+            reason = f"RSI {rsi} — 과매수 구간"
+
+        # ── 상승 추세 ────────────────────────────
+        elif any(k in q for k in ["상승", "오르는", "강세", "오름"]):
+            score  = max(0.0, cr / 10.0)
+            reason = f"당일 {cr:+.2f}%"
+
+        # ── 하락 추세 ────────────────────────────
+        elif any(k in q for k in ["하락", "내리는", "약세", "내림"]):
+            score  = max(0.0, -cr / 10.0)
+            reason = f"당일 {cr:+.2f}%"
+
+        # ── 배당주 ───────────────────────────────
+        elif any(k in q for k in ["배당"]):
+            div    = round((seed_for(stock.code, "div2") % 50 + 10) / 10, 1)
+            score  = div / 6.0
+            reason = f"배당수익률 {div:.1f}%"
+
+        # ── 업종 키워드 ──────────────────────────
+        else:
+            sector_kw = {
+                "반도체": "반도체", "바이오": "바이오", "게임": "게임",
+                "금융": "금융", "자동차": "자동차", "2차전지": "2차전지",
+                "제약": "제약", "통신": "통신", "화학": "화학",
+                "건설": "건설", "조선": "조선", "엔터": "엔터", "로봇": "로보틱스",
+            }
+            hit = next((sec for kw, sec in sector_kw.items() if kw in q), None)
+            if hit and hit not in stock.sector:
+                continue
+            score  = (seed_for(stock.code, "aisort") % 100) / 100.0
+            reason = stock.sector
+
+        results.append({"stock": stock, "score": score, "reason": reason, "change_rate": cr})
+
+    results.sort(key=lambda x: -x["score"])
+    return results[:n]
+
+
 def render_sidebar() -> tuple[str, str, str, list[str], bool, int]:
     st.sidebar.markdown(
         """
@@ -1367,6 +1489,72 @@ def render_sidebar() -> tuple[str, str, str, list[str], bool, int]:
     st.sidebar.markdown('<div class="bh-sidebar-title">시장</div>', unsafe_allow_html=True)
     market = st.sidebar.radio("시장", ["코스피", "코스닥", "전체"], horizontal=True, label_visibility="collapsed")
 
+    # ── AI 검색 ────────────────────────────────────
+    st.sidebar.markdown('<div class="bh-sidebar-title">AI 검색</div>', unsafe_allow_html=True)
+
+    _PRESETS = [
+        "3개월 최저가 근접 5개",
+        "거래량 급증 5개",
+        "오늘 상승 TOP5",
+        "RSI 과매도 5개",
+        "배당주 5개",
+        "신고가 근접 5개",
+    ]
+    chips_html = '<div class="bh-ai-chips">' + "".join(
+        f'<span class="bh-ai-chip" onclick="void(0)">{p}</span>' for p in _PRESETS
+    ) + "</div>"
+    st.sidebar.markdown(chips_html, unsafe_allow_html=True)
+
+    ai_query = st.sidebar.text_input(
+        "AI 검색",
+        placeholder="예) 3개월 최저가 근접 5개",
+        label_visibility="collapsed",
+        key="ai_query",
+    )
+
+    # 프리셋 버튼 (클릭 시 세션 상태에 저장 후 실행)
+    preset_cols = st.sidebar.columns(2)
+    for idx, preset in enumerate(_PRESETS):
+        col = preset_cols[idx % 2]
+        if col.button(preset, key=f"ai-preset-{idx}", use_container_width=True):
+            st.session_state["ai_query_run"] = preset
+            st.rerun()
+
+    run_query = st.session_state.pop("ai_query_run", None) or ai_query.strip()
+
+    if run_query:
+        with st.sidebar:
+            with st.spinner("분석 중…"):
+                ai_results = _ai_screen_stocks(run_query, market)
+        if not ai_results:
+            st.sidebar.markdown(
+                '<div style="font-size:0.78rem;color:var(--muted);padding:6px 2px;">'
+                '조건에 맞는 종목이 없습니다.</div>',
+                unsafe_allow_html=True,
+            )
+        else:
+            st.sidebar.markdown(
+                f'<div style="font-size:0.64rem;letter-spacing:0.08em;color:var(--muted);'
+                f'padding:4px 2px 2px;">▸ "{run_query}" — {len(ai_results)}개 결과</div>',
+                unsafe_allow_html=True,
+            )
+            for r in ai_results:
+                stk = r["stock"]
+                cr  = r["change_rate"]
+                cr_str = f"{cr:+.2f}%"
+                mkt_icon = "🔴" if stk.market == "KOSPI" else "🔵"
+                btn_label = f"{mkt_icon} {stk.name}  {cr_str}"
+                if st.sidebar.button(btn_label, key=f"ai-r-{stk.code}", use_container_width=True):
+                    st.session_state["selected_code"] = stk.code
+                    st.session_state["menu_override"] = "차트"
+                    st.rerun()
+                st.sidebar.markdown(
+                    f'<div style="font-size:0.68rem;color:var(--muted);'
+                    f'padding:0 4px 4px;margin-top:-6px;">{r["reason"]}</div>',
+                    unsafe_allow_html=True,
+                )
+
+    # ── 종목 검색 ───────────────────────────────────
     st.sidebar.markdown('<div class="bh-sidebar-title">종목</div>', unsafe_allow_html=True)
     keyword = st.sidebar.text_input("검색", placeholder="종목명 · 코드  예) 삼성전자, 005930", label_visibility="collapsed")
 
