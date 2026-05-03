@@ -1492,19 +1492,6 @@ def render_sidebar() -> tuple[str, str, str, list[str], bool, int]:
     # ── AI 검색 ────────────────────────────────────
     st.sidebar.markdown('<div class="bh-sidebar-title">AI 검색</div>', unsafe_allow_html=True)
 
-    _PRESETS = [
-        "3개월 최저가 근접 5개",
-        "거래량 급증 5개",
-        "오늘 상승 TOP5",
-        "RSI 과매도 5개",
-        "배당주 5개",
-        "신고가 근접 5개",
-    ]
-    chips_html = '<div class="bh-ai-chips">' + "".join(
-        f'<span class="bh-ai-chip" onclick="void(0)">{p}</span>' for p in _PRESETS
-    ) + "</div>"
-    st.sidebar.markdown(chips_html, unsafe_allow_html=True)
-
     ai_query = st.sidebar.text_input(
         "AI 검색",
         placeholder="예) 3개월 최저가 근접 5개",
@@ -1512,15 +1499,7 @@ def render_sidebar() -> tuple[str, str, str, list[str], bool, int]:
         key="ai_query",
     )
 
-    # 프리셋 버튼 (클릭 시 세션 상태에 저장 후 실행)
-    preset_cols = st.sidebar.columns(2)
-    for idx, preset in enumerate(_PRESETS):
-        col = preset_cols[idx % 2]
-        if col.button(preset, key=f"ai-preset-{idx}", use_container_width=True):
-            st.session_state["ai_query_run"] = preset
-            st.rerun()
-
-    run_query = st.session_state.pop("ai_query_run", None) or ai_query.strip()
+    run_query = ai_query.strip()
 
     if run_query:
         with st.sidebar:
