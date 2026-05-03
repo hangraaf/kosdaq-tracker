@@ -1448,7 +1448,8 @@ def _compute_chart_metrics(codes: tuple[str, ...], days: int, use_live: bool = F
     return out
 
 
-def _ai_screen_stocks(query: str, market: str, use_live: bool = False) -> list[dict]:
+def _ai_screen_stocks(query: str, market: str, use_live: bool = False,
+                      sectors: list[str] | None = None) -> list[dict]:
     """자연어 쿼리로 종목 스크리닝 — 복합 조건 지원."""
     import re
     q = query.lower()
@@ -1462,7 +1463,9 @@ def _ai_screen_stocks(query: str, market: str, use_live: bool = False) -> list[d
         if label in q:
             days = d
 
-    pool    = all_stocks() if market == "전체" else current_market_stocks(market)
+    base = all_stocks() if market == "전체" else current_market_stocks(market)
+    # 업종 필터가 있으면 해당 업종만 — 풀 크기를 줄여 속도 향상
+    pool = [s for s in base if s.sector in sectors] if sectors else base
     codes   = tuple(s.code for s in pool)
     metrics = _compute_chart_metrics(codes, days, use_live)
 
@@ -1617,12 +1620,30 @@ def render_sidebar() -> tuple[str, str, str, list[str], bool, int]:
     st.sidebar.markdown('<div class="bh-sidebar-title">시장</div>', unsafe_allow_html=True)
     market = st.sidebar.radio("시장", ["코스피", "코스닥", "전체"], horizontal=True, label_visibility="collapsed")
 
-    # AI 검색보다 먼저 use_live 값을 읽어야 실제 데이터 사용 가능
+    # ── 업종 (AI 검색 전에 위치 — 검색 범위 축소용) ──
+    st.sidebar.markdown('<div class="bh-sidebar-title">업종</div>', unsafe_allow_html=True)
+    market_stocks = current_market_stocks(market)
+    sectors = sorted({stock.sector for stock in market_stocks})
+    selected_sectors = st.sidebar.multiselect(
+        "업종", sectors, default=[],
+        placeholder="업종 선택 후 AI 검색 (빠름)",
+        label_visibility="collapsed",
+    )
+
+    # use_live: AI 검색 전에 세션 스테이트로 읽음
     _has_config = get_kis_config() is not None
     _use_live_now = st.session_state.get("use_live_toggle", _has_config)
 
     # ── AI 검색 ────────────────────────────────────
     st.sidebar.markdown('<div class="bh-sidebar-title">AI 검색</div>', unsafe_allow_html=True)
+
+    # 업종 미선택 시 안내
+    if not selected_sectors:
+        st.sidebar.markdown(
+            '<div style="font-size:0.72rem;color:var(--muted);padding:2px 0 6px;">'
+            '▲ 업종을 먼저 선택하면 빠른 검색이 가능합니다.</div>',
+            unsafe_allow_html=True,
+        )
 
     ai_query = st.sidebar.text_input(
         "AI 검색",
@@ -1634,9 +1655,12 @@ def render_sidebar() -> tuple[str, str, str, list[str], bool, int]:
     run_query = ai_query.strip()
 
     if run_query:
+        pool_size = len(filtered_stocks(market, "", selected_sectors)) if selected_sectors else len(
+            all_stocks() if market == "전체" else current_market_stocks(market)
+        )
         with st.sidebar:
-            with st.spinner("분석 중…"):
-                ai_results = _ai_screen_stocks(run_query, market, _use_live_now)
+            with st.spinner(f"분석 중… ({pool_size}개 종목)"):
+                ai_results = _ai_screen_stocks(run_query, market, _use_live_now, selected_sectors)
         if not ai_results:
             st.sidebar.markdown(
                 '<div style="font-size:0.78rem;color:var(--muted);padding:6px 2px;">'
@@ -1646,7 +1670,7 @@ def render_sidebar() -> tuple[str, str, str, list[str], bool, int]:
         else:
             st.sidebar.markdown(
                 f'<div style="font-size:0.64rem;letter-spacing:0.08em;color:var(--muted);'
-                f'padding:4px 2px 2px;">▸ "{run_query}" — {len(ai_results)}개 결과</div>',
+                f'padding:4px 2px 2px;">▸ {len(ai_results)}개 결과</div>',
                 unsafe_allow_html=True,
             )
             for r in ai_results:
@@ -1693,15 +1717,6 @@ def render_sidebar() -> tuple[str, str, str, list[str], bool, int]:
                     st.session_state["selected_code"] = stk.code
                     st.session_state["menu_override"] = "차트"
                     st.rerun()
-
-    st.sidebar.markdown('<div class="bh-sidebar-title">업종</div>', unsafe_allow_html=True)
-    market_stocks = current_market_stocks(market)
-    sectors = sorted({stock.sector for stock in market_stocks})
-    selected_sectors = st.sidebar.multiselect(
-        "업종", sectors, default=[],
-        placeholder="전체 업종 (클릭해서 필터)",
-        label_visibility="collapsed",
-    )
 
     st.sidebar.divider()
 
