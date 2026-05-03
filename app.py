@@ -436,14 +436,21 @@ body, .stApp {
 
 /* ── Sidebar ─────────────────────────────────── */
 [data-testid="stSidebar"] {
-  background: var(--surf) !important;
-  border-right: 1px solid var(--border) !important;
+  background: #C8BFB2 !important;          /* 메인(#F5F1EB)보다 확연히 짙은 웜 베이지 */
+  border-right: 2px solid #A89A8C !important;
+}
+[data-testid="stSidebar"] > div:first-child {
+  padding: 1.5rem 1rem 2rem !important;
 }
 [data-testid="stSidebar"] label {
   font-family: var(--font) !important;
   font-weight: 700 !important;
   font-size: 0.9rem !important;
-  color: var(--fg) !important;
+  color: #3A2E28 !important;               /* 사이드바용 더 진한 텍스트 */
+}
+[data-testid="stSidebar"] p,
+[data-testid="stSidebar"] div {
+  color: #3A2E28 !important;
 }
 
 /* ── Typography ──────────────────────────────── */
@@ -545,7 +552,7 @@ div[data-testid="stMetric"] [data-testid="stMetricDelta"] {
   color: var(--yellow) !important;
 }
 
-/* ── Inputs ──────────────────────────────────── */
+/* ── Inputs (메인 영역) ──────────────────────── */
 .stTextInput input, .stNumberInput input {
   background: #FFFFFF !important;
   border: 1px solid var(--border2) !important;
@@ -566,6 +573,40 @@ div[data-testid="stMetric"] [data-testid="stMetricDelta"] {
   border-radius: 2px !important;
   font-family: var(--font) !important;
   color: var(--white) !important;
+}
+
+/* ── 사이드바 Inputs — 둥근 필 스타일 ─────────── */
+[data-testid="stSidebar"] .stTextInput input,
+[data-testid="stSidebar"] .stNumberInput input {
+  background: #FAF8F4 !important;
+  border: 1.5px solid #B0A090 !important;
+  border-radius: 24px !important;
+  color: #2A1F18 !important;
+  font-family: var(--font) !important;
+  font-size: 0.88rem !important;
+  padding: 8px 18px !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08) !important;
+}
+[data-testid="stSidebar"] .stTextInput input:focus,
+[data-testid="stSidebar"] .stNumberInput input:focus {
+  border-color: var(--yellow) !important;
+  box-shadow: 0 0 0 3px rgba(156,112,48,0.2) !important;
+  outline: none !important;
+}
+/* 사이드바 multiselect */
+[data-testid="stSidebar"] [data-baseweb="select"] > div {
+  background: #FAF8F4 !important;
+  border: 1.5px solid #B0A090 !important;
+  border-radius: 24px !important;
+  color: #2A1F18 !important;
+  font-family: var(--font) !important;
+  padding: 2px 8px !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08) !important;
+}
+[data-testid="stSidebar"] [data-baseweb="tag"] {
+  border-radius: 14px !important;
+  background: var(--yellow) !important;
+  color: #FFFFFF !important;
 }
 
 /* ── Tabs ────────────────────────────────────── */
@@ -662,25 +703,28 @@ hr {
 [data-testid="stSidebar"] .stButton > button {
   text-align: left !important;
   justify-content: flex-start !important;
-  font-size: 0.88rem !important;
-  font-weight: 400 !important;
-  background: transparent !important;
-  border: none !important;
-  border-bottom: 1px solid var(--border) !important;
-  color: var(--fg) !important;
-  padding: 8px 4px !important;
+  font-size: 0.86rem !important;
+  font-weight: 700 !important;
+  background: rgba(255,255,255,0.45) !important;
+  border: 1px solid rgba(160,140,120,0.35) !important;
+  border-radius: 20px !important;
+  color: #2A1F18 !important;
+  padding: 7px 16px !important;
   height: auto !important;
   min-height: 0 !important;
-  border-radius: 0 !important;
+  margin-bottom: 4px !important;
   white-space: nowrap !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
+  transition: all 0.18s !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.07) !important;
 }
 [data-testid="stSidebar"] .stButton > button:hover {
-  background: var(--surf2) !important;
-  color: var(--yellow) !important;
-  border-bottom-color: var(--yellow) !important;
-  padding-left: 8px !important;
+  background: var(--yellow) !important;
+  color: #FFFFFF !important;
+  border-color: var(--yellow) !important;
+  box-shadow: 0 3px 8px rgba(156,112,48,0.3) !important;
+  transform: translateY(-1px) !important;
 }
 
 /* ── Toggle ──────────────────────────────────── */
@@ -694,6 +738,15 @@ hr {
   font-weight: 400 !important;
   font-size: 0.9rem !important;
   color: var(--fg) !important;
+}
+/* 사이드바 라디오 */
+[data-testid="stSidebar"] [data-testid="stRadio"] label {
+  color: #2A1F18 !important;
+  font-weight: 700 !important;
+  font-size: 0.92rem !important;
+}
+[data-testid="stSidebar"] [data-testid="stRadio"] [data-checked="true"] + span {
+  color: var(--yellow) !important;
 }
 
 /* ── Grid 컨테이너 통일 ──────────────────────── */
@@ -763,7 +816,7 @@ hr {
 }
 .bh-logo-mark {
   width: 54px; height: 54px;
-  background: var(--white);
+  background: #1C1916;             /* 사이드바 짙은 배경 위에서 대비 확보 */
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -771,6 +824,8 @@ hr {
   justify-content: center;
   position: relative;
   overflow: hidden;
+  border-radius: 8px;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.25);
   gap: 0;
 }
 /* 왼쪽 황금 수직 바 — 바우하우스 그리드 강조 */
@@ -812,7 +867,7 @@ hr {
   font-size: 1.18rem;
   font-weight: 800;
   letter-spacing: 0.08em;
-  color: var(--white);
+  color: #1C1916;                  /* 사이드바 어두운 텍스트 */
   text-transform: uppercase;
   line-height: 1.05;
   display: block;
@@ -833,10 +888,10 @@ hr {
   font-size: 0.58rem;
   font-weight: 400;
   letter-spacing: 0.12em;
-  color: var(--muted);
+  color: #6A5848;                  /* 사이드바용 뮤트 색 */
   margin-top: 6px;
   padding-top: 5px;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid #A89080;
   display: block;
 }
 
@@ -876,13 +931,14 @@ hr {
 /* ── Sidebar nav title ───────────────────────── */
 .bh-sidebar-title {
   font-family: var(--font);
-  font-size: 0.92rem;
-  font-weight: 700;
-  letter-spacing: 0.01em;
-  color: var(--fg);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #5C4A3A;
   border-bottom: 2px solid var(--yellow);
-  padding-bottom: 5px;
-  margin: 28px 0 10px;
+  padding-bottom: 6px;
+  margin: 24px 0 10px;
   display: block;
   background: transparent;
 }
