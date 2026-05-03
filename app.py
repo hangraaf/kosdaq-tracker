@@ -1391,8 +1391,8 @@ def _compute_chart_metrics(codes: tuple[str, ...], days: int) -> dict[str, dict]
                 continue
 
             close    = float(df["close"].iloc[-1])
-            low_min  = float(df["low"].min())
-            high_max = float(df["high"].max())
+            low_min  = float(df["close"].min())   # 종가 기준 최저가
+            high_max = float(df["close"].max())   # 종가 기준 최고가
             vol_mean = float(df["volume"].mean())
             vol_last = float(df["volume"].iloc[-1])
             cr       = float((df["close"].iloc[-1] / df["close"].iloc[-2] - 1) * 100) if len(df) >= 2 else 0.0
@@ -1499,12 +1499,16 @@ def _ai_screen_stocks(query: str, market: str) -> list[dict]:
 
         if cond_low:
             gap = m["low_gap"]
-            scores.append(max(0.0, 1.0 - min(gap, 1.0)))
+            if gap > 0.15:      # 15% 초과 = 최저가 근접 아님 → 제외
+                continue
+            scores.append(1.0 - gap / 0.15)
             reasons.append(f"{days//30}개월 저점 +{gap*100:.1f}%")
 
         if cond_high:
             gap = m["high_gap"]
-            scores.append(max(0.0, 1.0 - min(gap, 1.0)))
+            if gap > 0.15:
+                continue
+            scores.append(1.0 - gap / 0.15)
             reasons.append(f"신고가 -{gap*100:.1f}%")
 
         if cond_vol:
