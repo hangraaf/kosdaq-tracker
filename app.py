@@ -2330,17 +2330,17 @@ def _today_news(n: int = 4) -> list[dict]:
     ]
 
 
-@st.cache_data(ttl=300)
-def _sector_leaderboard(top_n: int = 5) -> list[dict]:
-    """섹터별 대표 종목 최대 4개만 샘플링해 평균 등락률 계산 (5분 캐시)."""
+@st.cache_data(ttl=300, show_spinner=False)
+def _sector_leaderboard(top_n: int = 5, use_live: bool = False) -> list[dict]:
+    """섹터별 대표 종목 최대 4개 샘플링해 평균 등락률 계산 (5분 캐시)."""
     sector_stocks: dict[str, list] = {}
     for stock in all_stocks():
         sector_stocks.setdefault(stock.sector, []).append(stock)
 
     sector_rates: dict[str, list[float]] = {}
     for sector, stocks in sector_stocks.items():
-        for stock in stocks[:4]:  # 섹터당 최대 4개만
-            snap = stock_snapshot(stock, False)  # 항상 데모(속도 우선)
+        for stock in stocks[:4]:
+            snap = stock_snapshot(stock, use_live)
             sector_rates.setdefault(sector, []).append(snap["change_rate"])
 
     results = [
@@ -2386,9 +2386,9 @@ def _portfolio_mini_summary(use_live: bool) -> dict | None:
 def render_stocks_page(stocks: list[Stock], use_live: bool, keyword: str = "") -> None:
     today_str = date.today().strftime("%Y년 %m월 %d일")
     st.title("오늘의 종목")
+    data_label = "KIS 실시간" if use_live else "데모 시뮬레이션"
     st.markdown(
-        f'<div class="bh-subtitle">{today_str} · 데모 시뮬레이션 기반 — '
-        '실시간 반영은 KIS API 연동 시 활성화됩니다.</div>',
+        f'<div class="bh-subtitle">{today_str} · {data_label} 기준</div>',
         unsafe_allow_html=True,
     )
 
@@ -2420,7 +2420,7 @@ def render_stocks_page(stocks: list[Stock], use_live: bool, keyword: str = "") -
 
     # ── 떠오르는 섹터 TOP 5 ──────────────────────
     st.markdown('<div class="bh-section-label">떠오르는 섹터 TOP 5</div>', unsafe_allow_html=True)
-    sectors = _sector_leaderboard(top_n=5)
+    sectors = _sector_leaderboard(top_n=5, use_live=use_live)
     sec_cols = st.columns(5)
     for col, sec in zip(sec_cols, sectors):
         rate = sec["avg_rate"]
