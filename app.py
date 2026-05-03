@@ -1371,56 +1371,126 @@ def current_market_stocks(market_label: str) -> list[Stock]:
     return MARKET_STOCKS[market_label]
 
 
+@st.cache_data(ttl=300)
+def _compute_chart_metrics(codes: tuple[str, ...], days: int) -> dict[str, dict]:
+    """종목 코드 목록에 대해 실제 차트 데이터로 스크리닝 지표를 계산 (캐시)."""
+    out: dict[str, dict] = {}
+    for code in codes:
+        stk = find_stock(code)
+        if not stk:
+            continue
+        try:
+            raw, _ = get_chart_data(stk, days, False)
+            if raw is None or len(raw) < 10:
+                continue
+            df = raw.copy()
+            df["close"] = pd.to_numeric(df["close"], errors="coerce")
+            df["low"]   = pd.to_numeric(df["low"],   errors="coerce")
+            df["high"]  = pd.to_numeric(df["high"],  errors="coerce")
+            df["volume"]= pd.to_numeric(df["volume"], errors="coerce")
+            df = df.dropna(subset=["close", "low", "high", "volume"])
+            if len(df) < 5:
+                continue
+
+            close    = float(df["close"].iloc[-1])
+            low_min  = float(df["low"].min())
+            high_max = float(df["high"].max())
+            vol_mean = float(df["volume"].mean())
+            vol_last = float(df["volume"].iloc[-1])
+
+            # RSI 14일
+            delta = df["close"].diff()
+            gain  = delta.clip(lower=0).rolling(14, min_periods=1).mean()
+            loss  = (-delta.clip(upper=0)).rolling(14, min_periods=1).mean()
+            rs    = gain / loss.replace(0, np.nan)
+            rsi   = float((100 - 100 / (1 + rs)).iloc[-1])
+            if np.isnan(rsi):
+                rsi = 50.0
+
+            # 당일 등락률 (마지막 2개 종가)
+            cr = float((df["close"].iloc[-1] / df["close"].iloc[-2] - 1) * 100) if len(df) >= 2 else 0.0
+
+            out[code] = {
+                "low_gap":   (close - low_min)  / low_min  if low_min  > 0 else 1.0,
+                "high_gap":  (high_max - close) / high_max if high_max > 0 else 1.0,
+                "vol_ratio": vol_last / vol_mean if vol_mean > 0 else 1.0,
+                "rsi":       rsi,
+                "change_rate": cr,
+                "low_min":   low_min,
+                "high_max":  high_max,
+            }
+        except Exception:
+            continue
+    return out
+
+
 def _ai_screen_stocks(query: str, market: str) -> list[dict]:
-    """자연어 쿼리로 종목 스크리닝. 데모 seed 데이터 기반."""
+    """자연어 쿼리로 종목 스크리닝. 실제 차트 데이터 기반."""
     import re
     q = query.lower()
 
-    m = re.search(r"(\d+)\s*개", query)
-    n = min(int(m.group(1)), 15) if m else 5
+    cnt_m = re.search(r"(\d+)\s*개", query)
+    n = min(int(cnt_m.group(1)), 15) if cnt_m else 5
 
-    pool = all_stocks() if market == "전체" else current_market_stocks(market)
+    # 기간 파싱
+    days = 90
+    for label, d in [("1개월", 30), ("3개월", 90), ("6개월", 180), ("1년", 365), ("52주", 365)]:
+        if label in q:
+            days = d
+
+    pool  = all_stocks() if market == "전체" else current_market_stocks(market)
+    codes = tuple(s.code for s in pool)
+    metrics = _compute_chart_metrics(codes, days)
+
+    SECTOR_KW = {
+        "반도체": "반도체", "바이오": "바이오", "게임": "게임",
+        "금융": "금융", "자동차": "자동차", "2차전지": "2차전지",
+        "제약": "제약", "통신": "통신", "화학": "화학",
+        "건설": "건설", "조선": "조선", "엔터": "엔터", "로봇": "로보틱스",
+    }
 
     results: list[dict] = []
     for stock in pool:
-        snap = stock_snapshot(stock, False)
-        cr   = snap["change_rate"]
+        m = metrics.get(stock.code)
+        if not m:
+            continue
+        cr    = m["change_rate"]
         score = 0.0
         reason = ""
 
         # ── 최저가 근접 ──────────────────────────
         if any(k in q for k in ["최저가", "저점", "바닥", "저가"]):
-            mths = 3
-            for label, val in [("1개월", 1), ("3개월", 3), ("6개월", 6), ("1년", 12), ("52주", 12)]:
-                if label in q:
-                    mths = val
-            gap = (seed_for(stock.code, f"low{mths}") % 25) / 100
-            score  = 1.0 - gap
-            reason = f"{mths}개월 저점 대비 +{gap*100:.0f}%"
+            gap    = m["low_gap"]
+            score  = max(0.0, 1.0 - gap)
+            reason = f"{days//30}개월 저점 대비 +{gap*100:.1f}%"
 
         # ── 최고가 / 신고가 근접 ─────────────────
         elif any(k in q for k in ["최고가", "신고가", "고점", "고가"]):
-            gap    = (seed_for(stock.code, "high3") % 20) / 100
-            score  = 1.0 - gap
-            reason = f"신고가 -{gap*100:.0f}%"
+            gap    = m["high_gap"]
+            score  = max(0.0, 1.0 - gap)
+            reason = f"신고가 -{gap*100:.1f}%"
 
         # ── 거래량 급증 ──────────────────────────
         elif any(k in q for k in ["거래량", "급등", "폭발"]):
-            vol_x  = round((seed_for(stock.code, "volx") % 40 + 15) / 10, 1)
-            score  = vol_x / 6.0
+            vol_x  = m["vol_ratio"]
+            score  = min(vol_x / 5.0, 1.0)
             reason = f"거래량 평균 {vol_x:.1f}배"
 
         # ── RSI 과매도 ───────────────────────────
-        elif any(k in q for k in ["과매도", "rsi30", "rsi 30"]):
-            rsi    = 18 + (seed_for(stock.code, "rsi_lo") % 14)
-            score  = (34 - rsi) / 16.0
-            reason = f"RSI {rsi} — 과매도 구간"
+        elif any(k in q for k in ["과매도"]):
+            rsi = m["rsi"]
+            if rsi >= 40:
+                continue
+            score  = (40 - rsi) / 40.0
+            reason = f"RSI {rsi:.0f} — 과매도"
 
         # ── RSI 과매수 ───────────────────────────
-        elif any(k in q for k in ["과매수", "rsi70", "rsi 70"]):
-            rsi    = 70 + (seed_for(stock.code, "rsi_hi") % 20)
-            score  = (rsi - 68) / 22.0
-            reason = f"RSI {rsi} — 과매수 구간"
+        elif any(k in q for k in ["과매수"]):
+            rsi = m["rsi"]
+            if rsi <= 60:
+                continue
+            score  = (rsi - 60) / 40.0
+            reason = f"RSI {rsi:.0f} — 과매수"
 
         # ── 상승 추세 ────────────────────────────
         elif any(k in q for k in ["상승", "오르는", "강세", "오름"]):
@@ -1434,23 +1504,17 @@ def _ai_screen_stocks(query: str, market: str) -> list[dict]:
 
         # ── 배당주 ───────────────────────────────
         elif any(k in q for k in ["배당"]):
-            div    = round((seed_for(stock.code, "div2") % 50 + 10) / 10, 1)
-            score  = div / 6.0
+            div   = round((seed_for(stock.code, "div2") % 50 + 10) / 10, 1)
+            score = div / 6.0
             reason = f"배당수익률 {div:.1f}%"
 
         # ── 업종 키워드 ──────────────────────────
         else:
-            sector_kw = {
-                "반도체": "반도체", "바이오": "바이오", "게임": "게임",
-                "금융": "금융", "자동차": "자동차", "2차전지": "2차전지",
-                "제약": "제약", "통신": "통신", "화학": "화학",
-                "건설": "건설", "조선": "조선", "엔터": "엔터", "로봇": "로보틱스",
-            }
-            hit = next((sec for kw, sec in sector_kw.items() if kw in q), None)
+            hit = next((sec for kw, sec in SECTOR_KW.items() if kw in q), None)
             if hit and hit not in stock.sector:
                 continue
-            score  = (seed_for(stock.code, "aisort") % 100) / 100.0
-            reason = stock.sector
+            score  = max(0.0, cr / 10.0)
+            reason = f"{stock.sector}  당일 {cr:+.2f}%"
 
         results.append({"stock": stock, "score": score, "reason": reason, "change_rate": cr})
 
