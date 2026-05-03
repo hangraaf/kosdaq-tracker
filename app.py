@@ -1114,6 +1114,70 @@ def generate_demo_ohlcv(code: str, base_price: int, days: int) -> pd.DataFrame:
     )
 
 
+@st.cache_data(ttl=3600, show_spinner=False)
+def fetch_krx_fundamentals(code: str) -> dict:
+    """pykrx로 KRX 공식 재무지표 조회. 실패 시 빈 dict 반환."""
+    try:
+        from pykrx import stock as krx
+        # 최근 영업일 탐색 (최대 5일 전까지)
+        for delta in range(0, 6):
+            d = (date.today() - timedelta(days=delta)).strftime("%Y%m%d")
+            try:
+                df = krx.get_market_fundamental_by_ticker(d, market="ALL")
+                if df is not None and not df.empty and code in df.index:
+                    row = df.loc[code]
+                    per = float(row.get("PER", 0) or 0)
+                    pbr = float(row.get("PBR", 0) or 0)
+                    eps = float(row.get("EPS", 0) or 0)
+                    bps = float(row.get("BPS", 0) or 0)
+                    div = float(row.get("DIV", 0) or 0)
+                    roe = round(eps / bps * 100, 1) if bps > 0 else 0.0
+                    if per > 0 or pbr > 0:  # 유효 데이터 확인
+                        return {"per": per, "pbr": pbr, "eps": int(eps), "bps": int(bps),
+                                "div": div, "roe": roe, "source": "KRX"}
+            except Exception:
+                continue
+    except Exception:
+        pass
+    return {}
+
+
+def get_stock_fundamentals(stock: Stock, use_live: bool = False) -> dict:
+    """실제 재무지표 조회. KIS raw 우선, pykrx 차선, 실패시 seed 추정."""
+    fund: dict = {}
+
+    # KIS API raw 데이터에서 PER/PBR 추출 시도 (use_live=True일 때)
+    if use_live:
+        try:
+            snap = fetch_live_snapshot(stock.code)
+            raw = snap.get("raw", {})
+            per = float(str(raw.get("per", "0")).replace(",", "") or 0)
+            pbr = float(str(raw.get("pbr", "0")).replace(",", "") or 0)
+            eps = int(float(str(raw.get("eps", "0")).replace(",", "") or 0))
+            bps = int(float(str(raw.get("bps", "0")).replace(",", "") or 0))
+            if per > 0 or pbr > 0:
+                roe = round(eps / bps * 100, 1) if bps > 0 else 0.0
+                fund = {"per": per, "pbr": pbr, "eps": eps, "bps": bps,
+                        "div": 0.0, "roe": roe, "source": "KIS"}
+        except Exception:
+            pass
+
+    # pykrx로 보완 (배당수익률 등 추가)
+    if not fund or fund.get("div", 0) == 0:
+        krx_data = fetch_krx_fundamentals(stock.code)
+        if krx_data:
+            if not fund:
+                fund = krx_data
+            else:
+                # KIS 데이터가 있으면 배당만 pykrx로 보완
+                fund["div"] = krx_data.get("div", 0.0)
+                if fund.get("roe", 0) == 0:
+                    fund["roe"] = krx_data.get("roe", 0.0)
+                fund["source"] = "KIS+KRX"
+
+    return fund  # 빈 dict면 각 advisor에서 seed_for fallback 사용
+
+
 @st.cache_data(ttl=3, show_spinner=False)
 def fetch_live_snapshot(code: str) -> dict:
     client = get_kis_client()
@@ -3142,7 +3206,7 @@ def render_chart_page(market: str, use_live: bool, keyword: str = "", sectors: l
     except Exception as exc:
         st.warning(f"예측 계산 실패 (차트는 정상): {exc}")
     st.divider()
-    render_stock_advisor_panel(stock)
+    render_stock_advisor_panel(stock, use_live)
 
 
 def render_favorites_page(use_live: bool) -> None:
@@ -3155,9 +3219,12 @@ def render_favorites_page(use_live: bool) -> None:
     render_stock_cards([stock for stock in stocks if stock is not None], use_live)
 
 
-def _dalio_stock_analysis(stock: Stock, row: dict) -> dict:
+def _dalio_stock_analysis(stock: Stock, row: dict, fund: dict | None = None) -> dict:
     debt_proxy = (seed_for(stock.code, "debt") % 200) + 50
-    div_yield = round((seed_for(stock.code, "div") % 40) / 10, 1)
+    _fund = fund or {}
+    _div_live = _fund.get("div")
+    div_yield = _div_live if (_div_live is not None and _div_live > 0) else round((seed_for(stock.code, "div") % 40) / 10, 1)
+    div_is_real = _div_live is not None and _div_live > 0
     profit_rate = row["profit_rate"]
 
     score = 0.0
@@ -3173,12 +3240,13 @@ def _dalio_stock_analysis(stock: Stock, row: dict) -> dict:
         score -= 0.3
         reasons.append(f"부채비율 추정 {debt_proxy}% — 고레버리지, 부채 사이클 후기에 위험")
 
+    _div_label = "" if div_is_real else " 추정"
     if div_yield > 2.0:
         score += 0.2
-        reasons.append(f"배당수익률 추정 {div_yield}% — 인플레이션 헤지 역할 가능")
+        reasons.append(f"배당수익률{_div_label} {div_yield}% — 인플레이션 헤지 역할 가능")
     elif div_yield > 1.0:
         score += 0.1
-        reasons.append(f"배당수익률 {div_yield}% — 보통. 올웨더 관점에서 방어성 다소 부족")
+        reasons.append(f"배당수익률{_div_label} {div_yield}% — 보통. 올웨더 관점에서 방어성 다소 부족")
     else:
         score -= 0.1
         reasons.append("배당수익률 낮음 — 방어 자산 역할 어려움, 채권·금 병행 권장")
@@ -3209,36 +3277,43 @@ def _dalio_stock_analysis(stock: Stock, row: dict) -> dict:
     return {"verdict": verdict, "badge": badge, "score": score, "reasons": reasons}
 
 
-def _buffett_stock_analysis(stock: Stock, row: dict) -> dict:
-    pbr = round((seed_for(stock.code, "pbr") % 30) / 10 + 0.5, 1)
-    roe = (seed_for(stock.code, "roe") % 25) + 5
+def _buffett_stock_analysis(stock: Stock, row: dict, fund: dict | None = None) -> dict:
+    _fund = fund or {}
+    _pbr_live = _fund.get("pbr")
+    _roe_live = _fund.get("roe")
+    pbr = _pbr_live if (_pbr_live is not None and _pbr_live > 0) else round((seed_for(stock.code, "pbr") % 30) / 10 + 0.5, 1)
+    roe = _roe_live if (_roe_live is not None and _roe_live > 0) else (seed_for(stock.code, "roe") % 25) + 5
+    pbr_is_real = _pbr_live is not None and _pbr_live > 0
+    roe_is_real = _roe_live is not None and _roe_live > 0
     has_dividend = seed_for(stock.code, "div_hist") % 3 != 0
     profit_rate = row["profit_rate"]
 
     score = 0.0
     reasons: list[str] = []
 
+    _pbr_label = "" if pbr_is_real else " 추정"
     if pbr < 1.0:
         score += 0.4
-        reasons.append(f"PBR {pbr} — 청산가치 이하, 강한 안전마진 확보")
+        reasons.append(f"PBR{_pbr_label} {pbr} — 청산가치 이하, 강한 안전마진 확보")
     elif pbr < 1.5:
         score += 0.2
-        reasons.append(f"PBR {pbr} — 합리적 가치권, 해자 강도에 따라 매력도 결정")
+        reasons.append(f"PBR{_pbr_label} {pbr} — 합리적 가치권, 해자 강도에 따라 매력도 결정")
     elif pbr < 2.5:
-        reasons.append(f"PBR {pbr} — 적정~약간 고평가. 강한 해자 있어야 정당화 가능")
+        reasons.append(f"PBR{_pbr_label} {pbr} — 적정~약간 고평가. 강한 해자 있어야 정당화 가능")
     else:
         score -= 0.3
-        reasons.append(f"PBR {pbr} — 고평가. 버핏 기준 '좋은 기업을 공정한 가격에'에 미달")
+        reasons.append(f"PBR{_pbr_label} {pbr} — 고평가. 버핏 기준 '좋은 기업을 공정한 가격에'에 미달")
 
+    _roe_label = "" if roe_is_real else " 추정"
     if roe >= 15:
         score += 0.4
-        reasons.append(f"ROE {roe}% — 탁월한 자본효율성, 장기 복리 성장 기대")
+        reasons.append(f"ROE{_roe_label} {roe}% — 탁월한 자본효율성, 장기 복리 성장 기대")
     elif roe >= 10:
         score += 0.2
-        reasons.append(f"ROE {roe}% — 양호한 수준. 10년 지속 여부가 핵심")
+        reasons.append(f"ROE{_roe_label} {roe}% — 양호한 수준. 10년 지속 여부가 핵심")
     else:
         score -= 0.2
-        reasons.append(f"ROE {roe}% — 낮은 자본효율성. 경제적 해자 불명확")
+        reasons.append(f"ROE{_roe_label} {roe}% — 낮은 자본효율성. 경제적 해자 불명확")
 
     if has_dividend:
         score += 0.1
@@ -3271,7 +3346,7 @@ def _buffett_stock_analysis(stock: Stock, row: dict) -> dict:
     return {"verdict": verdict, "badge": badge, "score": score, "reasons": reasons}
 
 
-def _kotegawa_stock_analysis(stock: Stock, row: dict) -> dict:
+def _kotegawa_stock_analysis(stock: Stock, row: dict, fund: dict | None = None) -> dict:
     vol_spike = round((seed_for(stock.code, "vol_spike") % 30) / 10 + 0.5, 1)
     profit_rate = row["profit_rate"]
 
@@ -3322,7 +3397,7 @@ def _kotegawa_stock_analysis(stock: Stock, row: dict) -> dict:
     return {"verdict": verdict, "badge": badge, "score": score, "reasons": reasons}
 
 
-def _katayama_stock_analysis(stock: Stock, row: dict) -> dict:
+def _katayama_stock_analysis(stock: Stock, row: dict, fund: dict | None = None) -> dict:
     """카타야마 아키라(片山晃·五月天) — 소형 성장주 발굴·집중 투자."""
     growth_proxy = (seed_for(stock.code, "growth") % 40) + 5      # 5–44% 매출성장률 추정
     margin_proxy = (seed_for(stock.code, "margin") % 25) + 5      # 5–29% 영업이익률 추정
@@ -3414,10 +3489,13 @@ def _katayama_stock_analysis(stock: Stock, row: dict) -> dict:
     return {"verdict": verdict, "badge": badge, "score": score, "reasons": reasons}
 
 
-def _lynch_stock_analysis(stock: Stock, row: dict) -> dict:
+def _lynch_stock_analysis(stock: Stock, row: dict, fund: dict | None = None) -> dict:
     """피터 린치 — 10루타·생활 밀착형 성장주 발굴."""
+    _fund = fund or {}
+    _pe_live = _fund.get("per")
     growth_proxy = (seed_for(stock.code, "lynch_growth") % 45) + 5   # 5–49% 성장률
-    pe_proxy     = (seed_for(stock.code, "lynch_pe")     % 40) + 8   # 8–47 PER
+    pe_proxy     = _pe_live if (_pe_live is not None and _pe_live > 0) else (seed_for(stock.code, "lynch_pe") % 40) + 8
+    pe_is_real   = _pe_live is not None and _pe_live > 0
     debt_proxy   = (seed_for(stock.code, "lynch_debt")   % 200) + 30 # 30–229% 부채비율
     familiar     = seed_for(stock.code, "lynch_fam") % 10            # 0–9 소비자 친숙도
     profit_rate  = row["profit_rate"]
@@ -3426,19 +3504,20 @@ def _lynch_stock_analysis(stock: Stock, row: dict) -> dict:
     reasons: list[str] = []
 
     # PEG (P/E ÷ 성장률) — 1 이하면 저평가
+    _pe_label = "" if pe_is_real else " 추정"
     peg = round(pe_proxy / max(growth_proxy, 1), 2)
     if peg < 0.75:
         score += 0.4
-        reasons.append(f"PEG {peg:.2f} — 성장 대비 극히 저평가! 린치 최선호 구간 (PEG < 1이 목표)")
+        reasons.append(f"PEG {peg:.2f} (PER{_pe_label} {pe_proxy}) — 성장 대비 극히 저평가! 린치 최선호 구간 (PEG < 1이 목표)")
     elif peg < 1.0:
         score += 0.25
-        reasons.append(f"PEG {peg:.2f} — 성장 대비 적정 가격. 린치 기준 '공정가치' 수준")
+        reasons.append(f"PEG {peg:.2f} (PER{_pe_label} {pe_proxy}) — 성장 대비 적정 가격. 린치 기준 '공정가치' 수준")
     elif peg < 1.5:
         score += 0.05
-        reasons.append(f"PEG {peg:.2f} — 다소 높음. 성장 가속 신호 없으면 관망")
+        reasons.append(f"PEG {peg:.2f} (PER{_pe_label} {pe_proxy}) — 다소 높음. 성장 가속 신호 없으면 관망")
     else:
         score -= 0.2
-        reasons.append(f"PEG {peg:.2f} — 성장 대비 고평가. 린치는 비싼 성장주를 경계함")
+        reasons.append(f"PEG {peg:.2f} (PER{_pe_label} {pe_proxy}) — 성장 대비 고평가. 린치는 비싼 성장주를 경계함")
 
     # 성장률 절대 수준
     if growth_proxy >= 25:
@@ -3492,12 +3571,19 @@ def _lynch_stock_analysis(stock: Stock, row: dict) -> dict:
     return {"verdict": verdict, "badge": badge, "score": score, "reasons": reasons}
 
 
-def _graham_stock_analysis(stock: Stock, row: dict) -> dict:
+def _graham_stock_analysis(stock: Stock, row: dict, fund: dict | None = None) -> dict:
     """벤저민 그레이엄 — 안전마진·방어적 가치투자."""
-    pe_proxy   = (seed_for(stock.code, "graham_pe")   % 35) + 6    # 6–40 PER
-    pb_proxy   = round((seed_for(stock.code, "graham_pb") % 30 + 5) / 10, 1)  # 0.5–3.5 PBR
+    _fund = fund or {}
+    _pe_live  = _fund.get("per")
+    _pb_live  = _fund.get("pbr")
+    _div_live = _fund.get("div")
+    pe_proxy   = _pe_live if (_pe_live is not None and _pe_live > 0) else (seed_for(stock.code, "graham_pe") % 35) + 6
+    pb_proxy   = _pb_live if (_pb_live is not None and _pb_live > 0) else round((seed_for(stock.code, "graham_pb") % 30 + 5) / 10, 1)
+    div_yield  = _div_live if (_div_live is not None and _div_live > 0) else round((seed_for(stock.code, "graham_div") % 50) / 10, 1)
+    pe_is_real  = _pe_live is not None and _pe_live > 0
+    pb_is_real  = _pb_live is not None and _pb_live > 0
+    div_is_real = _div_live is not None and _div_live > 0
     cr_proxy   = round((seed_for(stock.code, "graham_cr") % 25 + 10) / 10, 1) # 1.0–3.5 유동비율
-    div_yield  = round((seed_for(stock.code, "graham_div") % 50) / 10, 1)     # 0.0–4.9% 배당
     years_prof = (seed_for(stock.code, "graham_yrs") % 10) + 1    # 1–10년 연속 흑자
     profit_rate = row["profit_rate"]
 
@@ -3505,32 +3591,34 @@ def _graham_stock_analysis(stock: Stock, row: dict) -> dict:
     reasons: list[str] = []
 
     # PER — 15배 이하 선호
+    _pe_label = "" if pe_is_real else " 추정"
     if pe_proxy <= 10:
         score += 0.35
-        reasons.append(f"PER 추정 {pe_proxy}배 — 극히 저평가. 그레이엄 '바겐 종목' 기준 충족")
+        reasons.append(f"PER{_pe_label} {pe_proxy}배 — 극히 저평가. 그레이엄 '바겐 종목' 기준 충족")
     elif pe_proxy <= 15:
         score += 0.2
-        reasons.append(f"PER 추정 {pe_proxy}배 — 합리적 가격. 그레이엄 방어적 투자 기준 내")
+        reasons.append(f"PER{_pe_label} {pe_proxy}배 — 합리적 가격. 그레이엄 방어적 투자 기준 내")
     elif pe_proxy <= 25:
         score -= 0.05
-        reasons.append(f"PER 추정 {pe_proxy}배 — 다소 비쌈. 안전마진 확보 어려운 구간")
+        reasons.append(f"PER{_pe_label} {pe_proxy}배 — 다소 비쌈. 안전마진 확보 어려운 구간")
     else:
         score -= 0.3
-        reasons.append(f"PER 추정 {pe_proxy}배 — 고평가. 그레이엄은 높은 PER 종목을 투기로 간주")
+        reasons.append(f"PER{_pe_label} {pe_proxy}배 — 고평가. 그레이엄은 높은 PER 종목을 투기로 간주")
 
     # PBR — 1.5배 이하 선호 (PER×PBR ≤ 22.5 규칙)
+    _pb_label = "" if pb_is_real else " 추정"
     if pb_proxy <= 1.0:
         score += 0.3
-        reasons.append(f"PBR 추정 {pb_proxy}배 — 장부가 이하 거래! 그레이엄 안전마진 극대 구간")
+        reasons.append(f"PBR{_pb_label} {pb_proxy}배 — 장부가 이하 거래! 그레이엄 안전마진 극대 구간")
     elif pb_proxy <= 1.5:
         score += 0.15
-        reasons.append(f"PBR 추정 {pb_proxy}배 — 적정. PER×PBR={pe_proxy*pb_proxy:.0f} (≤22.5 규칙 확인)")
+        reasons.append(f"PBR{_pb_label} {pb_proxy}배 — 적정. PER×PBR={pe_proxy*pb_proxy:.0f} (≤22.5 규칙 확인)")
     elif pb_proxy <= 2.5:
         score -= 0.1
-        reasons.append(f"PBR 추정 {pb_proxy}배 — 프리미엄 구간. 자산 대비 안전마진 부족")
+        reasons.append(f"PBR{_pb_label} {pb_proxy}배 — 프리미엄 구간. 자산 대비 안전마진 부족")
     else:
         score -= 0.25
-        reasons.append(f"PBR 추정 {pb_proxy}배 — 고평가. 그레이엄은 청산가치 이상 투자를 경계")
+        reasons.append(f"PBR{_pb_label} {pb_proxy}배 — 고평가. 그레이엄은 청산가치 이상 투자를 경계")
 
     # 유동비율 (재무 안전성)
     if cr_proxy >= 2.0:
@@ -3544,15 +3632,16 @@ def _graham_stock_analysis(stock: Stock, row: dict) -> dict:
         reasons.append(f"유동비율 추정 {cr_proxy}배 — 단기 유동성 부족 우려. 그레이엄은 1.5배 미만 경계")
 
     # 배당 — 방어적 투자자 기준 배당 지속성
+    _div_label = "" if div_is_real else " 추정"
     if div_yield >= 3.0:
         score += 0.15
-        reasons.append(f"배당수익률 추정 {div_yield}% — 안정적 현금흐름. 방어적 투자자 조건 충족")
+        reasons.append(f"배당수익률{_div_label} {div_yield}% — 안정적 현금흐름. 방어적 투자자 조건 충족")
     elif div_yield >= 1.5:
         score += 0.05
-        reasons.append(f"배당수익률 추정 {div_yield}% — 배당 있음. 지속 가능성과 성장성 함께 확인")
+        reasons.append(f"배당수익률{_div_label} {div_yield}% — 배당 있음. 지속 가능성과 성장성 함께 확인")
     else:
         score -= 0.1
-        reasons.append(f"배당수익률 {div_yield}% — 배당 미흡. 그레이엄 방어적 기준에서 감점 요인")
+        reasons.append(f"배당수익률{_div_label} {div_yield}% — 배당 미흡. 그레이엄 방어적 기준에서 감점 요인")
 
     # 연속 흑자
     if years_prof >= 7:
@@ -3785,17 +3874,20 @@ def render_portfolio_page(market: str, use_live: bool) -> None:
     render_portfolio_advisor_summary(rows)
 
 
-def render_stock_advisor_panel(stock: Stock) -> None:
+def render_stock_advisor_panel(stock: Stock, use_live: bool = False) -> None:
     """6인 투자 대가의 관점으로 선택 종목을 분석하는 패널."""
     st.subheader("투자 대가별 종목 분석")
     dummy_row = {"profit_rate": 0.0, "profit": 0}
 
-    dalio    = _dalio_stock_analysis(stock, dummy_row)
-    buffett  = _buffett_stock_analysis(stock, dummy_row)
-    kotegawa = _kotegawa_stock_analysis(stock, dummy_row)
-    katayama = _katayama_stock_analysis(stock, dummy_row)
-    lynch    = _lynch_stock_analysis(stock, dummy_row)
-    graham   = _graham_stock_analysis(stock, dummy_row)
+    fund = get_stock_fundamentals(stock, use_live)
+    src = fund.get("source", "")
+
+    dalio    = _dalio_stock_analysis(stock, dummy_row, fund=fund)
+    buffett  = _buffett_stock_analysis(stock, dummy_row, fund=fund)
+    kotegawa = _kotegawa_stock_analysis(stock, dummy_row, fund=fund)
+    katayama = _katayama_stock_analysis(stock, dummy_row, fund=fund)
+    lynch    = _lynch_stock_analysis(stock, dummy_row, fund=fund)
+    graham   = _graham_stock_analysis(stock, dummy_row, fund=fund)
 
     tab_d, tab_b, tab_k, tab_ka, tab_l, tab_g = st.tabs([
         f"🇺🇸 달리오 {dalio['badge']}",
@@ -3877,7 +3969,10 @@ def render_stock_advisor_panel(stock: Stock) -> None:
                     "안전마진 · PBR·PER 이중 기준 · 방어적 투자", graham,
                     "투자란 철저한 분석 후 원금을 안전하게 지키면서 적절한 수익을 추구하는 것이다. 그 외는 모두 투기다.", "벤저민 그레이엄")
 
-    st.caption("재무 수치는 데모 시뮬레이션 값입니다. 실제 투자 전 공시 재무제표를 반드시 확인하십시오.")
+    if src:
+        st.caption(f"재무지표 출처: {src} (PER·PBR·ROE·배당수익률). 부채비율·성장률은 추정값. 실제 투자 전 공시 재무제표를 반드시 확인하십시오.")
+    else:
+        st.caption("재무 수치는 추정값입니다. 실제 투자 전 공시 재무제표를 반드시 확인하십시오.")
 
 
 def render_dalio_advice(stocks: list[Stock], use_live: bool) -> None:
