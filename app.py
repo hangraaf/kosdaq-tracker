@@ -2993,7 +2993,7 @@ def render_chart(stock: Stock, period_label: str, use_live: bool) -> tuple[pd.Da
         go.Scatter(
             x=pd.concat([df["date"], df["date"].iloc[::-1]]),
             y=pd.concat([df["bb_upper"], df["bb_lower"].iloc[::-1]]),
-            fill="toself", fillcolor="rgba(88,166,255,0.07)",
+            fill="toself", fillcolor="rgba(67,107,149,0.06)",
             line=dict(color="rgba(0,0,0,0)"),
             hoverinfo="skip", name="볼린저밴드 (가격 범위)",
         ),
@@ -3106,7 +3106,8 @@ def render_chart(stock: Stock, period_label: str, use_live: bool) -> tuple[pd.Da
             + ext["sector_flow"] * 0.05
         )
         if abs(ext_score) > 0.05:
-            tint = "rgba(62,144,80,0.07)" if ext_score > 0 else "rgba(200,72,72,0.07)"
+            # 양수 = 프렌치 블루, 음수 = 머스크 레드 (둘 다 매우 옅게)
+            tint = "rgba(67,107,149,0.05)" if ext_score > 0 else "rgba(181,69,63,0.05)"
             fig.add_shape(
                 type="rect",
                 xref="x domain", yref="y domain",
@@ -3136,7 +3137,7 @@ def render_chart(stock: Stock, period_label: str, use_live: bool) -> tuple[pd.Da
                 text="  ".join(badges),
                 showarrow=False,
                 font=dict(size=10, color=signal_color),
-                bgcolor="rgba(245,241,235,0.88)",
+                bgcolor="rgba(253,250,244,0.92)",
                 bordercolor=signal_color,
                 borderwidth=1,
                 borderpad=4,
@@ -3236,13 +3237,13 @@ def render_chart(stock: Stock, period_label: str, use_live: bool) -> tuple[pd.Da
         xaxis_rangeslider_visible=False,
         showlegend=False,
         paper_bgcolor="rgba(248,244,235,1)",
-        plot_bgcolor="rgba(241,236,223,1)",
+        plot_bgcolor="rgba(253,250,244,1)",
         font=dict(color="#3D3830", family="Pretendard, sans-serif"),
         hoverlabel=dict(bgcolor="#FFFFFF", font_size=12, namelength=-1, font_color="#1C1916"),
     )
-    fig.update_yaxes(tickformat=",", row=1, col=1, gridcolor="#D4CFC6", zerolinecolor="#C2BCB4")
-    fig.update_yaxes(title_text="RSI", range=[0, 100], row=4, col=1, gridcolor="#D4CFC6")
-    fig.update_xaxes(gridcolor="#D4CFC6", showgrid=False)
+    fig.update_yaxes(tickformat=",", row=1, col=1, gridcolor="#E8E1D0", zerolinecolor="#BCB09A")
+    fig.update_yaxes(title_text="RSI", range=[0, 100], row=4, col=1, gridcolor="#E8E1D0")
+    fig.update_xaxes(gridcolor="#E8E1D0", showgrid=False)
     fig.update_layout(clickmode="event+select")
 
     # ── Bauhaus 범례 ─────────────────────────────────
@@ -3383,7 +3384,7 @@ def render_forecast(df: pd.DataFrame, stock: Stock) -> None:
         title=f"{stock.name} 다요인 예측",
         margin=dict(l=10, r=10, t=48, b=10),
         paper_bgcolor="rgba(248,244,235,1)",
-        plot_bgcolor="rgba(241,236,223,1)",
+        plot_bgcolor="rgba(253,250,244,1)",
         font=dict(color="#3D3830", family="Pretendard, sans-serif"),
     )
     st.plotly_chart(fig, use_container_width=True)
@@ -3439,11 +3440,11 @@ def render_forecast(df: pd.DataFrame, stock: Stock) -> None:
         margin=dict(l=10, r=60, t=44, b=10),
         xaxis=dict(
             zeroline=True, zerolinecolor="#B0A090", zerolinewidth=1.5,
-            range=[-0.22, 0.22], gridcolor="#D4CFC6",
+            range=[-0.22, 0.22], gridcolor="#E8E1D0",
             title="가중 기여도",
         ),
         paper_bgcolor="rgba(248,244,235,1)",
-        plot_bgcolor="rgba(241,236,223,1)",
+        plot_bgcolor="rgba(253,250,244,1)",
         font=dict(color="#3D3830", family="Pretendard, sans-serif", size=11),
         showlegend=False,
     )
