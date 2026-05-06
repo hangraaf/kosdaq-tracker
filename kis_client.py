@@ -136,6 +136,16 @@ class KISClient:
             "raw": output,
         }
 
+    def get_stock_info(self, code: str) -> dict[str, Any]:
+        """종목 기본정보 조회 (이름·시장·업종)."""
+        response = requests.get(
+            f"{self.config.base_url}/uapi/domestic-stock/v1/quotations/search-stock-info",
+            headers=self._headers("CTPF1002R"),
+            params={"PRDT_TYPE_CD": "300", "PDNO": code},
+            timeout=10,
+        )
+        return self._parse_response(response).get("output") or {}
+
     def daily_chart(self, code: str, days: int) -> pd.DataFrame:
         end = date.today()
         start = end - pd.Timedelta(days=max(days * 2, 60))

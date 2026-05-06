@@ -593,20 +593,27 @@ div[data-testid="stMetric"] [data-testid="stMetricDelta"] {
   box-shadow: 0 0 0 3px rgba(156,112,48,0.2) !important;
   outline: none !important;
 }
-/* 사이드바 multiselect */
+/* 사이드바 multiselect — text input과 동일한 필 스타일 */
 [data-testid="stSidebar"] [data-baseweb="select"] > div {
   background: #FAF8F4 !important;
   border: 1.5px solid #B0A090 !important;
   border-radius: 24px !important;
   color: #2A1F18 !important;
   font-family: var(--font) !important;
-  padding: 2px 8px !important;
+  font-size: 0.88rem !important;
+  min-height: 42px !important;
+  padding: 6px 14px !important;
   box-shadow: 0 1px 3px rgba(0,0,0,0.08) !important;
+}
+[data-testid="stSidebar"] [data-baseweb="select"] > div:focus-within {
+  border-color: var(--yellow) !important;
+  box-shadow: 0 0 0 3px rgba(156,112,48,0.2) !important;
 }
 [data-testid="stSidebar"] [data-baseweb="tag"] {
   border-radius: 14px !important;
   background: var(--yellow) !important;
   color: #FFFFFF !important;
+  font-size: 0.78rem !important;
 }
 
 /* ── Tabs ────────────────────────────────────── */
@@ -1030,11 +1037,77 @@ def seed_for(code: str, salt: str = "") -> int:
 
 
 def all_stocks() -> list[Stock]:
-    return MARKET_STOCKS["전체"]
+    base = MARKET_STOCKS["전체"]
+    dynamic: dict[str, Stock] = st.session_state.get("dynamic_stocks", {})
+    if not dynamic:
+        return base
+    base_codes = {s.code for s in base}
+    return base + [s for s in dynamic.values() if s.code not in base_codes]
 
 
 def find_stock(code: str) -> Stock | None:
-    return next((stock for stock in all_stocks() if stock.code == code), None)
+    dynamic: dict[str, Stock] = st.session_state.get("dynamic_stocks", {})
+    if code in dynamic:
+        return dynamic[code]
+    return next((s for s in MARKET_STOCKS["전체"] if s.code == code), None)
+
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def _naver_stock_search(keyword: str) -> list[dict]:
+    """네이버 금융 자동완성으로 종목 검색 (인증 불필요)."""
+    import requests as _req
+    try:
+        resp = _req.get(
+            "https://ac.finance.naver.com/ac",
+            params={"q": keyword, "q_enc": "UTF-8", "st": "111111", "sug": "", "m": "stock", "r": "1", "v": "2"},
+            headers={"User-Agent": "Mozilla/5.0"},
+            timeout=5,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        results = []
+        for group in data.get("items", []):
+            for item in group:
+                if isinstance(item, list) and len(item) >= 2:
+                    code = str(item[1]).zfill(6)
+                    market_flag = str(item[2]) if len(item) > 2 else "1"
+                    results.append({
+                        "name": str(item[0]),
+                        "code": code,
+                        "market": "KOSPI" if market_flag == "1" else "KOSDAQ",
+                    })
+        return results
+    except Exception:
+        return []
+
+
+def _register_dynamic_stock(result: dict, kis_client: "KISClient | None") -> Stock:
+    """API 검색 결과를 동적 Stock으로 등록하고 반환."""
+    code = result["code"]
+    name = result["name"]
+    market = result["market"]
+    sector = "기타"
+    base_price = 0
+
+    if kis_client is not None:
+        try:
+            info = kis_client.get_stock_info(code)
+            sector = info.get("bstp_kor_isnm") or info.get("prdt_clsf_name") or "기타"
+            price_data = kis_client.inquire_price(code)
+            base_price = price_data.get("price", 0)
+            mket = info.get("mket_id_cd", "")
+            if mket in {"STK", "J"}:
+                market = "KOSPI"
+            elif mket in {"KSQ", "Q"}:
+                market = "KOSDAQ"
+        except Exception:
+            pass
+
+    stock = Stock(code=code, name=name, market=market, sector=sector, base_price=base_price)
+    if "dynamic_stocks" not in st.session_state:
+        st.session_state["dynamic_stocks"] = {}
+    st.session_state["dynamic_stocks"][code] = stock
+    return stock
 
 
 def money(value: float | int) -> str:
@@ -1815,13 +1888,7 @@ def render_sidebar() -> tuple[str, str, str, list[str], bool, int]:
     kw = keyword.strip()
     if kw:
         matches = filtered_stocks("전체", kw, [])[:10]
-        if not matches:
-            st.sidebar.markdown(
-                '<div style="font-size:0.78rem;color:var(--muted);padding:6px 2px;">'
-                '검색 결과가 없습니다.</div>',
-                unsafe_allow_html=True,
-            )
-        else:
+        if matches:
             st.sidebar.markdown(
                 f'<div style="font-size:0.64rem;letter-spacing:0.1em;text-transform:uppercase;'
                 f'color:var(--muted);padding:4px 2px 2px;">'
@@ -1835,6 +1902,32 @@ def render_sidebar() -> tuple[str, str, str, list[str], bool, int]:
                     st.session_state["selected_code"] = stk.code
                     st.session_state["menu_override"] = "차트"
                     st.rerun()
+        else:
+            # ── 로컬 미등록 종목 → 네이버 금융 자동완성 API로 폴백 ──
+            with st.sidebar:
+                with st.spinner("종목 검색 중…"):
+                    api_hits = _naver_stock_search(kw)
+            if not api_hits:
+                st.sidebar.markdown(
+                    '<div style="font-size:0.78rem;color:var(--muted);padding:6px 2px;">'
+                    '검색 결과가 없습니다.</div>',
+                    unsafe_allow_html=True,
+                )
+            else:
+                st.sidebar.markdown(
+                    f'<div style="font-size:0.64rem;letter-spacing:0.08em;color:var(--muted);'
+                    f'padding:4px 2px 2px;">▸ API {len(api_hits)}개</div>',
+                    unsafe_allow_html=True,
+                )
+                _kis = get_kis_client() if _has_config else None
+                for hit in api_hits[:8]:
+                    mkt_icon = "🔴" if hit["market"] == "KOSPI" else "🔵"
+                    btn_label = f"{mkt_icon} {hit['name']}  {hit['code']}"
+                    if st.sidebar.button(btn_label, key=f"api-{hit['code']}", use_container_width=True):
+                        stk = _register_dynamic_stock(hit, _kis)
+                        st.session_state["selected_code"] = stk.code
+                        st.session_state["menu_override"] = "차트"
+                        st.rerun()
 
     st.sidebar.divider()
 
