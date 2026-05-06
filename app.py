@@ -383,45 +383,49 @@ PERIODS = {"5일": 5, "2주": 10, "1개월": 22, "3개월": 65, "6개월": 130, 
 
 BH_CSS = """
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&family=Nanum+Gothic+Coding:wght@400;700&family=Nanum+Myeongjo:wght@400;700;800&display=swap');
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;500;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap');
 
-/* ── 오프화이트 라이트 테마 — 나눔고딕 ──────────
-   따뜻한 오프화이트 배경 · 나눔고딕 본문 · 나눔명조 제목
-   깔끔한 그리드 · 최소 장식
+/* ── 프렌치 블루 × 오프화이트 ─────────────────────
+   메인: 미색 크림 배경 · 프렌치 블루 액센트
+   서브: 머스크 레드(상승) · 짙은 블루(하락) · 머스타드 골드(강조)
+   타이포: Pretendard(본문) · Noto Serif KR(제목) · JetBrains Mono(숫자)
    ─────────────────────────────────────────────── */
 :root {
-  /* 배경 — 따뜻한 오프화이트 */
-  --bg:       #F5F1EB;
-  --surf:     #EDE9E2;
-  --surf2:    #E5E0D8;
-  --surf-warm:#DDD8D0;
-  --grid:     #D4CFC6;
-  --border:   #C2BCB4;
-  --border2:  #ABA5A0;
+  /* 배경 — 따뜻한 오프화이트(미색) */
+  --bg:        #F8F4EB;       /* 메인 크림 배경 */
+  --surf:      #F1ECDF;       /* 카드 배경 */
+  --surf2:     #E9E2D2;       /* 강조 카드 */
+  --surf-warm: #DDD3BE;       /* 따뜻한 강조 */
+  --grid:      #D0C6B2;       /* 그리드 */
+  --border:    #BCB09A;       /* 기본 테두리 */
+  --border2:   #9D9080;       /* 강조 테두리 */
 
-  /* 색상 — 라이트 배경용 진한 어스톤 */
-  --red:      #C03828;      /* 테라코타 (상승) */
-  --blue:     #2858A0;      /* 딥 인디고 (하락) */
-  --yellow:   #9C7030;      /* 웜 앰버 (메인 강조) */
-  --cyan:     #3A6858;      /* 딥 세이지 (보조) */
-  --magenta:  #685878;      /* 덤 라벤더 (예비) */
+  /* 프렌치 블루 — 메인 액센트 시스템 */
+  --blue:        #436B95;     /* 클래식 프렌치 블루 (하락 + 메인 액센트) */
+  --blue-deep:   #2C4A6E;     /* 짙은 프렌치 블루 (헤더, 강조) */
+  --blue-soft:   #6B8AAE;     /* 옅은 프렌치 블루 (보조) */
+  --blue-pale:   #C8D4E2;     /* 매우 옅은 블루 (배경 틴트) */
 
-  /* 텍스트 — 어두운 웜 계열 */
-  --white:    #1C1916;      /* 기본 텍스트 (거의 검정) */
-  --fg:       #3D3830;      /* 보조 텍스트 */
-  --muted:    #7A726A;      /* 흐린 텍스트 */
-  --muted2:   #A8A09A;      /* 더 흐린 텍스트 */
+  /* 보조색 */
+  --red:      #B5453F;        /* 머스크 레드 (상승) */
+  --yellow:   #B0883A;        /* 머스타드 골드 (강조) */
+  --cyan:     var(--blue);    /* 호환: cyan = 프렌치 블루 */
+  --magenta:  var(--blue-deep);
 
-  /* 글로우 없음 */
-  --glow-y:   none;
-  --glow-r:   none;
-  --glow-b:   none;
-  --glow-c:   none;
+  /* 텍스트 */
+  --white:    #1A1611;
+  --fg:       #3D362A;
+  --muted:    #7C7264;
+  --muted2:   #A89E8A;
 
-  /* 타이포 — 나눔명조(제목) + 나눔고딕(본문) + 나눔고딕코딩(숫자) */
-  --serif:    'Nanum Myeongjo', serif;
-  --font:     'Nanum Gothic', sans-serif;
-  --mono:     'Nanum Gothic Coding', 'Nanum Gothic', monospace;
+  /* 글로우 비활성 */
+  --glow-y: none; --glow-r: none; --glow-b: none; --glow-c: none;
+
+  /* 타이포 — 통일된 디자인 언어 */
+  --serif: 'Noto Serif KR', 'Nanum Myeongjo', serif;
+  --font:  'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --mono:  'JetBrains Mono', 'Pretendard', monospace;
   color-scheme: light;
 }
 
@@ -434,35 +438,35 @@ body, .stApp {
   line-height: 1.7 !important;
 }
 
-/* ── Sidebar ─────────────────────────────────── */
+/* ── Sidebar — 짙은 프렌치 블루 톤 ─────────── */
 [data-testid="stSidebar"] {
-  background: #C8BFB2 !important;          /* 메인(#F5F1EB)보다 확연히 짙은 웜 베이지 */
-  border-right: 2px solid #A89A8C !important;
+  background: #2C4A6E !important;          /* 짙은 프렌치 블루 사이드바 */
+  border-right: 1px solid #1F3552 !important;
 }
 [data-testid="stSidebar"] > div:first-child {
   padding: 1.5rem 1rem 2rem !important;
 }
 [data-testid="stSidebar"] label {
   font-family: var(--font) !important;
-  font-weight: 700 !important;
-  font-size: 0.9rem !important;
-  color: #3A2E28 !important;               /* 사이드바용 더 진한 텍스트 */
+  font-weight: 600 !important;
+  font-size: 0.88rem !important;
+  color: #F0EBE0 !important;
 }
 [data-testid="stSidebar"] p,
 [data-testid="stSidebar"] div {
-  color: #3A2E28 !important;
+  color: #E5DECD !important;
 }
 
 /* ── Typography ──────────────────────────────── */
 h1 {
   font-family: var(--serif) !important;
   font-size: 1.5rem !important;
-  font-weight: 800 !important;
-  letter-spacing: 0.01em !important;
-  border-left: 3px solid var(--yellow) !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.005em !important;
+  border-left: 3px solid var(--blue) !important;
   padding-left: 16px !important;
   margin-bottom: 8px !important;
-  color: var(--white) !important;
+  color: var(--blue-deep) !important;
 }
 h2 {
   font-family: var(--serif) !important;
@@ -483,12 +487,13 @@ h3 {
 
 /* ── Metric blocks ───────────────────────────── */
 div[data-testid="stMetric"] {
-  background: var(--surf2) !important;
+  background: #FBF8F1 !important;
   border: 1px solid var(--border) !important;
-  border-top: 2px solid var(--yellow) !important;
-  border-radius: 0 !important;
+  border-top: 2px solid var(--blue) !important;
+  border-radius: 4px !important;
   padding: 14px 16px !important;
   overflow: visible !important;
+  box-shadow: 0 1px 3px rgba(44, 74, 110, 0.05) !important;
 }
 div[data-testid="stMetric"] label {
   font-family: var(--font) !important;
@@ -522,34 +527,38 @@ div[data-testid="stMetric"] [data-testid="stMetricDelta"] {
   white-space: nowrap !important;
 }
 
-/* ── Buttons ─────────────────────────────────── */
+/* ── Buttons — 통일된 프렌치 블루 시스템 ───── */
 .stButton > button {
-  border-radius: 2px !important;
+  border-radius: 4px !important;
   font-family: var(--font) !important;
-  font-weight: 700 !important;
-  font-size: 0.85rem !important;
-  letter-spacing: 0.04em !important;
+  font-weight: 600 !important;
+  font-size: 0.86rem !important;
+  letter-spacing: -0.005em !important;
   text-transform: none !important;
-  transition: all 0.2s !important;
+  transition: all 0.18s ease !important;
+  box-shadow: 0 1px 2px rgba(44, 74, 110, 0.06) !important;
 }
 .stButton > button[kind="primary"] {
-  background: var(--yellow) !important;
+  background: var(--blue) !important;
   color: #FFFFFF !important;
-  border: 1px solid var(--yellow) !important;
+  border: 1px solid var(--blue) !important;
 }
 .stButton > button[kind="primary"]:hover {
-  background: transparent !important;
-  color: var(--yellow) !important;
-  border-color: var(--yellow) !important;
+  background: var(--blue-deep) !important;
+  border-color: var(--blue-deep) !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 3px 8px rgba(44, 74, 110, 0.22) !important;
+  transform: translateY(-1px);
 }
 .stButton > button[kind="secondary"] {
-  background: var(--surf2) !important;
+  background: #FBF8F1 !important;
   color: var(--fg) !important;
-  border: 1px solid var(--border2) !important;
+  border: 1px solid var(--border) !important;
 }
 .stButton > button[kind="secondary"]:hover {
-  border-color: var(--yellow) !important;
-  color: var(--yellow) !important;
+  border-color: var(--blue) !important;
+  color: var(--blue) !important;
+  background: var(--blue-pale) !important;
 }
 
 /* ── Inputs (메인 영역) ──────────────────────── */
@@ -578,42 +587,44 @@ div[data-testid="stMetric"] [data-testid="stMetricDelta"] {
 /* ── 사이드바 Inputs — 둥근 필 스타일 ─────────── */
 [data-testid="stSidebar"] .stTextInput input,
 [data-testid="stSidebar"] .stNumberInput input {
-  background: #FAF8F4 !important;
-  border: 1.5px solid #B0A090 !important;
-  border-radius: 24px !important;
-  color: #2A1F18 !important;
+  background: rgba(248, 244, 235, 0.95) !important;
+  border: 1px solid rgba(248, 244, 235, 0.4) !important;
+  border-radius: 22px !important;
+  color: #1A2638 !important;
   font-family: var(--font) !important;
+  font-weight: 500 !important;
   font-size: 0.88rem !important;
   padding: 8px 18px !important;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.08) !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15) !important;
 }
 [data-testid="stSidebar"] .stTextInput input:focus,
 [data-testid="stSidebar"] .stNumberInput input:focus {
   border-color: var(--yellow) !important;
-  box-shadow: 0 0 0 3px rgba(156,112,48,0.2) !important;
+  box-shadow: 0 0 0 3px rgba(176, 136, 58, 0.35) !important;
   outline: none !important;
 }
-/* 사이드바 multiselect — text input과 동일한 필 스타일 */
+/* 사이드바 multiselect */
 [data-testid="stSidebar"] [data-baseweb="select"] > div {
-  background: #FAF8F4 !important;
-  border: 1.5px solid #B0A090 !important;
-  border-radius: 24px !important;
-  color: #2A1F18 !important;
+  background: rgba(248, 244, 235, 0.95) !important;
+  border: 1px solid rgba(248, 244, 235, 0.4) !important;
+  border-radius: 22px !important;
+  color: #1A2638 !important;
   font-family: var(--font) !important;
   font-size: 0.88rem !important;
   min-height: 42px !important;
   padding: 6px 14px !important;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.08) !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15) !important;
 }
 [data-testid="stSidebar"] [data-baseweb="select"] > div:focus-within {
   border-color: var(--yellow) !important;
-  box-shadow: 0 0 0 3px rgba(156,112,48,0.2) !important;
+  box-shadow: 0 0 0 3px rgba(176, 136, 58, 0.35) !important;
 }
 [data-testid="stSidebar"] [data-baseweb="tag"] {
-  border-radius: 14px !important;
+  border-radius: 12px !important;
   background: var(--yellow) !important;
   color: #FFFFFF !important;
-  font-size: 0.78rem !important;
+  font-weight: 600 !important;
+  font-size: 0.76rem !important;
 }
 
 /* ── Tabs ────────────────────────────────────── */
@@ -634,9 +645,9 @@ div[data-testid="stMetric"] [data-testid="stMetricDelta"] {
   color: var(--muted) !important;
 }
 [data-testid="stTabs"] [aria-selected="true"] {
-  color: var(--white) !important;
-  border-bottom: 2px solid var(--yellow) !important;
-  font-weight: 800 !important;
+  color: var(--blue-deep) !important;
+  border-bottom: 2px solid var(--blue) !important;
+  font-weight: 700 !important;
 }
 
 /* ── Expanders ───────────────────────────────── */
@@ -706,16 +717,16 @@ hr {
   opacity: 0.8 !important;
 }
 
-/* ── Sidebar 검색 결과 버튼 ──────────────────── */
+/* ── Sidebar 검색 결과 버튼 — 옅은 크림 필 ───── */
 [data-testid="stSidebar"] .stButton > button {
   text-align: left !important;
   justify-content: flex-start !important;
-  font-size: 0.86rem !important;
-  font-weight: 700 !important;
-  background: rgba(255,255,255,0.45) !important;
-  border: 1px solid rgba(160,140,120,0.35) !important;
+  font-size: 0.84rem !important;
+  font-weight: 600 !important;
+  background: rgba(248, 244, 235, 0.92) !important;
+  border: 1px solid rgba(248, 244, 235, 0.3) !important;
   border-radius: 20px !important;
-  color: #2A1F18 !important;
+  color: #1A2638 !important;
   padding: 7px 16px !important;
   height: auto !important;
   min-height: 0 !important;
@@ -723,14 +734,14 @@ hr {
   white-space: nowrap !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
-  transition: all 0.18s !important;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.07) !important;
+  transition: all 0.18s ease !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.12) !important;
 }
 [data-testid="stSidebar"] .stButton > button:hover {
   background: var(--yellow) !important;
   color: #FFFFFF !important;
   border-color: var(--yellow) !important;
-  box-shadow: 0 3px 8px rgba(156,112,48,0.3) !important;
+  box-shadow: 0 3px 8px rgba(176, 136, 58, 0.4) !important;
   transform: translateY(-1px) !important;
 }
 
@@ -748,12 +759,13 @@ hr {
 }
 /* 사이드바 라디오 */
 [data-testid="stSidebar"] [data-testid="stRadio"] label {
-  color: #2A1F18 !important;
-  font-weight: 700 !important;
+  color: #F0EBE0 !important;
+  font-weight: 600 !important;
   font-size: 0.92rem !important;
 }
 [data-testid="stSidebar"] [data-testid="stRadio"] [data-checked="true"] + span {
   color: var(--yellow) !important;
+  font-weight: 700 !important;
 }
 
 /* ── Grid 컨테이너 통일 ──────────────────────── */
@@ -770,15 +782,21 @@ hr {
   max-width: 1200px !important;
 }
 
-/* ── Stock cards ─────────────────────────────── */
+/* ── Stock cards — 통일된 카드 스타일 ───────── */
 .bh-card {
-  background: #FFFFFF;
+  background: #FBF8F1;
   border: 1px solid var(--border);
-  border-left: 3px solid var(--border2);
+  border-left: 3px solid var(--blue-soft);
   padding: 18px 16px 14px;
   min-height: 155px;
   margin-bottom: 4px;
-  border-radius: 2px;
+  border-radius: 6px;
+  box-shadow: 0 1px 4px rgba(44, 74, 110, 0.06);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+.bh-card:hover {
+  box-shadow: 0 4px 12px rgba(44, 74, 110, 0.12);
+  transform: translateY(-1px);
 }
 .bh-card.up   { border-left-color: var(--red); }
 .bh-card.down { border-left-color: var(--blue); }
@@ -812,18 +830,18 @@ hr {
 .bh-delta.down { color: var(--blue); }
 .bh-delta.flat { color: var(--muted); }
 
-/* ── Sidebar 로고 — 80s Bauhaus ─────────────── */
+/* ── Sidebar 로고 — 프렌치 블루 다크 / 미색 텍스트 ── */
 .bh-logo {
   display: flex;
   align-items: center;
-  gap: 18px;
-  margin-bottom: 32px;
-  padding-bottom: 26px;
-  border-bottom: 3px solid var(--yellow);
+  gap: 16px;
+  margin-bottom: 28px;
+  padding-bottom: 22px;
+  border-bottom: 1.5px solid var(--yellow);
 }
 .bh-logo-mark {
-  width: 72px; height: 72px;
-  background: #1C1916;
+  width: 64px; height: 64px;
+  background: #F8F4EB;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -831,87 +849,89 @@ hr {
   justify-content: center;
   position: relative;
   overflow: hidden;
-  border-radius: 10px;
-  box-shadow: 0 4px 14px rgba(0,0,0,0.32);
+  border-radius: 8px;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.25);
   gap: 0;
 }
-/* 왼쪽 황금 수직 바 — 바우하우스 그리드 강조 */
+/* 왼쪽 골드 수직 바 */
 .bh-logo-mark::before {
   content: '';
   position: absolute;
   left: 0; top: 0; bottom: 0;
-  width: 7px;
+  width: 5px;
   background: var(--yellow);
 }
-/* 하단 얇은 황금 줄 */
+/* 하단 얇은 골드 줄 */
 .bh-logo-mark::after {
   content: '';
   position: absolute;
-  bottom: 0; left: 7px; right: 0;
-  height: 4px;
+  bottom: 0; left: 5px; right: 0;
+  height: 3px;
   background: var(--yellow);
-  opacity: 0.6;
+  opacity: 0.5;
 }
 .bh-logo-tri {
-  font-size: 2.1rem;
-  color: var(--yellow);
+  font-size: 1.85rem;
+  color: var(--blue);
   line-height: 1;
-  margin-left: 5px;
+  margin-left: 4px;
+  font-weight: 700;
 }
 .bh-logo-krx {
   font-family: var(--font);
-  font-size: 0.58rem;
+  font-size: 0.54rem;
   font-weight: 800;
   letter-spacing: 0.22em;
-  color: rgba(255,255,255,0.55);
-  margin-top: 2px;
-  margin-left: 5px;
+  color: var(--blue-deep);
+  margin-top: 1px;
+  margin-left: 4px;
   text-transform: uppercase;
+  opacity: 0.7;
 }
 .bh-logo-text { line-height: 1; }
 .bh-logo-title {
   font-family: var(--font);
-  font-size: 1.52rem;
+  font-size: 1.4rem;
   font-weight: 800;
-  letter-spacing: 0.08em;
-  color: #1C1916;
+  letter-spacing: 0.06em;
+  color: #F8F4EB;
   text-transform: uppercase;
   line-height: 1.05;
   display: block;
 }
 .bh-logo-tracker {
   font-family: var(--font);
-  font-size: 0.82rem;
-  font-weight: 700;
-  letter-spacing: 0.28em;
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 0.3em;
   color: var(--yellow);
   text-transform: uppercase;
   display: block;
-  margin-top: 3px;
+  margin-top: 4px;
   line-height: 1.3;
 }
 .bh-logo-sub {
   font-family: var(--font);
-  font-size: 0.68rem;
+  font-size: 0.64rem;
   font-weight: 400;
   letter-spacing: 0.12em;
-  color: #6A5848;
-  margin-top: 7px;
-  padding-top: 6px;
-  border-top: 1px solid #A89080;
+  color: rgba(229, 222, 205, 0.7);
+  margin-top: 6px;
+  padding-top: 5px;
+  border-top: 1px solid rgba(229, 222, 205, 0.25);
   display: block;
 }
 
-/* ── Section label ───────────────────────────── */
+/* ── Section label — 프렌치 블루 강조 ──────── */
 .bh-section-label {
   font-family: var(--font);
-  font-size: 0.7rem;
+  font-size: 0.74rem;
   font-weight: 700;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--muted);
-  border-bottom: 1px solid var(--border);
-  padding-bottom: 4px;
+  color: var(--blue-deep);
+  border-bottom: 1px solid var(--blue-soft);
+  padding-bottom: 5px;
   margin: 24px 0 12px;
   display: block;
   background: transparent;
@@ -935,17 +955,17 @@ hr {
   color: var(--yellow);
 }
 
-/* ── Sidebar nav title ───────────────────────── */
+/* ── Sidebar nav title — 미색 텍스트 / 골드 언더라인 ── */
 .bh-sidebar-title {
   font-family: var(--font);
-  font-size: 0.78rem;
-  font-weight: 800;
-  letter-spacing: 0.14em;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: #5C4A3A;
-  border-bottom: 2px solid var(--yellow);
+  color: #E5DECD;
+  border-bottom: 1.5px solid var(--yellow);
   padding-bottom: 6px;
-  margin: 24px 0 10px;
+  margin: 22px 0 10px;
   display: block;
   background: transparent;
 }
@@ -2978,7 +2998,7 @@ def render_chart(stock: Stock, period_label: str, use_live: bool) -> tuple[pd.Da
     fig.add_trace(
         go.Scatter(
             x=df["date"], y=df["bb_upper"], name="BB상단",
-            line=dict(color="#5888A8", width=0.8, dash="dot"), opacity=0.6,
+            line=dict(color="#6B8AAE", width=0.8, dash="dot"), opacity=0.6,
             hovertemplate="<b>볼린저밴드 상단</b><br>%{x}<br>%{y:,.0f}원<br><i>주가가 이 선 근처면 과매수 구간</i><extra></extra>",
         ),
         row=1, col=1,
@@ -2986,7 +3006,7 @@ def render_chart(stock: Stock, period_label: str, use_live: bool) -> tuple[pd.Da
     fig.add_trace(
         go.Scatter(
             x=df["date"], y=df["bb_lower"], name="BB하단",
-            line=dict(color="#5888A8", width=0.8, dash="dot"), opacity=0.6,
+            line=dict(color="#6B8AAE", width=0.8, dash="dot"), opacity=0.6,
             hovertemplate="<b>볼린저밴드 하단</b><br>%{x}<br>%{y:,.0f}원<br><i>주가가 이 선 근처면 과매도 구간</i><extra></extra>",
         ),
         row=1, col=1,
@@ -2998,8 +3018,8 @@ def render_chart(stock: Stock, period_label: str, use_live: bool) -> tuple[pd.Da
             x=df["date"],
             open=df["open"], high=df["high"], low=df["low"], close=df["close"],
             name="캔들 (일봉)",
-            increasing_line_color="#C84848", increasing_fillcolor="#C84848",
-            decreasing_line_color="#3E9050", decreasing_fillcolor="#3E9050",
+            increasing_line_color="#B5453F", increasing_fillcolor="#B5453F",
+            decreasing_line_color="#436B95", decreasing_fillcolor="#436B95",
         ),
         row=1, col=1,
     )
@@ -3008,7 +3028,7 @@ def render_chart(stock: Stock, period_label: str, use_live: bool) -> tuple[pd.Da
     fig.add_trace(
         go.Scatter(
             x=df["date"], y=df["ma5"], name="MA5 (단기·5일)",
-            line=dict(color="#B87830", width=1.5),
+            line=dict(color="#B0883A", width=1.5),
             hovertemplate="<b>MA5 단기 이동평균</b><br>%{x}<br>%{y:,.0f}원<br><i>최근 5일 종가 평균. 단기 추세 파악용</i><extra></extra>",
         ),
         row=1, col=1,
@@ -3016,7 +3036,7 @@ def render_chart(stock: Stock, period_label: str, use_live: bool) -> tuple[pd.Da
     fig.add_trace(
         go.Scatter(
             x=df["date"], y=df["ma20"], name="MA20 (중기·20일)",
-            line=dict(color="#5888A8", width=1.5),
+            line=dict(color="#6B8AAE", width=1.5),
             hovertemplate="<b>MA20 중기 이동평균</b><br>%{x}<br>%{y:,.0f}원<br><i>최근 20일 평균. 골든/데드크로스 기준선</i><extra></extra>",
         ),
         row=1, col=1,
@@ -3024,7 +3044,7 @@ def render_chart(stock: Stock, period_label: str, use_live: bool) -> tuple[pd.Da
     fig.add_trace(
         go.Scatter(
             x=df["date"], y=df["ma60"], name="MA60 (장기·60일)",
-            line=dict(color="#7060A8", width=1.5),
+            line=dict(color="#2C4A6E", width=1.5),
             hovertemplate="<b>MA60 장기 이동평균</b><br>%{x}<br>%{y:,.0f}원<br><i>최근 60일(약 3개월) 평균. 큰 추세 판단용</i><extra></extra>",
         ),
         row=1, col=1,
@@ -3042,11 +3062,11 @@ def render_chart(stock: Stock, period_label: str, use_live: bool) -> tuple[pd.Da
                 go.Scatter(
                     x=golden["date"], y=golden["ma5"],
                     mode="markers+text",
-                    marker=dict(symbol="triangle-up", size=14, color="#C89020",
+                    marker=dict(symbol="triangle-up", size=14, color="#B0883A",
                                 line=dict(color="#F5F1EB", width=1)),
                     text=["골든크로스"] * len(golden),
                     textposition="bottom center",
-                    textfont=dict(size=9, color="#C89020"),
+                    textfont=dict(size=9, color="#B0883A"),
                     hovertemplate="<b>🟡 골든크로스 (매수 신호)</b><br>%{x}<br>MA5가 MA20을 위로 돌파<br><i>단기 평균이 중기 평균을 넘어서는 순간.<br>상승 추세 시작 신호로 봅니다.</i><extra></extra>",
                     name="골든크로스 (매수신호)",
                 ),
@@ -3057,11 +3077,11 @@ def render_chart(stock: Stock, period_label: str, use_live: bool) -> tuple[pd.Da
                 go.Scatter(
                     x=dead["date"], y=dead["ma5"],
                     mode="markers+text",
-                    marker=dict(symbol="triangle-down", size=14, color="#4878A8",
+                    marker=dict(symbol="triangle-down", size=14, color="#2C4A6E",
                                 line=dict(color="#F5F1EB", width=1)),
                     text=["데드크로스"] * len(dead),
                     textposition="top center",
-                    textfont=dict(size=9, color="#4878A8"),
+                    textfont=dict(size=9, color="#2C4A6E"),
                     hovertemplate="<b>🔵 데드크로스 (매도 신호)</b><br>%{x}<br>MA5가 MA20을 아래로 돌파<br><i>단기 평균이 중기 평균 아래로 꺾이는 순간.<br>하락 추세 시작 신호로 봅니다.</i><extra></extra>",
                     name="데드크로스 (매도신호)",
                 ),
@@ -3105,7 +3125,7 @@ def render_chart(stock: Stock, period_label: str, use_live: bool) -> tuple[pd.Da
             if abs(ext[k]) > 0.01
         ]
         if badges:
-            signal_color = "#3E9050" if ext_score > 0.05 else "#C84848" if ext_score < -0.05 else "#888"
+            signal_color = "#436B95" if ext_score > 0.05 else "#B5453F" if ext_score < -0.05 else "#888"
             fig.add_annotation(
                 xref="x domain", yref="y domain",
                 x=0.01, y=0.97,
@@ -3126,16 +3146,16 @@ def render_chart(stock: Stock, period_label: str, use_live: bool) -> tuple[pd.Da
     last_close = float(df["close"].iloc[-1])
     fig.add_hline(
         y=last_close,
-        line_dash="dash", line_color="#B87830", line_width=1.2,
+        line_dash="dash", line_color="#B0883A", line_width=1.2,
         annotation_text=f"현재가 {last_close:,.0f}원",
         annotation_position="top right",
-        annotation_font_size=11, annotation_font_color="#B87830",
+        annotation_font_size=11, annotation_font_color="#B0883A",
         row=1, col=1,
     )
 
     # ── 거래량 (양봉일=빨강, 음봉일=초록) ───────────
     vol_colors = [
-        "#C84848" if float(c) >= float(o) else "#3E9050"
+        "#B5453F" if float(c) >= float(o) else "#436B95"
         for c, o in zip(df["close"], df["open"])
     ]
     fig.add_trace(
@@ -3149,7 +3169,7 @@ def render_chart(stock: Stock, period_label: str, use_live: bool) -> tuple[pd.Da
 
     # ── MACD ────────────────────────────────────────
     hist_colors = [
-        "#C84848" if float(v) >= 0 else "#3E9050"
+        "#B5453F" if float(v) >= 0 else "#436B95"
         for v in df["histogram"].fillna(0)
     ]
     fig.add_trace(
@@ -3163,7 +3183,7 @@ def render_chart(stock: Stock, period_label: str, use_live: bool) -> tuple[pd.Da
     fig.add_trace(
         go.Scatter(
             x=df["date"], y=df["macd"], name="MACD선",
-            line=dict(color="#5888A8", width=1.5),
+            line=dict(color="#6B8AAE", width=1.5),
             hovertemplate="<b>MACD선</b><br>%{x}<br>%{y:.2f}<br><i>12일 평균 - 26일 평균.<br>시그널선과 교차 시 매수/매도 신호.</i><extra></extra>",
         ),
         row=3, col=1,
@@ -3171,7 +3191,7 @@ def render_chart(stock: Stock, period_label: str, use_live: bool) -> tuple[pd.Da
     fig.add_trace(
         go.Scatter(
             x=df["date"], y=df["signal"], name="시그널선",
-            line=dict(color="#C84848", width=1.5),
+            line=dict(color="#B5453F", width=1.5),
             hovertemplate="<b>시그널선</b><br>%{x}<br>%{y:.2f}<br><i>MACD의 9일 평균.<br>MACD가 이 선을 위로 넘으면 매수 신호.</i><extra></extra>",
         ),
         row=3, col=1,
@@ -3184,7 +3204,7 @@ def render_chart(stock: Stock, period_label: str, use_live: bool) -> tuple[pd.Da
     fig.add_trace(
         go.Scatter(
             x=df["date"], y=df["rsi"], name="RSI(14)",
-            line=dict(color="#A89030", width=1.8),
+            line=dict(color="#B0883A", width=1.8),
             hovertemplate=(
                 "<b>RSI</b>  %{y:.1f}<br>%{x}<br>"
                 "<i>0~100 사이 값. 14일 기준 과매수·과매도 지표.<br>"
@@ -3195,13 +3215,13 @@ def render_chart(stock: Stock, period_label: str, use_live: bool) -> tuple[pd.Da
         ),
         row=4, col=1,
     )
-    fig.add_hline(y=70, line_dash="dot", line_color="#C84848", line_width=1,
+    fig.add_hline(y=70, line_dash="dot", line_color="#B5453F", line_width=1,
                   annotation_text="과매수(70)", annotation_font_size=10,
-                  annotation_font_color="#C84848", annotation_position="right",
+                  annotation_font_color="#B5453F", annotation_position="right",
                   row=4, col=1)
-    fig.add_hline(y=30, line_dash="dot", line_color="#3E9050", line_width=1,
+    fig.add_hline(y=30, line_dash="dot", line_color="#436B95", line_width=1,
                   annotation_text="과매도(30)", annotation_font_size=10,
-                  annotation_font_color="#3E9050", annotation_position="right",
+                  annotation_font_color="#436B95", annotation_position="right",
                   row=4, col=1)
 
     # ── 레이아웃 (Plotly 기본 범례 숨김 → 커스텀 HTML 범례 사용) ──
@@ -3211,9 +3231,9 @@ def render_chart(stock: Stock, period_label: str, use_live: bool) -> tuple[pd.Da
         margin=dict(l=10, r=60, t=20, b=10),
         xaxis_rangeslider_visible=False,
         showlegend=False,
-        paper_bgcolor="rgba(245,241,235,1)",
-        plot_bgcolor="rgba(237,233,226,1)",
-        font=dict(color="#3D3830", family="Nanum Gothic"),
+        paper_bgcolor="rgba(248,244,235,1)",
+        plot_bgcolor="rgba(241,236,223,1)",
+        font=dict(color="#3D3830", family="Pretendard, sans-serif"),
         hoverlabel=dict(bgcolor="#FFFFFF", font_size=12, namelength=-1, font_color="#1C1916"),
     )
     fig.update_yaxes(tickformat=",", row=1, col=1, gridcolor="#D4CFC6", zerolinecolor="#C2BCB4")
@@ -3240,48 +3260,48 @@ def render_chart(stock: Stock, period_label: str, use_live: bool) -> tuple[pd.Da
         # 가격 그룹
         f'<div style="{_g}">'
         f'<span style="{_m}">가격</span>'
-        f'<div style="{_lg}">{_dot("#C84848","█")}<span style="{_s}">양봉</span></div>'
-        f'<div style="{_lg}">{_dot("#3E9050","█")}<span style="{_s}">음봉</span></div>'
-        f'<div style="{_lg}">{_dot("#5888A8","···")}<span style="{_s}">볼린저</span></div>'
+        f'<div style="{_lg}">{_dot("#B5453F","█")}<span style="{_s}">양봉</span></div>'
+        f'<div style="{_lg}">{_dot("#436B95","█")}<span style="{_s}">음봉</span></div>'
+        f'<div style="{_lg}">{_dot("#6B8AAE","···")}<span style="{_s}">볼린저</span></div>'
         f'</div>'
 
         # 이동평균 그룹
         f'<div style="{_g}">'
         f'<span style="{_m}">이평선</span>'
-        f'<div style="{_lg}">{_dot("#B87830","━━")}<span style="{_s}">MA5</span></div>'
-        f'<div style="{_lg}">{_dot("#5888A8","━━")}<span style="{_s}">MA20</span></div>'
-        f'<div style="{_lg}">{_dot("#7060A8","━━")}<span style="{_s}">MA60</span></div>'
+        f'<div style="{_lg}">{_dot("#B0883A","━━")}<span style="{_s}">MA5</span></div>'
+        f'<div style="{_lg}">{_dot("#6B8AAE","━━")}<span style="{_s}">MA20</span></div>'
+        f'<div style="{_lg}">{_dot("#2C4A6E","━━")}<span style="{_s}">MA60</span></div>'
         f'</div>'
 
         # 신호 그룹
         f'<div style="{_g}">'
         f'<span style="{_m}">신호</span>'
-        f'<div style="{_lg}">{_dot("#C89020","▲")}<span style="{_s}">골든크로스</span></div>'
-        f'<div style="{_lg}">{_dot("#4878A8","▼")}<span style="{_s}">데드크로스</span></div>'
+        f'<div style="{_lg}">{_dot("#B0883A","▲")}<span style="{_s}">골든크로스</span></div>'
+        f'<div style="{_lg}">{_dot("#2C4A6E","▼")}<span style="{_s}">데드크로스</span></div>'
         f'</div>'
 
         # 거래량 그룹
         f'<div style="{_g}">'
         f'<span style="{_m}">거래량</span>'
-        f'<div style="{_lg}">{_dot("#C84848","█")}<span style="{_s}">상승일</span></div>'
-        f'<div style="{_lg}">{_dot("#3E9050","█")}<span style="{_s}">하락일</span></div>'
+        f'<div style="{_lg}">{_dot("#B5453F","█")}<span style="{_s}">상승일</span></div>'
+        f'<div style="{_lg}">{_dot("#436B95","█")}<span style="{_s}">하락일</span></div>'
         f'</div>'
 
         # MACD 그룹
         f'<div style="{_g}">'
         f'<span style="{_m}">MACD</span>'
-        f'<div style="{_lg}">{_dot("#C84848","█")}<span style="{_s}">히스토그램+</span></div>'
-        f'<div style="{_lg}">{_dot("#3E9050","█")}<span style="{_s}">히스토그램−</span></div>'
-        f'<div style="{_lg}">{_dot("#5888A8","━━")}<span style="{_s}">MACD</span></div>'
-        f'<div style="{_lg}">{_dot("#C84848","━━")}<span style="{_s}">시그널</span></div>'
+        f'<div style="{_lg}">{_dot("#B5453F","█")}<span style="{_s}">히스토그램+</span></div>'
+        f'<div style="{_lg}">{_dot("#436B95","█")}<span style="{_s}">히스토그램−</span></div>'
+        f'<div style="{_lg}">{_dot("#6B8AAE","━━")}<span style="{_s}">MACD</span></div>'
+        f'<div style="{_lg}">{_dot("#B5453F","━━")}<span style="{_s}">시그널</span></div>'
         f'</div>'
 
         # RSI 그룹
         f'<div style="display:flex;align-items:center;gap:10px;padding:6px 14px;">'
         f'<span style="{_m}">RSI</span>'
-        f'<div style="{_lg}">{_dot("#A89030","━━")}<span style="{_s}">RSI(14)</span></div>'
-        f'<div style="{_lg}"><span style="font-size:0.72rem;color:#C84848;">70↑ 과매수</span></div>'
-        f'<div style="{_lg}"><span style="font-size:0.72rem;color:#3E9050;">30↓ 과매도</span></div>'
+        f'<div style="{_lg}">{_dot("#B0883A","━━")}<span style="{_s}">RSI(14)</span></div>'
+        f'<div style="{_lg}"><span style="font-size:0.72rem;color:#B5453F;">70↑ 과매수</span></div>'
+        f'<div style="{_lg}"><span style="font-size:0.72rem;color:#436B95;">30↓ 과매도</span></div>'
         f'</div>'
 
         f'</div>',
@@ -3311,7 +3331,7 @@ def render_forecast(df: pd.DataFrame, stock: Stock) -> None:
     history = history.dropna(subset=["date", "close"]).tail(45)
 
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=history["date"], y=history["close"], name="최근 종가", line=dict(color="#5888A8")))
+    fig.add_trace(go.Scatter(x=history["date"], y=history["close"], name="최근 종가", line=dict(color="#6B8AAE")))
     fig.add_trace(
         go.Scatter(
             x=pd.concat([forecast["date"], forecast["date"].iloc[::-1]]),
@@ -3328,7 +3348,7 @@ def render_forecast(df: pd.DataFrame, stock: Stock) -> None:
             x=forecast["date"],
             y=forecast["forecast"],
             name="요인 반영 예측",
-            line=dict(color="#B87830", dash="dash"),
+            line=dict(color="#B0883A", dash="dash"),
             mode="lines+markers",
         )
     )
@@ -3337,9 +3357,9 @@ def render_forecast(df: pd.DataFrame, stock: Stock) -> None:
         height=340,
         title=f"{stock.name} 다요인 예측",
         margin=dict(l=10, r=10, t=48, b=10),
-        paper_bgcolor="rgba(245,241,235,1)",
-        plot_bgcolor="rgba(237,233,226,1)",
-        font=dict(color="#3D3830", family="Nanum Gothic"),
+        paper_bgcolor="rgba(248,244,235,1)",
+        plot_bgcolor="rgba(241,236,223,1)",
+        font=dict(color="#3D3830", family="Pretendard, sans-serif"),
     )
     st.plotly_chart(fig, use_container_width=True)
 
@@ -3377,7 +3397,7 @@ def render_forecast(df: pd.DataFrame, stock: Stock) -> None:
     }
     labels = [factor_labels[k] for k in weights]
     values = [contributions[k] for k in weights]
-    bar_colors = ["#C84848" if v > 0 else "#3E9050" if v < 0 else "#AAAAAA" for v in values]
+    bar_colors = ["#B5453F" if v > 0 else "#436B95" if v < 0 else "#AAAAAA" for v in values]
 
     fig_factors = go.Figure(go.Bar(
         x=values,
@@ -3397,9 +3417,9 @@ def render_forecast(df: pd.DataFrame, stock: Stock) -> None:
             range=[-0.22, 0.22], gridcolor="#D4CFC6",
             title="가중 기여도",
         ),
-        paper_bgcolor="rgba(245,241,235,1)",
-        plot_bgcolor="rgba(237,233,226,1)",
-        font=dict(color="#3D3830", family="Nanum Gothic", size=11),
+        paper_bgcolor="rgba(248,244,235,1)",
+        plot_bgcolor="rgba(241,236,223,1)",
+        font=dict(color="#3D3830", family="Pretendard, sans-serif", size=11),
         showlegend=False,
     )
     st.plotly_chart(fig_factors, use_container_width=True)
