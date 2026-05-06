@@ -809,14 +809,14 @@ hr {
 .bh-logo {
   display: flex;
   align-items: center;
-  gap: 14px;
-  margin-bottom: 28px;
-  padding-bottom: 22px;
+  gap: 18px;
+  margin-bottom: 32px;
+  padding-bottom: 26px;
   border-bottom: 3px solid var(--yellow);
 }
 .bh-logo-mark {
-  width: 54px; height: 54px;
-  background: #1C1916;             /* 사이드바 짙은 배경 위에서 대비 확보 */
+  width: 72px; height: 72px;
+  background: #1C1916;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -824,8 +824,8 @@ hr {
   justify-content: center;
   position: relative;
   overflow: hidden;
-  border-radius: 8px;
-  box-shadow: 0 3px 10px rgba(0,0,0,0.25);
+  border-radius: 10px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.32);
   gap: 0;
 }
 /* 왼쪽 황금 수직 바 — 바우하우스 그리드 강조 */
@@ -833,64 +833,64 @@ hr {
   content: '';
   position: absolute;
   left: 0; top: 0; bottom: 0;
-  width: 6px;
+  width: 7px;
   background: var(--yellow);
 }
 /* 하단 얇은 황금 줄 */
 .bh-logo-mark::after {
   content: '';
   position: absolute;
-  bottom: 0; left: 6px; right: 0;
-  height: 3px;
+  bottom: 0; left: 7px; right: 0;
+  height: 4px;
   background: var(--yellow);
   opacity: 0.6;
 }
 .bh-logo-tri {
-  font-size: 1.6rem;
+  font-size: 2.1rem;
   color: var(--yellow);
   line-height: 1;
-  margin-left: 4px;
+  margin-left: 5px;
 }
 .bh-logo-krx {
   font-family: var(--font);
-  font-size: 0.46rem;
+  font-size: 0.58rem;
   font-weight: 800;
   letter-spacing: 0.22em;
   color: rgba(255,255,255,0.55);
-  margin-top: 1px;
-  margin-left: 4px;
+  margin-top: 2px;
+  margin-left: 5px;
   text-transform: uppercase;
 }
 .bh-logo-text { line-height: 1; }
 .bh-logo-title {
   font-family: var(--font);
-  font-size: 1.18rem;
+  font-size: 1.52rem;
   font-weight: 800;
   letter-spacing: 0.08em;
-  color: #1C1916;                  /* 사이드바 어두운 텍스트 */
+  color: #1C1916;
   text-transform: uppercase;
   line-height: 1.05;
   display: block;
 }
 .bh-logo-tracker {
   font-family: var(--font);
-  font-size: 0.68rem;
+  font-size: 0.82rem;
   font-weight: 700;
   letter-spacing: 0.28em;
   color: var(--yellow);
   text-transform: uppercase;
   display: block;
-  margin-top: 2px;
+  margin-top: 3px;
   line-height: 1.3;
 }
 .bh-logo-sub {
   font-family: var(--font);
-  font-size: 0.58rem;
+  font-size: 0.68rem;
   font-weight: 400;
   letter-spacing: 0.12em;
-  color: #6A5848;                  /* 사이드바용 뮤트 색 */
-  margin-top: 6px;
-  padding-top: 5px;
+  color: #6A5848;
+  margin-top: 7px;
+  padding-top: 6px;
   border-top: 1px solid #A89080;
   display: block;
 }
@@ -1737,13 +1737,11 @@ def render_sidebar() -> tuple[str, str, str, list[str], bool, int]:
     )
     menu = next(k for k, v in menu_icons.items() if v == menu_key)
 
-    st.sidebar.markdown('<div class="bh-sidebar-title">시장</div>', unsafe_allow_html=True)
-    market = st.sidebar.radio("시장", ["코스피", "코스닥", "전체"], horizontal=True, label_visibility="collapsed")
+    market = "전체"
 
     # ── 업종 (AI 검색 전에 위치 — 검색 범위 축소용) ──
     st.sidebar.markdown('<div class="bh-sidebar-title">업종</div>', unsafe_allow_html=True)
-    market_stocks = current_market_stocks(market)
-    sectors = sorted({stock.sector for stock in market_stocks})
+    sectors = sorted({stock.sector for stock in all_stocks()})
     selected_sectors = st.sidebar.multiselect(
         "업종", sectors, default=[],
         placeholder="업종 선택 후 AI 검색 (빠름)",
