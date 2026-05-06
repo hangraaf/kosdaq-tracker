@@ -2287,93 +2287,89 @@ _NEWS_POOL = [
 ]
 
 
-def _hot_potato_slot() -> str:
-    t = datetime.now()
-    return f"{date.today()}_{t.hour}_{1 if t.minute >= 30 else 0}"
+_HP_CACHE_VER = "v3"   # 버전 바꾸면 stale 캐시 자동 무효화
+
+_HP_REASON_POOL = [
+    "외국인 순매수 집중", "기관 대규모 매집", "거래량 이전 대비 급증",
+    "52주 신고가 돌파 시도", "주가 급반등 포착", "공매도 잔고 급감",
+    "실적 서프라이즈 기대", "업종 대장주 동반 강세", "테마주 편입 수혜",
+]
 
 
 def _hot_potato_picks(use_live: bool) -> list[dict]:
-    """30분 슬롯 기반 session_state 캐싱 — Stock 직렬화 없이 dict만 반환."""
-    slot = _hot_potato_slot()
+    """30분 슬롯 기반 session_state 캐싱."""
+    t = datetime.now()
+    slot = f"{date.today()}_{t.hour}_{1 if t.minute >= 30 else 0}"
     cache = st.session_state.get("_hp_cache", {})
-    if cache.get("slot") == slot and cache.get("use_live") == use_live:
+    if (
+        cache.get("ver") == _HP_CACHE_VER
+        and cache.get("slot") == slot
+        and cache.get("use_live") == use_live
+        and cache.get("picks")          # 빈 리스트면 재계산
+    ):
         return cache["picks"]
 
-    picks = _fetch_hot_potato_picks(use_live, slot)
-    st.session_state["_hp_cache"] = {"slot": slot, "use_live": use_live, "picks": picks}
+    picks = _build_hot_potato(use_live, slot)
+    st.session_state["_hp_cache"] = {
+        "ver": _HP_CACHE_VER, "slot": slot, "use_live": use_live, "picks": picks,
+    }
     return picks
 
 
-def _fetch_hot_potato_picks(use_live: bool, slot: str) -> list[dict]:
+def _build_hot_potato(use_live: bool, slot: str) -> list[dict]:
     import requests as _req
     import re
-
-    _REASON_POOL = [
-        "외국인 순매수 집중", "기관 대규모 매집", "거래량 이전 대비 급증",
-        "52주 신고가 돌파 시도", "주가 급반등 포착", "공매도 잔고 급감",
-        "실적 서프라이즈 기대", "업종 대장주 동반 강세", "테마주 편입 수혜",
-    ]
 
     seed = int(hashlib.sha256(slot.encode()).hexdigest()[:10], 16)
     rng = np.random.default_rng(seed % (2**32))
 
-    # ── Naver 인기검색 시도 ──────────────────────
-    naver_codes: list[str] = []
+    # ── 1) Naver 인기검색 종목 코드 추출 ─────────
+    found: list[Stock] = []
     try:
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-            "Referer": "https://finance.naver.com/",
-        }
-        resp = _req.get(
-            "https://finance.naver.com/sise/lastsearch2.naver",
-            headers=headers, timeout=5,
-        )
+        hdrs = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+                "Referer": "https://finance.naver.com/"}
+        resp = _req.get("https://finance.naver.com/sise/lastsearch2.naver",
+                        headers=hdrs, timeout=4)
         resp.encoding = "euc-kr"
-        naver_codes = re.findall(r'code=(\d{6})', resp.text)
+        codes = re.findall(r'code=(\d{6})', resp.text)
+        seen: set[str] = set()
+        for code in codes:
+            if code in seen:
+                continue
+            seen.add(code)
+            s = find_stock(code)
+            if s:
+                found.append(s)
+            if len(found) >= 6:
+                break
     except Exception:
         pass
 
-    # 등록된 종목만 필터
-    found: list[Stock] = []
-    seen: set[str] = set()
-    for code in naver_codes:
-        if code in seen:
-            continue
-        seen.add(code)
-        s = find_stock(code)
-        if s:
-            found.append(s)
-        if len(found) >= 6:
-            break
-
-    # ── Fallback: 변동률 상위 ─────────────────────
+    # ── 2) Fallback: seed 기반 종목 선택 (보장) ──
     if len(found) < 6:
         base = MARKET_STOCKS["전체"]
-        idx = rng.choice(len(base), size=min(20, len(base)), replace=False)
-        sample = [base[i] for i in idx]
-        snaps_fb = [(s, stock_snapshot(s, use_live)) for s in sample]
-        snaps_fb.sort(key=lambda x: -abs(x[1].get("change_rate", 0)))
-        existing_codes = {s.code for s in found}
-        for s, _ in snaps_fb:
-            if s.code not in existing_codes:
-                found.append(s)
-                existing_codes.add(s.code)
-            if len(found) >= 6:
-                break
+        needed = 6 - len(found)
+        existing = {s.code for s in found}
+        pool = [s for s in base if s.code not in existing]
+        chosen_idx = rng.choice(len(pool), size=min(needed + 10, len(pool)), replace=False)
+        # 변동률 기준 정렬해서 상위 needed개 선택
+        candidates = [(pool[i], stock_snapshot(pool[i], use_live)) for i in chosen_idx]
+        candidates.sort(key=lambda x: -abs(float(x[1].get("change_rate", 0))))
+        for s, _ in candidates[:needed]:
+            found.append(s)
 
     picks = []
     for rank, stock in enumerate(found[:6], 1):
         snap = stock_snapshot(stock, use_live)
-        cr = snap.get("change_rate", 0.0)
-        reason = str(rng.choice(_REASON_POOL))
+        cr = float(snap.get("change_rate", 0.0))
         picks.append({
             "code": stock.code,
             "name": stock.name,
             "market": stock.market,
             "sector": stock.sector,
             "change_rate": cr,
-            "volume": snap.get("volume", 0),
-            "reason": reason,
+            "volume": int(snap.get("volume", 0)),
+            "reason": str(rng.choice(_HP_REASON_POOL)),
             "rank": rank,
         })
     return picks
@@ -2404,10 +2400,12 @@ def _fetch_live_news(n: int = 6) -> list[dict]:
         resp.encoding = "euc-kr"
         text = resp.text
 
-        titles = re.findall(r'<dt[^>]*>.*?<a[^>]+>([^<]{10,})</a>', text, re.S)
-        titles = [t.strip() for t in titles if len(t.strip()) > 10]
-        sources = re.findall(r'<dd class="articleSource">([^<]+)</dd>', text)
-        times = re.findall(r'<dd class="articleDate">([^<]+)</dd>', text)
+        # 실제 HTML 구조: <dd class="articleSubject"><a href=...>제목</a></dd>
+        titles = re.findall(
+            r'class="articleSubject"[^>]*>\s*<a[^>]+>([^<]+)</a>', text, re.S
+        )
+        titles = [t.strip() for t in titles if len(t.strip()) > 5]
+        sources = re.findall(r'<span class="press">([^<]+)</span>', text)
 
         if titles:
             sent_pool = ["긍정", "부정", "중립"]
@@ -2416,8 +2414,8 @@ def _fetch_live_news(n: int = 6) -> list[dict]:
                 sent = sent_pool[i % 3]
                 items.append({
                     "title": title,
-                    "source": sources[i] if i < len(sources) else "네이버금융",
-                    "time": times[i].strip() if i < len(times) else "",
+                    "source": sources[i].strip() if i < len(sources) else "네이버금융",
+                    "time": datetime.now().strftime("%H:%M"),
                     "sentiment": sent,
                     "icon": icon_map[sent],
                 })
