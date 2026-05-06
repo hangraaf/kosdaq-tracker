@@ -1023,6 +1023,122 @@ hr {
   background: transparent;
   border: none;
 }
+
+/* ── NASDAQ-style News Ticker ─────────────────── */
+.bh-ticker-wrap {
+  width: 100%;
+  background: #001533;
+  border-top: 3px solid #0052CC;
+  border-bottom: 1px solid #0A2A6E;
+  overflow: hidden;
+  padding: 0;
+  margin: -8px 0 32px 0;   /* 최상단 밀착 */
+  position: relative;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  border-radius: 0;
+  box-shadow: 0 4px 18px rgba(0,21,51,0.18);
+}
+.bh-ticker-label {
+  flex-shrink: 0;
+  background: #0052CC;
+  color: #FFFFFF;
+  font-family: var(--font);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  padding: 0 16px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  z-index: 2;
+  white-space: nowrap;
+  position: relative;
+}
+.bh-ticker-label::after {
+  content: '';
+  position: absolute;
+  right: -18px;
+  top: 0;
+  height: 100%;
+  width: 18px;
+  background: linear-gradient(to right, #0052CC, transparent);
+  pointer-events: none;
+}
+.bh-ticker-live-dot {
+  display: inline-block;
+  width: 6px; height: 6px;
+  background: #FF4444;
+  border-radius: 50%;
+  margin-right: 7px;
+  animation: bh-pulse 1.4s ease-in-out infinite;
+  box-shadow: 0 0 6px #FF4444;
+}
+@keyframes bh-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.4; transform: scale(0.7); }
+}
+.bh-ticker-track-outer {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+  height: 100%;
+}
+.bh-ticker-track {
+  display: inline-flex;
+  gap: 0;
+  white-space: nowrap;
+  animation: bh-ticker-scroll linear infinite;
+  will-change: transform;
+  height: 100%;
+  align-items: center;
+}
+@keyframes bh-ticker-scroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.bh-ticker-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 32px 0 0;
+  height: 100%;
+  color: #B8CCEE;
+  font-family: var(--mono);
+  font-size: 0.76rem;
+  letter-spacing: 0.01em;
+  cursor: default;
+  transition: color 0.2s;
+}
+.bh-ticker-item:hover {
+  color: #FFFFFF;
+}
+.bh-ticker-sep {
+  display: inline-block;
+  color: #1A3D80;
+  font-size: 0.55rem;
+  padding: 0 10px 0 0;
+  user-select: none;
+}
+.bh-ticker-icon {
+  font-size: 0.72rem;
+  opacity: 0.85;
+}
+.bh-ticker-src {
+  color: #4A80D4;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  background: rgba(0,82,204,0.18);
+  padding: 1px 5px;
+  border-radius: 2px;
+}
+.bh-ticker-time {
+  color: #2D5499;
+  font-size: 0.63rem;
+}
 </style>
 """
 
@@ -2818,6 +2934,51 @@ def _fetch_live_news(n: int = 6) -> list[dict]:
     return items[:n]
 
 
+def _render_news_ticker() -> None:
+    """나스닥 전광판 스타일 실시간 뉴스 티커."""
+    items = _fetch_live_news(n=14)
+    if not items:
+        return
+
+    # 아이템 텍스트 구성
+    parts: list[str] = []
+    for it in items:
+        icon = it.get("icon", "📊")
+        src = it.get("source", "")
+        time_str = it.get("time", "")
+        title = it["title"]
+
+        src_html = f'<span class="bh-ticker-src">[{src}]</span> ' if src else ""
+        time_html = f'<span class="bh-ticker-time"> {time_str}</span>' if time_str else ""
+        parts.append(
+            f'<span class="bh-ticker-item">'
+            f'<span class="bh-ticker-icon">{icon}</span>'
+            f'{src_html}{title}{time_html}'
+            f'</span>'
+            f'<span class="bh-ticker-sep">◆</span>'
+        )
+
+    # 두 번 반복(무한 루프 착시)
+    track_inner = "".join(parts * 2)
+
+    # 속도: 아이템 수에 비례 (아이템당 ~6초)
+    duration = max(40, len(items) * 6)
+
+    html = f"""
+<div class="bh-ticker-wrap">
+  <div class="bh-ticker-label">
+    <span class="bh-ticker-live-dot"></span>LIVE
+  </div>
+  <div class="bh-ticker-track-outer">
+    <div class="bh-ticker-track" style="animation-duration:{duration}s;">
+      {track_inner}
+    </div>
+  </div>
+</div>
+"""
+    st.markdown(html, unsafe_allow_html=True)
+
+
 def render_date_news_panel(stock: "Stock", date_str: str, df: pd.DataFrame) -> None:
     """차트 날짜 클릭 → 실제 차트 데이터 기반 기술적 분석 + 실제 뉴스 링크."""
     # ── 날짜 파싱 ──────────────────────────────────
@@ -3114,6 +3275,9 @@ def _portfolio_mini_summary(use_live: bool) -> dict | None:
 
 def render_stocks_page(stocks: list[Stock], use_live: bool, keyword: str = "") -> None:
     today_str = date.today().strftime("%Y년 %m월 %d일")
+    # ── 나스닥 스타일 뉴스 티커 (최상단) ──────────────
+    _render_news_ticker()
+
     st.title("오늘의 종목")
     data_label = "KIS 실시간" if use_live else "데모 시뮬레이션"
     st.markdown(
