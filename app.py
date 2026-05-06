@@ -3999,12 +3999,143 @@ def _graham_stock_analysis(stock: Stock, row: dict, fund: dict | None = None) ->
     return {"verdict": verdict, "badge": badge, "score": score, "reasons": reasons}
 
 
+def _terry_smith_stock_analysis(stock: Stock, row: dict, fund: dict | None = None) -> dict:
+    """테리 스미스 — 고품질 성장주 장기 보유 · Fundsmith."""
+    _fund = fund or {}
+    _roe_live = _fund.get("roe")
+    _pe_live  = _fund.get("per")
+
+    roe = _roe_live if (_roe_live and _roe_live > 0) else (seed_for(stock.code, "ts_roe") % 38) + 5
+    pe  = _pe_live  if (_pe_live  and _pe_live  > 0) else (seed_for(stock.code, "ts_pe")  % 38) + 10
+    roe_is_real = _roe_live is not None and _roe_live > 0
+    pe_is_real  = _pe_live  is not None and _pe_live  > 0
+
+    # 업종별 영업이익률 추정
+    high_m = {"인터넷", "IT서비스", "게임", "제약", "바이오"}
+    mid_m  = {"반도체", "화장품", "통신", "엔터", "미디어"}
+    m_base = 28 if stock.sector in high_m else (18 if stock.sector in mid_m else 10)
+    margin = (seed_for(stock.code, "ts_margin") % 18) + m_base - 6
+
+    debt    = (seed_for(stock.code, "ts_debt")   % 180) + 15   # 15~195%
+    growth  = (seed_for(stock.code, "ts_growth") % 30)  - 4    # -4~26%
+    fcf_pct = (seed_for(stock.code, "ts_fcf")    % 35)  + 60   # 60~95%
+    profit_rate = row["profit_rate"]
+
+    score: float = 0.0
+    reasons: list[str] = []
+
+    # ── ROCE / ROE (자본 수익성) — 스미스의 핵심 기준 ────
+    _rl = "" if roe_is_real else " 추정"
+    if roe >= 25:
+        score += 0.35
+        reasons.append(f"ROE{_rl} {roe}% — 탁월한 자본 수익성. 스미스 기준 최우선 통과 (목표 25%+)")
+    elif roe >= 15:
+        score += 0.2
+        reasons.append(f"ROE{_rl} {roe}% — 양호한 자본 수익성. Fundsmith 편입 가능 구간")
+    elif roe >= 10:
+        score += 0.0
+        reasons.append(f"ROE{_rl} {roe}% — 평균 수준. 스미스: '평범한 기업에 투자하지 마라'")
+    else:
+        score -= 0.25
+        reasons.append(f"ROE{_rl} {roe}% — 낮은 자본 수익성. Fundsmith 편입 기준 미달")
+
+    # ── 영업이익률 (가격 결정력의 증거) ────────────────
+    if margin >= 25:
+        score += 0.25
+        reasons.append(f"영업이익률 추정 {margin}% — 강한 가격 결정력. 스미스가 선호하는 고마진 비즈니스")
+    elif margin >= 15:
+        score += 0.12
+        reasons.append(f"영업이익률 추정 {margin}% — 적정 마진. 경쟁 우위 여부 추가 확인 필요")
+    elif margin >= 8:
+        score -= 0.05
+        reasons.append(f"영업이익률 추정 {margin}% — 낮은 마진. 가격 결정력 부재 가능성")
+    else:
+        score -= 0.2
+        reasons.append(f"영업이익률 추정 {margin}% — 저마진 구조. 스미스는 마진 압박 기업 제외")
+
+    # ── 부채 수준 (레버리지 없는 성장) ─────────────────
+    if debt <= 50:
+        score += 0.2
+        reasons.append(f"부채비율 추정 {debt}% — 재무 건전. 스미스 '빚 없이 성장' 원칙 부합")
+    elif debt <= 100:
+        score += 0.05
+        reasons.append(f"부채비율 추정 {debt}% — 관리 가능 수준. 차입 의존도 추이 모니터링")
+    elif debt <= 160:
+        score -= 0.1
+        reasons.append(f"부채비율 추정 {debt}% — 부채 부담. 스미스는 레버리지 성장 기업을 경계")
+    else:
+        score -= 0.25
+        reasons.append(f"부채비율 추정 {debt}% — 과도한 부채. Fundsmith 배제 기준 초과")
+
+    # ── FCF 전환율 (이익 품질) ───────────────────────
+    if fcf_pct >= 90:
+        score += 0.15
+        reasons.append(f"FCF 전환율 추정 {fcf_pct}% — 이익=현금. 스미스의 핵심 이익 품질 지표 최상")
+    elif fcf_pct >= 75:
+        score += 0.05
+        reasons.append(f"FCF 전환율 추정 {fcf_pct}% — 양호한 현금 창출. 회계이익과 실제 현금 일치")
+    else:
+        score -= 0.1
+        reasons.append(f"FCF 전환율 추정 {fcf_pct}% — 현금 전환 부족. 이익 품질 점검 필요")
+
+    # ── 매출 성장률 ────────────────────────────────
+    if growth >= 15:
+        score += 0.1
+        reasons.append(f"매출 성장률 추정 {growth}% — 강한 복리 성장. 스미스 장기 보유 요건 충족")
+    elif growth >= 7:
+        score += 0.05
+        reasons.append(f"매출 성장률 추정 {growth}% — 안정 성장. Fundsmith 포트폴리오 적합 범위")
+    elif growth >= 0:
+        reasons.append(f"매출 성장률 추정 {growth}% — 성장 정체. 향후 성장 동력 확인 필요")
+    else:
+        score -= 0.15
+        reasons.append(f"매출 성장률 추정 {growth}% — 역성장. 스미스는 지속 성장 기업만 보유")
+
+    # ── 섹터 적합성 ────────────────────────────────
+    preferred = {"인터넷", "IT서비스", "제약", "바이오", "화장품", "게임", "통신"}
+    avoid = {"조선", "철강", "화학", "2차전지", "타이어", "중공업", "에너지", "금융"}
+    if stock.sector in preferred:
+        score += 0.1
+        reasons.append(f"{stock.sector} — 스미스 선호 섹터. 반복 매출·진입 장벽·브랜드 가치 보유")
+    elif stock.sector in avoid:
+        score -= 0.2
+        reasons.append(f"{stock.sector} — 스미스 기피 섹터. 경기 민감·자본집약적 산업 제외 원칙")
+
+    # ── 밸류에이션 (품질 프리미엄은 수용) ──────────────
+    _pl = "" if pe_is_real else " 추정"
+    if pe <= 20:
+        score += 0.05
+        reasons.append(f"PER{_pl} {pe}배 — 고품질 대비 합리적 가격. 스미스의 이상적 매수 구간")
+    elif pe <= 40:
+        reasons.append(f"PER{_pl} {pe}배 — 품질 프리미엄. 스미스: '좋은 기업은 비싸게 살 수 있다'")
+    else:
+        score -= 0.15
+        reasons.append(f"PER{_pl} {pe}배 — 과도한 프리미엄. '과대지불하지 마라' — 스미스 3원칙")
+
+    # ── 보유 손익 ───────────────────────────────────
+    if profit_rate > 20:
+        reasons.append(f"현재 +{profit_rate:.1f}% — 복리 성장 중. 스미스: '좋은 기업은 팔지 마라'")
+    elif profit_rate < -15:
+        score -= 0.05
+        reasons.append(f"현재 {profit_rate:.1f}% 손실 — 기업 본질 변화 없다면 매수 기회로 볼 수 있음")
+
+    if score > 0.55:
+        verdict, badge = "매수", "🟢"
+    elif score > 0.2:
+        verdict, badge = "관망", "🟡"
+    else:
+        verdict, badge = "매도", "🔴"
+
+    return {"verdict": verdict, "badge": badge, "score": score, "reasons": reasons}
+
+
 def render_portfolio_advisor_summary(rows: list[dict]) -> None:
     st.subheader("투자 대가별 종목 분석")
     st.caption(
         "보유 종목 각각을 레이 달리오(리스크 패리티), 워렌 버핏(가치투자), "
         "코테가와 다카시(모멘텀), 카타야마 아키라(소형 성장주), "
-        "피터 린치(10루타·PEG), 벤저민 그레이엄(안전마진)의 철학으로 분석합니다. "
+        "피터 린치(10루타·PEG), 벤저민 그레이엄(안전마진), "
+        "테리 스미스(고품질 성장주·Fundsmith)의 철학으로 분석합니다. "
         "재무 수치는 데모 시뮬레이션이므로 실제 투자 전 공시 데이터를 확인하십시오."
     )
 
@@ -4019,6 +4150,7 @@ def render_portfolio_advisor_summary(rows: list[dict]) -> None:
         katayama = _katayama_stock_analysis(stock, row)
         lynch    = _lynch_stock_analysis(stock, row)
         graham   = _graham_stock_analysis(stock, row)
+        t_smith  = _terry_smith_stock_analysis(stock, row)
 
         profit_label = f"+{row['profit_rate']:.1f}%" if row["profit_rate"] >= 0 else f"{row['profit_rate']:.1f}%"
         profit_money = money_signed(row["profit"])
@@ -4027,7 +4159,7 @@ def render_portfolio_advisor_summary(rows: list[dict]) -> None:
             f"{row['name']} ({row['code']}) · {profit_label} · {profit_money} "
             f"| 🇺🇸달리오 {dalio['badge']} 🇺🇸버핏 {buffett['badge']} "
             f"🇯🇵코테가와 {kotegawa['badge']} 🇯🇵카타야마 {katayama['badge']} "
-            f"🇺🇸린치 {lynch['badge']} 🇺🇸그레이엄 {graham['badge']}",
+            f"🇺🇸린치 {lynch['badge']} 🇺🇸그레이엄 {graham['badge']} 🇬🇧스미스 {t_smith['badge']}",
             expanded=False,
         ):
             analyses = [
@@ -4037,6 +4169,7 @@ def render_portfolio_advisor_summary(rows: list[dict]) -> None:
                 ("🇯🇵 카타야마 아키라", "소형 성장주 · 집중 투자",       katayama),
                 ("🇺🇸 피터 린치",      "10루타 · PEG · 생활 밀착형",    lynch),
                 ("🇺🇸 벤저민 그레이엄", "안전마진 · 방어적 가치투자",    graham),
+                ("🇬🇧 테리 스미스",    "고품질 성장주 · ROCE · Fundsmith", t_smith),
             ]
             vcolor = {"매수": "var(--red)", "관망": "var(--yellow)", "매도": "var(--blue)"}
             # 3열 2행으로 배치
@@ -4068,24 +4201,26 @@ def render_portfolio_advisor_summary(rows: list[dict]) -> None:
     st.markdown("**포트폴리오 종합 의견**")
     valid_stocks = [find_stock(r["code"]) for r in rows if find_stock(r["code"])]
     valid_rows   = [r for r in rows if find_stock(r["code"])]
-    dalio_all    = [_dalio_stock_analysis(s, r)    for s, r in zip(valid_stocks, valid_rows)]
-    buffett_all  = [_buffett_stock_analysis(s, r)  for s, r in zip(valid_stocks, valid_rows)]
-    kotegawa_all = [_kotegawa_stock_analysis(s, r) for s, r in zip(valid_stocks, valid_rows)]
-    katayama_all = [_katayama_stock_analysis(s, r) for s, r in zip(valid_stocks, valid_rows)]
-    lynch_all    = [_lynch_stock_analysis(s, r)    for s, r in zip(valid_stocks, valid_rows)]
-    graham_all   = [_graham_stock_analysis(s, r)   for s, r in zip(valid_stocks, valid_rows)]
+    dalio_all    = [_dalio_stock_analysis(s, r)         for s, r in zip(valid_stocks, valid_rows)]
+    buffett_all  = [_buffett_stock_analysis(s, r)       for s, r in zip(valid_stocks, valid_rows)]
+    kotegawa_all = [_kotegawa_stock_analysis(s, r)      for s, r in zip(valid_stocks, valid_rows)]
+    katayama_all = [_katayama_stock_analysis(s, r)      for s, r in zip(valid_stocks, valid_rows)]
+    lynch_all    = [_lynch_stock_analysis(s, r)         for s, r in zip(valid_stocks, valid_rows)]
+    graham_all   = [_graham_stock_analysis(s, r)        for s, r in zip(valid_stocks, valid_rows)]
+    t_smith_all  = [_terry_smith_stock_analysis(s, r)   for s, r in zip(valid_stocks, valid_rows)]
 
     def avg_score(analyses: list[dict]) -> float:
         return sum(a["score"] for a in analyses) / len(analyses) if analyses else 0.0
 
-    col1, col2, col3 = st.columns(3)
+    col1, col2, col3, col4 = st.columns(4)
     col1.metric("🇺🇸 달리오 점수",   f"{avg_score(dalio_all):+.2f}",    help="리스크 패리티 관점 평균")
     col2.metric("🇺🇸 버핏 점수",     f"{avg_score(buffett_all):+.2f}",  help="가치투자 관점 평균")
     col3.metric("🇯🇵 코테가와 점수", f"{avg_score(kotegawa_all):+.2f}", help="모멘텀 관점 평균")
-    col4, col5, col6 = st.columns(3)
     col4.metric("🇯🇵 카타야마 점수", f"{avg_score(katayama_all):+.2f}", help="소형 성장주 관점 평균")
+    col5, col6, col7 = st.columns(3)
     col5.metric("🇺🇸 린치 점수",     f"{avg_score(lynch_all):+.2f}",    help="PEG·10루타 관점 평균")
     col6.metric("🇺🇸 그레이엄 점수", f"{avg_score(graham_all):+.2f}",   help="안전마진·방어 관점 평균")
+    col7.metric("🇬🇧 스미스 점수",   f"{avg_score(t_smith_all):+.2f}",  help="고품질 성장주·Fundsmith 관점 평균")
 
     sectors_in_portfolio = [find_stock(r["code"]).sector for r in rows if find_stock(r["code"])]
     unique_sectors = set(sectors_in_portfolio)
@@ -4206,14 +4341,16 @@ def render_stock_advisor_panel(stock: Stock, use_live: bool = False) -> None:
     katayama = _katayama_stock_analysis(stock, dummy_row, fund=fund)
     lynch    = _lynch_stock_analysis(stock, dummy_row, fund=fund)
     graham   = _graham_stock_analysis(stock, dummy_row, fund=fund)
+    t_smith  = _terry_smith_stock_analysis(stock, dummy_row, fund=fund)
 
-    tab_d, tab_b, tab_k, tab_ka, tab_l, tab_g = st.tabs([
+    tab_d, tab_b, tab_k, tab_ka, tab_l, tab_g, tab_ts = st.tabs([
         f"🇺🇸 달리오 {dalio['badge']}",
         f"🇺🇸 버핏 {buffett['badge']}",
         f"🇯🇵 코테가와 {kotegawa['badge']}",
         f"🇯🇵 카타야마 {katayama['badge']}",
         f"🇺🇸 린치 {lynch['badge']}",
         f"🇺🇸 그레이엄 {graham['badge']}",
+        f"🇬🇧 스미스 {t_smith['badge']}",
     ])
 
     def _render_tab(flag: str, name: str, subtitle: str, result: dict, quote: str, quotee: str) -> None:
@@ -4286,6 +4423,10 @@ def render_stock_advisor_panel(stock: Stock, use_live: bool = False) -> None:
         _render_tab("🇺🇸", "벤저민 그레이엄 · Benjamin Graham",
                     "안전마진 · PBR·PER 이중 기준 · 방어적 투자", graham,
                     "투자란 철저한 분석 후 원금을 안전하게 지키면서 적절한 수익을 추구하는 것이다. 그 외는 모두 투기다.", "벤저민 그레이엄")
+    with tab_ts:
+        _render_tab("🇬🇧", "테리 스미스 · Terry Smith",
+                    "고품질 성장주 · ROCE · 장기 보유 · Fundsmith", t_smith,
+                    "좋은 기업을 사라. 너무 비싸게 사지 마라. 그리고 아무것도 하지 마라.", "테리 스미스")
 
     if src:
         st.caption(f"재무지표 출처: {src} (PER·PBR·ROE·배당수익률). 부채비율·성장률은 추정값. 실제 투자 전 공시 재무제표를 반드시 확인하십시오.")
