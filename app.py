@@ -2286,50 +2286,38 @@ _NEWS_POOL = [
 ]
 
 
-def _hot_potato_reason(change_rate: float, volume: int, rank: int, seed_val: int) -> str:
-    """등락률·거래량·순위 기반으로 짧은 코멘트 자동 생성."""
-    rng = np.random.default_rng((seed_val + rank) % (2**32))
-    if rank == 1:
-        base = "최강 상승세" if change_rate > 0 else "최강 하락세"
-    elif rank <= 3:
-        base = "강세" if change_rate > 0 else "약세"
-    else:
-        base = "관심 종목"
-
-    modifiers = [
-        "외국인 순매수 중",
-        "기관 매집 신호",
-        "거래량 급증",
-        "기술적 매수신호",
-        "차입금 증가",
-        "공매도 급감",
-    ]
-    return f"{base} · {rng.choice(modifiers)}"
+def _hot_potato_slot() -> str:
+    t = datetime.now()
+    return f"{date.today()}_{t.hour}_{1 if t.minute >= 30 else 0}"
 
 
-@st.cache_data(ttl=1800, show_spinner=False)
 def _hot_potato_picks(use_live: bool) -> list[dict]:
-    """Naver Finance 인기검색 기반 뜨거운 감자 6개 종목 (30분 캐시)."""
+    """30분 슬롯 기반 session_state 캐싱 — Stock 직렬화 없이 dict만 반환."""
+    slot = _hot_potato_slot()
+    cache = st.session_state.get("_hp_cache", {})
+    if cache.get("slot") == slot and cache.get("use_live") == use_live:
+        return cache["picks"]
+
+    picks = _fetch_hot_potato_picks(use_live, slot)
+    st.session_state["_hp_cache"] = {"slot": slot, "use_live": use_live, "picks": picks}
+    return picks
+
+
+def _fetch_hot_potato_picks(use_live: bool, slot: str) -> list[dict]:
     import requests as _req
-    from html.parser import HTMLParser
+    import re
 
-    class StockParser(HTMLParser):
-        def __init__(self):
-            super().__init__()
-            self.codes = []
-            self.in_td = False
+    _REASON_POOL = [
+        "외국인 순매수 집중", "기관 대규모 매집", "거래량 이전 대비 급증",
+        "52주 신고가 돌파 시도", "주가 급반등 포착", "공매도 잔고 급감",
+        "실적 서프라이즈 기대", "업종 대장주 동반 강세", "테마주 편입 수혜",
+    ]
 
-        def handle_starttag(self, tag, attrs):
-            if tag == "td":
-                for attr, value in attrs:
-                    if attr == "class" and "no" in value:
-                        self.in_td = True
+    seed = int(hashlib.sha256(slot.encode()).hexdigest()[:10], 16)
+    rng = np.random.default_rng(seed % (2**32))
 
-        def handle_data(self, data):
-            if self.in_td and data.strip().isdigit() and len(data.strip()) == 6:
-                self.codes.append(data.strip())
-                self.in_td = False
-
+    # ── Naver 인기검색 시도 ──────────────────────
+    naver_codes: list[str] = []
     try:
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
@@ -2337,58 +2325,121 @@ def _hot_potato_picks(use_live: bool) -> list[dict]:
         }
         resp = _req.get(
             "https://finance.naver.com/sise/lastsearch2.naver",
-            headers=headers,
-            timeout=5,
+            headers=headers, timeout=5,
         )
-        resp.encoding = "utf-8"
-        parser = StockParser()
-        parser.feed(resp.text)
-        found_stocks = []
-        for code in parser.codes[:10]:
-            stock = find_stock(code)
-            if stock:
-                found_stocks.append(stock)
-            if len(found_stocks) >= 6:
-                break
-        if len(found_stocks) >= 6:
-            picks = []
-            for rank, stock in enumerate(found_stocks[:6], 1):
-                snap = stock_snapshot(stock, use_live)
-                change_rate = snap.get("change_rate", 0.0)
-                reason = _hot_potato_reason(change_rate, snap.get("volume", 0), rank, hash((stock.code, date.today())))
-                picks.append({
-                    "stock": stock,
-                    "change_rate": change_rate,
-                    "volume": snap.get("volume", 0),
-                    "theme": stock.sector,
-                    "reason": reason,
-                    "rank": rank,
-                })
-            return picks
+        resp.encoding = "euc-kr"
+        naver_codes = re.findall(r'code=(\d{6})', resp.text)
     except Exception:
         pass
 
-    t = datetime.now()
-    slot = t.hour * 2 + (1 if t.minute >= 30 else 0)
-    seed = int(hashlib.sha256(f"{date.today()}{slot}hotpotato".encode()).hexdigest()[:10], 16)
+    # 등록된 종목만 필터
+    found: list[Stock] = []
+    seen: set[str] = set()
+    for code in naver_codes:
+        if code in seen:
+            continue
+        seen.add(code)
+        s = find_stock(code)
+        if s:
+            found.append(s)
+        if len(found) >= 6:
+            break
 
-    all_stks = all_stocks()
-    snaps = [(stk, stock_snapshot(stk, use_live)) for stk in all_stks]
-    snaps_sorted = sorted(snaps, key=lambda x: -abs(x[1].get("change_rate", 0)))
+    # ── Fallback: 변동률 상위 ─────────────────────
+    if len(found) < 6:
+        base = MARKET_STOCKS["전체"]
+        idx = rng.choice(len(base), size=min(50, len(base)), replace=False)
+        sample = [base[i] for i in idx]
+        snaps_fb = [(s, stock_snapshot(s, use_live)) for s in sample]
+        snaps_fb.sort(key=lambda x: -abs(x[1].get("change_rate", 0)))
+        existing_codes = {s.code for s in found}
+        for s, _ in snaps_fb:
+            if s.code not in existing_codes:
+                found.append(s)
+                existing_codes.add(s.code)
+            if len(found) >= 6:
+                break
 
     picks = []
-    for rank, (stock, snap) in enumerate(snaps_sorted[:6], 1):
-        change_rate = snap.get("change_rate", 0.0)
-        reason = _hot_potato_reason(change_rate, snap.get("volume", 0), rank, seed + rank)
+    for rank, stock in enumerate(found[:6], 1):
+        snap = stock_snapshot(stock, use_live)
+        cr = snap.get("change_rate", 0.0)
+        reason = str(rng.choice(_REASON_POOL))
         picks.append({
-            "stock": stock,
-            "change_rate": change_rate,
+            "code": stock.code,
+            "name": stock.name,
+            "market": stock.market,
+            "sector": stock.sector,
+            "change_rate": cr,
             "volume": snap.get("volume", 0),
-            "theme": stock.sector,
             "reason": reason,
             "rank": rank,
         })
     return picks
+
+
+def _fetch_live_news(n: int = 6) -> list[dict]:
+    """네이버 금융 증권 뉴스 실시간 스크래핑 (실패 시 _NEWS_POOL fallback)."""
+    import requests as _req
+    import re
+
+    try:
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+            "Referer": "https://finance.naver.com/",
+        }
+        resp = _req.get(
+            "https://finance.naver.com/news/mainnews.naver",
+            headers=headers, timeout=5,
+        )
+        resp.encoding = "euc-kr"
+        text = resp.text
+
+        # 제목: <a ... title="..."> 혹은 dl 블록
+        titles = re.findall(r'<dt[^>]*>.*?<a[^>]+>([^<]{10,})</a>', text, re.S)
+        titles = [t.strip() for t in titles if len(t.strip()) > 10][:n]
+
+        # 출처
+        sources = re.findall(r'<dd class="articleSource">([^<]+)</dd>', text)
+
+        # 시각
+        times = re.findall(r'<dd class="articleDate">([^<]+)</dd>', text)
+
+        if not titles:
+            raise ValueError("parse fail")
+
+        items = []
+        sent_pool = ["긍정", "부정", "중립"]
+        icon_map = {"긍정": "📈", "부정": "📉", "중립": "📊"}
+        for i, title in enumerate(titles[:n]):
+            sent = sent_pool[i % 3]
+            items.append({
+                "title": title,
+                "source": sources[i] if i < len(sources) else "네이버금융",
+                "time": times[i].strip() if i < len(times) else "",
+                "sentiment": sent,
+                "icon": icon_map[sent],
+            })
+        return items
+    except Exception:
+        pass
+
+    # fallback — _NEWS_POOL 그대로 섞어 반환
+    d = date.today()
+    seed = int(hashlib.sha256(f"{d}news".encode()).hexdigest()[:10], 16)
+    rng = np.random.default_rng(seed % (2**32))
+    sent_map = {"긍정": "📈", "부정": "📉", "중립": "📊"}
+    idx = rng.choice(len(_NEWS_POOL), size=min(n, len(_NEWS_POOL)), replace=False)
+    return [
+        {
+            "title": _NEWS_POOL[i][2],
+            "source": _NEWS_POOL[i][1],
+            "time": "",
+            "sentiment": _NEWS_POOL[i][3],
+            "icon": sent_map.get(_NEWS_POOL[i][3], "📊"),
+        }
+        for i in idx
+    ]
 
 
 def render_date_news_panel(stock: "Stock", date_str: str, df: pd.DataFrame) -> None:
@@ -2630,17 +2681,6 @@ def render_date_news_panel(stock: "Stock", date_str: str, df: pd.DataFrame) -> N
             )
 
 
-def _today_news(n: int = 4) -> list[dict]:
-    d = date.today()
-    seed = int(hashlib.sha256(f"{d.year}{d.month}{d.day}news".encode()).hexdigest()[:10], 16)
-    rng = np.random.default_rng(seed % (2**32))
-    idx = rng.choice(len(_NEWS_POOL), size=min(n, len(_NEWS_POOL)), replace=False)
-    return [
-        {"icon": _NEWS_POOL[i][0], "tag": _NEWS_POOL[i][1],
-         "title": _NEWS_POOL[i][2], "sentiment": _NEWS_POOL[i][3]}
-        for i in idx
-    ]
-
 
 @st.cache_data(ttl=300, show_spinner=False)
 def _sector_leaderboard(top_n: int = 5, use_live: bool = False) -> list[dict]:
@@ -2717,42 +2757,41 @@ def render_stocks_page(stocks: list[Stock], use_live: bool, keyword: str = "") -
     hp_cols = st.columns(3)
     for i, pick in enumerate(hot_picks):
         col = hp_cols[i % 3]
-        stk = pick["stock"]
         cr = pick["change_rate"]
         color = "var(--red)" if cr > 0 else ("var(--blue)" if cr < 0 else "var(--muted)")
         arrow = "▲" if cr > 0 else ("▼" if cr < 0 else "—")
         with col:
             st.markdown(
                 f'<div style="background:var(--surf2);border:2px solid var(--border2);'
-                f'border-left:4px solid {color};padding:12px 14px;margin-bottom:10px;cursor:pointer;">'
+                f'border-left:4px solid {color};padding:12px 14px;margin-bottom:6px;">'
                 f'<div style="font-family:var(--font);font-size:0.62rem;letter-spacing:0.12em;'
                 f'text-transform:uppercase;color:var(--cyan);margin-bottom:4px;">'
-                f'#{pick["rank"]:02d} · {stk.sector}</div>'
-                f'<div style="font-weight:700;font-size:0.92rem;color:var(--white);margin-bottom:4px;">'
-                f'{stk.name}</div>'
-                f'<div style="font-family:var(--mono);font-size:0.8rem;color:var(--muted);margin-bottom:6px;">'
-                f'{stk.code}</div>'
+                f'#{pick["rank"]:02d} · {pick["sector"]}</div>'
+                f'<div style="font-weight:700;font-size:0.92rem;color:var(--white);margin-bottom:2px;">'
+                f'{pick["name"]}</div>'
+                f'<div style="font-family:var(--mono);font-size:0.78rem;color:var(--muted);margin-bottom:6px;">'
+                f'{pick["code"]}</div>'
                 f'<div style="font-family:var(--mono);font-size:1rem;color:{color};font-weight:700;margin-bottom:6px;">'
                 f'{arrow} {cr:+.2f}%</div>'
-                f'<div style="font-size:0.75rem;color:var(--muted);line-height:1.3;">'
+                f'<div style="font-size:0.73rem;color:var(--muted);line-height:1.3;">'
                 f'{pick["reason"]}</div>'
                 f'</div>',
                 unsafe_allow_html=True,
             )
             if st.button(
                 "차트 보기",
-                key=f"hp-{stk.code}",
+                key=f"hp-{pick['code']}",
                 use_container_width=True,
             ):
-                st.session_state["selected_code"] = stk.code
+                st.session_state["selected_code"] = pick["code"]
                 st.session_state["menu_override"] = "차트"
                 st.rerun()
 
     st.divider()
 
-    # ── 오늘의 이슈 & 뉴스 ───────────────────────
-    st.markdown('<div class="bh-section-label">오늘의 이슈 &amp; 뉴스</div>', unsafe_allow_html=True)
-    news_items = _today_news(4)
+    # ── 실시간 뉴스 피드 ─────────────────────────
+    st.markdown('<div class="bh-section-label">📰 실시간 뉴스</div>', unsafe_allow_html=True)
+    news_items = _fetch_live_news(6)
     sent_color = {"긍정": "var(--red)", "부정": "var(--blue)", "중립": "var(--yellow)"}
     sent_label = {"긍정": "▲ 긍정", "부정": "▼ 부정", "중립": "— 중립"}
     nc1, nc2 = st.columns(2)
@@ -2760,16 +2799,20 @@ def render_stocks_page(stocks: list[Stock], use_live: bool, keyword: str = "") -
         col = nc1 if i % 2 == 0 else nc2
         sc = sent_color.get(news["sentiment"], "var(--muted)")
         sl = sent_label.get(news["sentiment"], "—")
+        src = news.get("source", "")
+        tm = news.get("time", "")
+        meta = " · ".join(x for x in [src, tm] if x)
         with col:
             st.markdown(
                 f'<div style="background:var(--surf2);border:2px solid var(--border2);'
                 f'border-left:4px solid {sc};padding:12px 14px;margin-bottom:10px;">'
                 f'<div style="font-family:var(--font);font-size:0.6rem;letter-spacing:0.14em;'
                 f'text-transform:uppercase;color:var(--cyan);margin-bottom:5px;">'
-                f'{news["icon"]} {news["tag"]}'
+                f'{news["icon"]}'
                 f'<span style="float:right;color:{sc};">{sl}</span></div>'
-                f'<div style="font-size:0.88rem;font-weight:600;color:var(--white);line-height:1.4;">'
+                f'<div style="font-size:0.87rem;font-weight:600;color:var(--white);line-height:1.45;margin-bottom:5px;">'
                 f'{news["title"]}</div>'
+                f'<div style="font-size:0.68rem;color:var(--muted);">{meta}</div>'
                 f'</div>',
                 unsafe_allow_html=True,
             )
