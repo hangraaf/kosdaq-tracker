@@ -3152,10 +3152,18 @@ def render_chart(stock: Stock, period_label: str, use_live: bool) -> tuple[pd.Da
     fig.add_hline(
         y=last_close,
         line_dash="dash", line_color="#B0883A", line_width=1.2,
-        annotation_text=f"현재가 {last_close:,.0f}원",
-        annotation_position="top right",
-        annotation_font_size=11, annotation_font_color="#B0883A",
         row=1, col=1,
+    )
+    # 현재가 라벨을 플롯 내부 우측 상단에 배치 (외부 마진 제거)
+    fig.add_annotation(
+        xref="x domain", yref="y", row=1, col=1,
+        x=1, y=last_close,
+        text=f"  현재가 {last_close:,.0f}원  ",
+        xanchor="right", yanchor="bottom",
+        showarrow=False,
+        font=dict(size=11, color="#B0883A", family="Pretendard, sans-serif"),
+        bgcolor="rgba(253,250,244,0.92)",
+        bordercolor="#B0883A", borderwidth=1, borderpad=3,
     )
 
     # ── 거래량 (양봉일=빨강, 음봉일=초록) ───────────
@@ -3233,7 +3241,7 @@ def render_chart(stock: Stock, period_label: str, use_live: bool) -> tuple[pd.Da
     fig.update_layout(
         template="plotly_white",
         height=860,
-        margin=dict(l=10, r=60, t=20, b=10),
+        margin=dict(l=15, r=15, t=20, b=10),
         xaxis_rangeslider_visible=False,
         showlegend=False,
         paper_bgcolor="rgba(248,244,235,1)",
@@ -3437,7 +3445,7 @@ def render_forecast(df: pd.DataFrame, stock: Stock) -> None:
     fig_factors.update_layout(
         height=360,
         title="요인별 가중 기여도  (🌐 = 외부 신호)",
-        margin=dict(l=10, r=60, t=44, b=10),
+        margin=dict(l=15, r=20, t=44, b=10),
         xaxis=dict(
             zeroline=True, zerolinecolor="#B0A090", zerolinewidth=1.5,
             range=[-0.22, 0.22], gridcolor="#E8E1D0",
