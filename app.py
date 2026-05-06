@@ -830,95 +830,99 @@ hr {
 .bh-delta.down { color: var(--blue); }
 .bh-delta.flat { color: var(--muted); }
 
-/* ── Sidebar 로고 — 프렌치 블루 다크 / 미색 텍스트 ── */
+/* ── Sidebar 로고 — Itten/Kandinsky 기하학 컴포지션 ──
+   3원색 3원형 (정사각형=빨강·삼각형=노랑·원=파랑) Bauhaus 도그마
+   ─────────────────────────────────────────────── */
 .bh-logo {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 18px;
   margin-bottom: 28px;
   padding-bottom: 22px;
-  border-bottom: 1.5px solid var(--yellow);
+  border-bottom: 2px solid var(--yellow);
 }
 .bh-logo-mark {
-  width: 64px; height: 64px;
+  width: 70px; height: 70px;
   background: #F8F4EB;
   flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  display: block;
   position: relative;
   overflow: hidden;
-  border-radius: 8px;
-  box-shadow: 0 3px 10px rgba(0,0,0,0.25);
-  gap: 0;
+  border-radius: 0;            /* 샤프 코너 */
+  box-shadow: 4px 4px 0 var(--yellow), 4px 4px 0 1px var(--blue-deep);
 }
-/* 왼쪽 골드 수직 바 */
+/* 노란 정사각형 — 좌하단 (Itten: 사각형=정적/안정) */
 .bh-logo-mark::before {
   content: '';
   position: absolute;
-  left: 0; top: 0; bottom: 0;
-  width: 5px;
+  left: 0; bottom: 0;
+  width: 32px; height: 32px;
   background: var(--yellow);
 }
-/* 하단 얇은 골드 줄 */
+/* 빨간 정사각형 — 우상단 모서리 (Kandinsky: 빨강=땅/정지) */
 .bh-logo-mark::after {
   content: '';
   position: absolute;
-  bottom: 0; left: 5px; right: 0;
-  height: 3px;
-  background: var(--yellow);
-  opacity: 0.5;
+  top: 5px; right: 5px;
+  width: 14px; height: 14px;
+  background: var(--red);
 }
+/* 파란 삼각형 — 중앙 위, 큰 ▲ 글리프 (역동/상승) */
 .bh-logo-tri {
-  font-size: 1.85rem;
+  position: absolute;
+  top: 4px; left: 18px;
+  font-size: 2.2rem;
   color: var(--blue);
   line-height: 1;
-  margin-left: 4px;
   font-weight: 700;
+  letter-spacing: 0;
+  z-index: 2;
 }
+/* KRX 텍스트 — 우하단, 노란 사각형 위로 살짝 */
 .bh-logo-krx {
+  position: absolute;
+  bottom: 4px; right: 6px;
   font-family: var(--font);
-  font-size: 0.54rem;
-  font-weight: 800;
-  letter-spacing: 0.22em;
+  font-size: 0.56rem;
+  font-weight: 900;
+  letter-spacing: 0.2em;
   color: var(--blue-deep);
-  margin-top: 1px;
-  margin-left: 4px;
   text-transform: uppercase;
-  opacity: 0.7;
+  z-index: 3;
 }
 .bh-logo-text { line-height: 1; }
 .bh-logo-title {
   font-family: var(--font);
-  font-size: 1.4rem;
-  font-weight: 800;
-  letter-spacing: 0.06em;
+  font-size: 1.45rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
   color: #F8F4EB;
   text-transform: uppercase;
-  line-height: 1.05;
+  line-height: 1;
   display: block;
 }
 .bh-logo-tracker {
   font-family: var(--font);
-  font-size: 0.74rem;
-  font-weight: 600;
-  letter-spacing: 0.3em;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.32em;
   color: var(--yellow);
   text-transform: uppercase;
-  display: block;
-  margin-top: 4px;
-  line-height: 1.3;
+  display: inline-block;
+  margin-top: 5px;
+  line-height: 1;
+  background: transparent;
+  padding: 3px 0;
+  border-bottom: 2px solid var(--red);
 }
 .bh-logo-sub {
-  font-family: var(--font);
-  font-size: 0.64rem;
-  font-weight: 400;
-  letter-spacing: 0.12em;
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  font-weight: 500;
+  letter-spacing: 0.18em;
   color: rgba(229, 222, 205, 0.7);
-  margin-top: 6px;
+  margin-top: 8px;
   padding-top: 5px;
-  border-top: 1px solid rgba(229, 222, 205, 0.25);
   display: block;
 }
 
