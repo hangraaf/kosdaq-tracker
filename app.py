@@ -3204,17 +3204,13 @@ def render_chart(stock: Stock, period_label: str, use_live: bool) -> tuple[pd.Da
                   annotation_font_color="#3E9050", annotation_position="right",
                   row=4, col=1)
 
-    # ── 레이아웃 ─────────────────────────────────────
+    # ── 레이아웃 (Plotly 기본 범례 숨김 → 커스텀 HTML 범례 사용) ──
     fig.update_layout(
         template="plotly_white",
         height=860,
-        margin=dict(l=10, r=60, t=50, b=10),
+        margin=dict(l=10, r=60, t=20, b=10),
         xaxis_rangeslider_visible=False,
-        legend=dict(
-            orientation="h", yanchor="bottom", y=1.02,
-            xanchor="left", x=0, font=dict(size=11, color="#3D3830"),
-            bgcolor="rgba(245,241,235,0.9)",
-        ),
+        showlegend=False,
         paper_bgcolor="rgba(245,241,235,1)",
         plot_bgcolor="rgba(237,233,226,1)",
         font=dict(color="#3D3830", family="Nanum Gothic"),
@@ -3224,6 +3220,73 @@ def render_chart(stock: Stock, period_label: str, use_live: bool) -> tuple[pd.Da
     fig.update_yaxes(title_text="RSI", range=[0, 100], row=4, col=1, gridcolor="#D4CFC6")
     fig.update_xaxes(gridcolor="#D4CFC6", showgrid=False)
     fig.update_layout(clickmode="event+select")
+
+    # ── 커스텀 범례 ──────────────────────────────────
+    _s = "font-size:0.72rem;color:var(--fg);white-space:nowrap;"
+    _m = "font-size:0.72rem;color:var(--muted);white-space:nowrap;"
+    _g = (
+        "display:flex;align-items:center;gap:10px;"
+        "padding:6px 14px;border-right:1px solid var(--border);"
+    )
+    _lg = "display:flex;align-items:center;gap:6px;"
+    def _dot(color: str, shape: str = "─") -> str:
+        return f'<span style="color:{color};font-size:0.9rem;line-height:1;">{shape}</span>'
+
+    st.markdown(
+        f'<div style="background:var(--surf2);border:1px solid var(--border2);'
+        f'border-bottom:none;display:flex;align-items:stretch;flex-wrap:wrap;'
+        f'font-family:var(--font);overflow:hidden;">'
+
+        # 가격 그룹
+        f'<div style="{_g}">'
+        f'<span style="{_m}">가격</span>'
+        f'<div style="{_lg}">{_dot("#C84848","█")}<span style="{_s}">양봉</span></div>'
+        f'<div style="{_lg}">{_dot("#3E9050","█")}<span style="{_s}">음봉</span></div>'
+        f'<div style="{_lg}">{_dot("#5888A8","···")}<span style="{_s}">볼린저</span></div>'
+        f'</div>'
+
+        # 이동평균 그룹
+        f'<div style="{_g}">'
+        f'<span style="{_m}">이평선</span>'
+        f'<div style="{_lg}">{_dot("#B87830","━━")}<span style="{_s}">MA5</span></div>'
+        f'<div style="{_lg}">{_dot("#5888A8","━━")}<span style="{_s}">MA20</span></div>'
+        f'<div style="{_lg}">{_dot("#7060A8","━━")}<span style="{_s}">MA60</span></div>'
+        f'</div>'
+
+        # 신호 그룹
+        f'<div style="{_g}">'
+        f'<span style="{_m}">신호</span>'
+        f'<div style="{_lg}">{_dot("#C89020","▲")}<span style="{_s}">골든크로스</span></div>'
+        f'<div style="{_lg}">{_dot("#4878A8","▼")}<span style="{_s}">데드크로스</span></div>'
+        f'</div>'
+
+        # 거래량 그룹
+        f'<div style="{_g}">'
+        f'<span style="{_m}">거래량</span>'
+        f'<div style="{_lg}">{_dot("#C84848","█")}<span style="{_s}">상승일</span></div>'
+        f'<div style="{_lg}">{_dot("#3E9050","█")}<span style="{_s}">하락일</span></div>'
+        f'</div>'
+
+        # MACD 그룹
+        f'<div style="{_g}">'
+        f'<span style="{_m}">MACD</span>'
+        f'<div style="{_lg}">{_dot("#C84848","█")}<span style="{_s}">히스토그램+</span></div>'
+        f'<div style="{_lg}">{_dot("#3E9050","█")}<span style="{_s}">히스토그램−</span></div>'
+        f'<div style="{_lg}">{_dot("#5888A8","━━")}<span style="{_s}">MACD</span></div>'
+        f'<div style="{_lg}">{_dot("#C84848","━━")}<span style="{_s}">시그널</span></div>'
+        f'</div>'
+
+        # RSI 그룹
+        f'<div style="display:flex;align-items:center;gap:10px;padding:6px 14px;">'
+        f'<span style="{_m}">RSI</span>'
+        f'<div style="{_lg}">{_dot("#A89030","━━")}<span style="{_s}">RSI(14)</span></div>'
+        f'<div style="{_lg}"><span style="font-size:0.72rem;color:#C84848;">70↑ 과매수</span></div>'
+        f'<div style="{_lg}"><span style="font-size:0.72rem;color:#3E9050;">30↓ 과매도</span></div>'
+        f'</div>'
+
+        f'</div>',
+        unsafe_allow_html=True,
+    )
 
     event = st.plotly_chart(
         fig,
