@@ -3629,60 +3629,80 @@ def render_candle_pattern_section(df: pd.DataFrame) -> None:
 
 
 def render_chart_page(market: str, use_live: bool, keyword: str = "", sectors: list[str] | None = None) -> None:
-    st.title("종목별 차트")
+    # ── 종목 선택 ──────────────────────────────────────
+    stock = select_stock_widget(market, keyword, sectors)
 
-    # ── 상단 행: 종목 선택 | 기간 선택 | 포트폴리오 버튼 ──
-    sel_col, period_col, btn_col = st.columns([3, 1, 1])
-    with sel_col:
-        stock = select_stock_widget(market, keyword, sectors)
-    with period_col:
-        period = st.selectbox("차트 기간", list(PERIODS.keys()), index=3)
+    # ── 기간 state (selectbox 대신 버튼으로 관리) ──────
+    if "chart_period" not in st.session_state:
+        st.session_state["chart_period"] = "3개월"
+    period = st.session_state["chart_period"]
 
-    # 컬럼 컨텍스트 밖에서 데이터 조회
+    # ── 데이터 조회 ────────────────────────────────────
     snapshot = stock_snapshot(stock, use_live)
     df_period, _ = get_chart_data(stock, PERIODS[period], use_live)
     period_high = int(df_period["high"].max())
     period_low  = int(df_period["low"].min())
 
-    with btn_col:
-        st.markdown("<div style='height:28px'></div>", unsafe_allow_html=True)
-        if st.button("＋ 포트폴리오 추가", use_container_width=True, type="primary"):
+    cr       = snapshot["change_rate"]
+    price_c  = "var(--red)" if cr >= 0 else "var(--blue)"
+    arrow    = "▲" if cr >= 0 else "▼"
+    data_lbl = "KIS 실시간" if use_live else "데모"
+
+    # ── 티커 정보 배지 ─────────────────────────────────
+    st.markdown(
+        f'<div style="display:flex;align-items:center;gap:14px;padding:6px 2px 4px;">'
+        f'<span style="font-weight:800;font-size:1.05rem;color:var(--white);">{stock.name}</span>'
+        f'<span style="font-family:var(--mono);font-size:0.68rem;color:var(--muted);'
+        f'letter-spacing:0.06em;">{stock.code} · {stock.market} · {stock.sector}</span>'
+        f'<span style="font-family:var(--mono);font-size:0.95rem;font-weight:700;color:{price_c};">'
+        f'{arrow} {money(snapshot["price"])} &nbsp; {cr:+.2f}%</span>'
+        f'<span style="font-size:0.77rem;color:var(--muted);">거래량 {volume_fmt(snapshot["volume"])}</span>'
+        f'<span style="font-size:0.77rem;color:var(--muted);">'
+        f'{period} 고 {money(period_high)} / 저 {money(period_low)}</span>'
+        f'<span style="font-family:var(--font);font-size:0.62rem;color:var(--muted);'
+        f'border:1px solid var(--border2);padding:1px 6px;margin-left:auto;">{data_lbl}</span>'
+        f'</div>',
+        unsafe_allow_html=True,
+    )
+
+    # ── 툴바: [★관심] [＋포트폴리오] ── 공백 ── [기간 버튼들] ──
+    period_list = list(PERIODS.keys())
+    favorites   = read_json(FAVORITES_FILE, [])
+    is_fav      = any(f["code"] == stock.code for f in favorites)
+
+    tb_fav, tb_port, _, *tb_periods = st.columns(
+        [1.1, 1.5, 1.8] + [0.85] * len(period_list)
+    )
+
+    with tb_fav:
+        if st.button(
+            "★ 해제" if is_fav else "☆ 관심",
+            key=f"tb-fav-{stock.code}",
+            use_container_width=True,
+        ):
+            toggle_favorite(stock)
+            st.rerun()
+
+    with tb_port:
+        if st.button(
+            "＋ 포트폴리오",
+            key=f"tb-port-{stock.code}",
+            type="primary",
+            use_container_width=True,
+        ):
             st.session_state["portfolio_add_code"] = stock.code
             st.session_state["portfolio_add_price"] = snapshot["price"]
 
-    # ── 메트릭 행: 6열 (버튼 분리로 여유 확보) ──
-    col1, col2, col3, col4, col5, col6 = st.columns(6)
-    col1.metric(
-        "현재가 (1주)",
-        money(snapshot["price"]),
-        money_signed(snapshot["change"]),
-        help="주식 1주를 사고팔 때의 가격입니다.",
-    )
-    col2.metric(
-        "등락률",
-        signed_pct(snapshot["change_rate"]),
-        help="전 거래일 종가 대비 오늘 가격이 오르거나 내린 비율입니다.",
-    )
-    col3.metric(
-        "거래량",
-        volume_fmt(snapshot["volume"]),
-        help="오늘 하루 동안 사고팔린 주식 수입니다. 많을수록 관심이 높습니다.",
-    )
-    col4.metric(
-        "시장",
-        stock.market,
-        help="KOSPI=대형주 중심 / KOSDAQ=중소·성장주 중심",
-    )
-    col5.metric(
-        f"최고가 ({period})",
-        money(period_high),
-        help=f"선택한 기간({period}) 중 가장 높았던 1주당 가격입니다.",
-    )
-    col6.metric(
-        f"최저가 ({period})",
-        money(period_low),
-        help=f"선택한 기간({period}) 중 가장 낮았던 1주당 가격입니다.",
-    )
+    for _p, _col in zip(period_list, tb_periods):
+        with _col:
+            if st.button(
+                _p,
+                key=f"tb-period-{_p}",
+                type="primary" if _p == period else "secondary",
+                use_container_width=True,
+            ):
+                st.session_state["chart_period"] = _p
+                st.rerun()
 
     if st.session_state.get("portfolio_add_code") == stock.code:
         with st.form("chart-portfolio-form", clear_on_submit=True):
