@@ -1360,6 +1360,7 @@ def get_chart_data(stock: Stock, days: int, use_live: bool) -> tuple[pd.DataFram
     return generate_demo_ohlcv(stock.code, stock.base_price, days), "DEMO"
 
 
+@st.cache_data(ttl=10, show_spinner=False)
 def stock_snapshot(stock: Stock, use_live: bool) -> dict:
     if use_live:
         try:
@@ -2348,7 +2349,7 @@ def _fetch_hot_potato_picks(use_live: bool, slot: str) -> list[dict]:
     # ── Fallback: 변동률 상위 ─────────────────────
     if len(found) < 6:
         base = MARKET_STOCKS["전체"]
-        idx = rng.choice(len(base), size=min(50, len(base)), replace=False)
+        idx = rng.choice(len(base), size=min(20, len(base)), replace=False)
         sample = [base[i] for i in idx]
         snaps_fb = [(s, stock_snapshot(s, use_live)) for s in sample]
         snaps_fb.sort(key=lambda x: -abs(x[1].get("change_rate", 0)))
@@ -2379,10 +2380,18 @@ def _fetch_hot_potato_picks(use_live: bool, slot: str) -> list[dict]:
 
 
 def _fetch_live_news(n: int = 6) -> list[dict]:
-    """네이버 금융 증권 뉴스 실시간 스크래핑 (실패 시 _NEWS_POOL fallback)."""
+    """네이버 금융 증권 뉴스 스크래핑 — session_state 5분 캐시."""
+    cache_key = "_news_cache"
+    ttl_seconds = 300
+    now_ts = datetime.now().timestamp()
+    cached = st.session_state.get(cache_key)
+    if cached and (now_ts - cached["ts"]) < ttl_seconds and len(cached["items"]) >= n:
+        return cached["items"][:n]
+
     import requests as _req
     import re
 
+    items: list[dict] = []
     try:
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
@@ -2390,56 +2399,50 @@ def _fetch_live_news(n: int = 6) -> list[dict]:
         }
         resp = _req.get(
             "https://finance.naver.com/news/mainnews.naver",
-            headers=headers, timeout=5,
+            headers=headers, timeout=4,
         )
         resp.encoding = "euc-kr"
         text = resp.text
 
-        # 제목: <a ... title="..."> 혹은 dl 블록
         titles = re.findall(r'<dt[^>]*>.*?<a[^>]+>([^<]{10,})</a>', text, re.S)
-        titles = [t.strip() for t in titles if len(t.strip()) > 10][:n]
-
-        # 출처
+        titles = [t.strip() for t in titles if len(t.strip()) > 10]
         sources = re.findall(r'<dd class="articleSource">([^<]+)</dd>', text)
-
-        # 시각
         times = re.findall(r'<dd class="articleDate">([^<]+)</dd>', text)
 
-        if not titles:
-            raise ValueError("parse fail")
-
-        items = []
-        sent_pool = ["긍정", "부정", "중립"]
-        icon_map = {"긍정": "📈", "부정": "📉", "중립": "📊"}
-        for i, title in enumerate(titles[:n]):
-            sent = sent_pool[i % 3]
-            items.append({
-                "title": title,
-                "source": sources[i] if i < len(sources) else "네이버금융",
-                "time": times[i].strip() if i < len(times) else "",
-                "sentiment": sent,
-                "icon": icon_map[sent],
-            })
-        return items
+        if titles:
+            sent_pool = ["긍정", "부정", "중립"]
+            icon_map = {"긍정": "📈", "부정": "📉", "중립": "📊"}
+            for i, title in enumerate(titles[:max(n, 12)]):
+                sent = sent_pool[i % 3]
+                items.append({
+                    "title": title,
+                    "source": sources[i] if i < len(sources) else "네이버금융",
+                    "time": times[i].strip() if i < len(times) else "",
+                    "sentiment": sent,
+                    "icon": icon_map[sent],
+                })
     except Exception:
         pass
 
-    # fallback — _NEWS_POOL 그대로 섞어 반환
-    d = date.today()
-    seed = int(hashlib.sha256(f"{d}news".encode()).hexdigest()[:10], 16)
-    rng = np.random.default_rng(seed % (2**32))
-    sent_map = {"긍정": "📈", "부정": "📉", "중립": "📊"}
-    idx = rng.choice(len(_NEWS_POOL), size=min(n, len(_NEWS_POOL)), replace=False)
-    return [
-        {
-            "title": _NEWS_POOL[i][2],
-            "source": _NEWS_POOL[i][1],
-            "time": "",
-            "sentiment": _NEWS_POOL[i][3],
-            "icon": sent_map.get(_NEWS_POOL[i][3], "📊"),
-        }
-        for i in idx
-    ]
+    if not items:
+        d = date.today()
+        seed = int(hashlib.sha256(f"{d}news".encode()).hexdigest()[:10], 16)
+        rng = np.random.default_rng(seed % (2**32))
+        sent_map = {"긍정": "📈", "부정": "📉", "중립": "📊"}
+        idx = rng.choice(len(_NEWS_POOL), size=len(_NEWS_POOL), replace=False)
+        items = [
+            {
+                "title": _NEWS_POOL[i][2],
+                "source": _NEWS_POOL[i][1],
+                "time": "",
+                "sentiment": _NEWS_POOL[i][3],
+                "icon": sent_map.get(_NEWS_POOL[i][3], "📊"),
+            }
+            for i in idx
+        ]
+
+    st.session_state[cache_key] = {"ts": now_ts, "items": items}
+    return items[:n]
 
 
 def render_date_news_panel(stock: "Stock", date_str: str, df: pd.DataFrame) -> None:
@@ -2684,14 +2687,15 @@ def render_date_news_panel(stock: "Stock", date_str: str, df: pd.DataFrame) -> N
 
 @st.cache_data(ttl=300, show_spinner=False)
 def _sector_leaderboard(top_n: int = 5, use_live: bool = False) -> list[dict]:
-    """섹터별 대표 종목 최대 4개 샘플링해 평균 등락률 계산 (5분 캐시)."""
+    """섹터별 대표 종목 2개 샘플링해 평균 등락률 계산 (5분 캐시, session_state 미사용)."""
+    base = MARKET_STOCKS["전체"]   # session_state 없이 모듈 상수 직접 사용
     sector_stocks: dict[str, list] = {}
-    for stock in all_stocks():
+    for stock in base:
         sector_stocks.setdefault(stock.sector, []).append(stock)
 
     sector_rates: dict[str, list[float]] = {}
     for sector, stocks in sector_stocks.items():
-        for stock in stocks[:4]:
+        for stock in stocks[:2]:   # 4 → 2 로 축소
             snap = stock_snapshot(stock, use_live)
             sector_rates.setdefault(sector, []).append(snap["change_rate"])
 
