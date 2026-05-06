@@ -1904,14 +1904,14 @@ def render_sidebar() -> tuple[str, str, str, list[str], bool, int]:
 
     st.sidebar.markdown('<div class="bh-sidebar-title">화면</div>', unsafe_allow_html=True)
     menu_icons = {"종목": "▦ 종목", "차트": "▲ 차트", "관심종목": "★ 관심종목", "포트폴리오": "◈ 포트폴리오"}
-    # query_params 우선 → session_state 순서로 현재 메뉴 결정
-    _qp_menu = st.query_params.get("menu", "")
-    _current = _qp_menu if _qp_menu in menu_icons else st.session_state.get("current_menu", "종목")
-    _default_idx = list(menu_icons.keys()).index(_current) if _current in menu_icons else 0
+    # session_state 기반 — index= 파라미터를 쓰지 않아 첫 클릭부터 즉시 반영
+    if "bh_menu_radio" not in st.session_state:
+        _init = st.session_state.get("current_menu", "종목")
+        st.session_state["bh_menu_radio"] = menu_icons.get(_init, "▦ 종목")
     menu_key = st.sidebar.radio(
         "화면",
         list(menu_icons.values()),
-        index=_default_idx,
+        key="bh_menu_radio",
         label_visibility="collapsed",
     )
     menu = next(k for k, v in menu_icons.items() if v == menu_key)
@@ -5048,13 +5048,16 @@ def main() -> None:
     if "code" in qp and "selected_code" not in st.session_state:
         st.session_state["selected_code"] = qp["code"]
 
+    # ── menu_override를 render_sidebar 전에 처리 ─────────────
+    # 이렇게 해야 라디오 버튼이 즉시 올바른 메뉴를 표시함
+    _menu_icons = {"종목": "▦ 종목", "차트": "▲ 차트", "관심종목": "★ 관심종목", "포트폴리오": "◈ 포트폴리오"}
+    _override = st.session_state.pop("menu_override", None)
+    if _override and _override in _menu_icons:
+        st.session_state["current_menu"] = _override
+        st.session_state["bh_menu_radio"] = _menu_icons[_override]
+
     menu, market, keyword, sectors, use_live, refresh_seconds = render_sidebar()
     auto_refresh(refresh_seconds if use_live else 0)
-
-    _override = st.session_state.pop("menu_override", None)
-    if _override:
-        menu = _override
-        st.session_state["current_menu"] = _override
 
     # ── 현재 상태를 URL에 동기화 ────────────────────────
     st.query_params["menu"] = menu
