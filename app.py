@@ -1875,13 +1875,16 @@ def render_sidebar() -> tuple[str, str, str, list[str], bool, int]:
 
     st.sidebar.markdown('<div class="bh-sidebar-title">화면</div>', unsafe_allow_html=True)
     menu_icons = {"종목": "▦ 종목", "차트": "▲ 차트", "관심종목": "★ 관심종목", "포트폴리오": "◈ 포트폴리오"}
+    _current = st.session_state.get("current_menu", "종목")
+    _default_idx = list(menu_icons.keys()).index(_current) if _current in menu_icons else 0
     menu_key = st.sidebar.radio(
         "화면",
         list(menu_icons.values()),
-        index=0,
+        index=_default_idx,
         label_visibility="collapsed",
     )
     menu = next(k for k, v in menu_icons.items() if v == menu_key)
+    st.session_state["current_menu"] = menu
 
     market = "전체"
 
@@ -2844,12 +2847,14 @@ def render_chart(stock: Stock, period_label: str, use_live: bool) -> tuple[pd.Da
         )
         if abs(ext_score) > 0.05:
             tint = "rgba(62,144,80,0.07)" if ext_score > 0 else "rgba(200,72,72,0.07)"
-            fig.add_hrect(
-                y0=0, y1=1, yref="paper",
+            fig.add_shape(
+                type="rect",
+                xref="x domain", yref="y domain",
+                x0=0, y0=0, x1=1, y1=1,
                 fillcolor=tint, line_width=0,
                 row=1, col=1,
             )
-        # 비-제로 신호 배지 (우측 상단)
+        # 비-제로 신호 배지 (좌상단)
         ext_label_map = {
             "news_sentiment": "뉴스",
             "earnings_surprise": "실적",
@@ -2866,8 +2871,8 @@ def render_chart(stock: Stock, period_label: str, use_live: bool) -> tuple[pd.Da
         if badges:
             signal_color = "#3E9050" if ext_score > 0.05 else "#C84848" if ext_score < -0.05 else "#888"
             fig.add_annotation(
-                xref="paper", yref="paper",
-                x=0.01, y=0.99,
+                xref="x domain", yref="y domain",
+                x=0.01, y=0.97,
                 text="  ".join(badges),
                 showarrow=False,
                 font=dict(size=10, color=signal_color),
@@ -4658,8 +4663,10 @@ def main() -> None:
     setup_page()
     menu, market, keyword, sectors, use_live, refresh_seconds = render_sidebar()
     auto_refresh(refresh_seconds if use_live else 0)
-    if st.session_state.pop("menu_override", None) == "차트":
-        menu = "차트"
+    _override = st.session_state.pop("menu_override", None)
+    if _override:
+        menu = _override
+        st.session_state["current_menu"] = _override
 
     stocks = filtered_stocks(market, keyword, sectors)
     if menu == "종목":
