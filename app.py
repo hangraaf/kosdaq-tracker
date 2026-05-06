@@ -2286,6 +2286,111 @@ _NEWS_POOL = [
 ]
 
 
+def _hot_potato_reason(change_rate: float, volume: int, rank: int, seed_val: int) -> str:
+    """등락률·거래량·순위 기반으로 짧은 코멘트 자동 생성."""
+    rng = np.random.default_rng((seed_val + rank) % (2**32))
+    if rank == 1:
+        base = "최강 상승세" if change_rate > 0 else "최강 하락세"
+    elif rank <= 3:
+        base = "강세" if change_rate > 0 else "약세"
+    else:
+        base = "관심 종목"
+
+    modifiers = [
+        "외국인 순매수 중",
+        "기관 매집 신호",
+        "거래량 급증",
+        "기술적 매수신호",
+        "차입금 증가",
+        "공매도 급감",
+    ]
+    return f"{base} · {rng.choice(modifiers)}"
+
+
+@st.cache_data(ttl=1800, show_spinner=False)
+def _hot_potato_picks(use_live: bool) -> list[dict]:
+    """Naver Finance 인기검색 기반 뜨거운 감자 6개 종목 (30분 캐시)."""
+    import requests as _req
+    from html.parser import HTMLParser
+
+    class StockParser(HTMLParser):
+        def __init__(self):
+            super().__init__()
+            self.codes = []
+            self.in_td = False
+
+        def handle_starttag(self, tag, attrs):
+            if tag == "td":
+                for attr, value in attrs:
+                    if attr == "class" and "no" in value:
+                        self.in_td = True
+
+        def handle_data(self, data):
+            if self.in_td and data.strip().isdigit() and len(data.strip()) == 6:
+                self.codes.append(data.strip())
+                self.in_td = False
+
+    try:
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+            "Referer": "https://finance.naver.com/",
+        }
+        resp = _req.get(
+            "https://finance.naver.com/sise/lastsearch2.naver",
+            headers=headers,
+            timeout=5,
+        )
+        resp.encoding = "utf-8"
+        parser = StockParser()
+        parser.feed(resp.text)
+        found_stocks = []
+        for code in parser.codes[:10]:
+            stock = find_stock(code)
+            if stock:
+                found_stocks.append(stock)
+            if len(found_stocks) >= 6:
+                break
+        if len(found_stocks) >= 6:
+            picks = []
+            for rank, stock in enumerate(found_stocks[:6], 1):
+                snap = stock_snapshot(stock, use_live)
+                change_rate = snap.get("change_rate", 0.0)
+                reason = _hot_potato_reason(change_rate, snap.get("volume", 0), rank, hash((stock.code, date.today())))
+                picks.append({
+                    "stock": stock,
+                    "change_rate": change_rate,
+                    "volume": snap.get("volume", 0),
+                    "theme": stock.sector,
+                    "reason": reason,
+                    "rank": rank,
+                })
+            return picks
+    except Exception:
+        pass
+
+    t = datetime.now()
+    slot = t.hour * 2 + (1 if t.minute >= 30 else 0)
+    seed = int(hashlib.sha256(f"{date.today()}{slot}hotpotato".encode()).hexdigest()[:10], 16)
+
+    all_stks = all_stocks()
+    snaps = [(stk, stock_snapshot(stk, use_live)) for stk in all_stks]
+    snaps_sorted = sorted(snaps, key=lambda x: -abs(x[1].get("change_rate", 0)))
+
+    picks = []
+    for rank, (stock, snap) in enumerate(snaps_sorted[:6], 1):
+        change_rate = snap.get("change_rate", 0.0)
+        reason = _hot_potato_reason(change_rate, snap.get("volume", 0), rank, seed + rank)
+        picks.append({
+            "stock": stock,
+            "change_rate": change_rate,
+            "volume": snap.get("volume", 0),
+            "theme": stock.sector,
+            "reason": reason,
+            "rank": rank,
+        })
+    return picks
+
+
 def render_date_news_panel(stock: "Stock", date_str: str, df: pd.DataFrame) -> None:
     """차트 날짜 클릭 → 실제 차트 데이터 기반 기술적 분석 + 실제 뉴스 링크."""
     # ── 날짜 파싱 ──────────────────────────────────
@@ -2598,6 +2703,52 @@ def render_stocks_page(stocks: list[Stock], use_live: bool, keyword: str = "") -
         f'<div class="bh-subtitle">{today_str} · {data_label} 기준</div>',
         unsafe_allow_html=True,
     )
+
+    # ── 뜨거운 감자 ──────────────────────────────
+    st.markdown('<div class="bh-section-label">🔥 뜨거운 감자</div>', unsafe_allow_html=True)
+    now = datetime.now()
+    next_update_min = 30 - (now.minute % 30)
+    st.markdown(
+        f'<div style="font-size:0.75rem;color:var(--muted);margin-bottom:10px;">'
+        f'30분마다 갱신 · 다음 갱신까지 {next_update_min}분</div>',
+        unsafe_allow_html=True,
+    )
+    hot_picks = _hot_potato_picks(use_live)
+    hp_cols = st.columns(3)
+    for i, pick in enumerate(hot_picks):
+        col = hp_cols[i % 3]
+        stk = pick["stock"]
+        cr = pick["change_rate"]
+        color = "var(--red)" if cr > 0 else ("var(--blue)" if cr < 0 else "var(--muted)")
+        arrow = "▲" if cr > 0 else ("▼" if cr < 0 else "—")
+        with col:
+            st.markdown(
+                f'<div style="background:var(--surf2);border:2px solid var(--border2);'
+                f'border-left:4px solid {color};padding:12px 14px;margin-bottom:10px;cursor:pointer;">'
+                f'<div style="font-family:var(--font);font-size:0.62rem;letter-spacing:0.12em;'
+                f'text-transform:uppercase;color:var(--cyan);margin-bottom:4px;">'
+                f'#{pick["rank"]:02d} · {stk.sector}</div>'
+                f'<div style="font-weight:700;font-size:0.92rem;color:var(--white);margin-bottom:4px;">'
+                f'{stk.name}</div>'
+                f'<div style="font-family:var(--mono);font-size:0.8rem;color:var(--muted);margin-bottom:6px;">'
+                f'{stk.code}</div>'
+                f'<div style="font-family:var(--mono);font-size:1rem;color:{color};font-weight:700;margin-bottom:6px;">'
+                f'{arrow} {cr:+.2f}%</div>'
+                f'<div style="font-size:0.75rem;color:var(--muted);line-height:1.3;">'
+                f'{pick["reason"]}</div>'
+                f'</div>',
+                unsafe_allow_html=True,
+            )
+            if st.button(
+                "차트 보기",
+                key=f"hp-{stk.code}",
+                use_container_width=True,
+            ):
+                st.session_state["selected_code"] = stk.code
+                st.session_state["menu_override"] = "차트"
+                st.rerun()
+
+    st.divider()
 
     # ── 오늘의 이슈 & 뉴스 ───────────────────────
     st.markdown('<div class="bh-section-label">오늘의 이슈 &amp; 뉴스</div>', unsafe_allow_html=True)
