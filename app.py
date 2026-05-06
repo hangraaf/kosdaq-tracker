@@ -527,38 +527,38 @@ div[data-testid="stMetric"] [data-testid="stMetricDelta"] {
   white-space: nowrap !important;
 }
 
-/* ── Buttons — 통일된 프렌치 블루 시스템 ───── */
+/* ── Buttons — Bauhaus: 샤프 코너 / 두꺼운 타입 ─ */
 .stButton > button {
-  border-radius: 4px !important;
+  border-radius: 0 !important;
   font-family: var(--font) !important;
-  font-weight: 600 !important;
-  font-size: 0.86rem !important;
-  letter-spacing: -0.005em !important;
+  font-weight: 700 !important;
+  font-size: 0.84rem !important;
+  letter-spacing: 0.02em !important;
   text-transform: none !important;
-  transition: all 0.18s ease !important;
-  box-shadow: 0 1px 2px rgba(44, 74, 110, 0.06) !important;
+  transition: all 0.15s ease !important;
+  box-shadow: none !important;
 }
 .stButton > button[kind="primary"] {
   background: var(--blue) !important;
   color: #FFFFFF !important;
-  border: 1px solid var(--blue) !important;
+  border: 2px solid var(--blue) !important;
 }
 .stButton > button[kind="primary"]:hover {
   background: var(--blue-deep) !important;
   border-color: var(--blue-deep) !important;
   color: #FFFFFF !important;
-  box-shadow: 0 3px 8px rgba(44, 74, 110, 0.22) !important;
-  transform: translateY(-1px);
+  box-shadow: 3px 3px 0 var(--yellow) !important;
+  transform: translate(-2px, -2px);
 }
 .stButton > button[kind="secondary"] {
   background: #FBF8F1 !important;
-  color: var(--fg) !important;
-  border: 1px solid var(--border) !important;
+  color: var(--blue-deep) !important;
+  border: 2px solid var(--blue-deep) !important;
 }
 .stButton > button[kind="secondary"]:hover {
-  border-color: var(--blue) !important;
-  color: var(--blue) !important;
-  background: var(--blue-pale) !important;
+  background: var(--blue-deep) !important;
+  color: #FFFFFF !important;
+  border-color: var(--blue-deep) !important;
 }
 
 /* ── Inputs (메인 영역) ──────────────────────── */
@@ -3241,19 +3241,40 @@ def render_chart(stock: Stock, period_label: str, use_live: bool) -> tuple[pd.Da
     fig.update_xaxes(gridcolor="#D4CFC6", showgrid=False)
     fig.update_layout(clickmode="event+select")
 
-    # ── 커스텀 범례 ──────────────────────────────────
-    _s = "font-size:0.72rem;color:var(--fg);white-space:nowrap;"
-    _m = "font-size:0.72rem;color:var(--muted);white-space:nowrap;"
+    # ── Bauhaus 범례 ─────────────────────────────────
+    _s = "font-size:0.7rem;color:var(--fg);white-space:nowrap;font-weight:600;"
+    _m = (
+        "font-size:0.62rem;color:#FFFFFF;white-space:nowrap;font-weight:800;"
+        "letter-spacing:0.16em;text-transform:uppercase;"
+        "background:#2C4A6E;padding:3px 8px;line-height:1;"
+    )
     _g = (
         "display:flex;align-items:center;gap:10px;"
-        "padding:6px 14px;border-right:1px solid var(--border);"
+        "padding:8px 14px;border-right:2px solid #2C4A6E;"
     )
-    _lg = "display:flex;align-items:center;gap:6px;"
-    def _dot(color: str, shape: str = "─") -> str:
-        return f'<span style="color:{color};font-size:0.9rem;line-height:1;">{shape}</span>'
+    _lg = "display:flex;align-items:center;gap:5px;"
+    def _dot(color: str, shape: str = "━") -> str:
+        if shape == "█":
+            return (
+                f'<span style="display:inline-block;width:14px;height:11px;'
+                f'background:{color};vertical-align:middle;"></span>'
+            )
+        if shape == "▲":
+            return f'<span style="color:{color};font-size:0.85rem;line-height:1;">▲</span>'
+        if shape == "▼":
+            return f'<span style="color:{color};font-size:0.85rem;line-height:1;">▼</span>'
+        if shape == "···":
+            return (
+                f'<span style="display:inline-block;width:18px;border-top:2px dotted {color};'
+                f'vertical-align:middle;"></span>'
+            )
+        return (
+            f'<span style="display:inline-block;width:18px;height:0;'
+            f'border-top:2.5px solid {color};vertical-align:middle;"></span>'
+        )
 
     st.markdown(
-        f'<div style="background:var(--surf2);border:1px solid var(--border2);'
+        f'<div style="background:#FBF8F1;border:2px solid #2C4A6E;'
         f'border-bottom:none;display:flex;align-items:stretch;flex-wrap:wrap;'
         f'font-family:var(--font);overflow:hidden;">'
 
@@ -3296,12 +3317,12 @@ def render_chart(stock: Stock, period_label: str, use_live: bool) -> tuple[pd.Da
         f'<div style="{_lg}">{_dot("#B5453F","━━")}<span style="{_s}">시그널</span></div>'
         f'</div>'
 
-        # RSI 그룹
-        f'<div style="display:flex;align-items:center;gap:10px;padding:6px 14px;">'
+        # RSI 그룹 (마지막, border-right 제거)
+        f'<div style="display:flex;align-items:center;gap:10px;padding:8px 14px;">'
         f'<span style="{_m}">RSI</span>'
         f'<div style="{_lg}">{_dot("#B0883A","━━")}<span style="{_s}">RSI(14)</span></div>'
-        f'<div style="{_lg}"><span style="font-size:0.72rem;color:#B5453F;">70↑ 과매수</span></div>'
-        f'<div style="{_lg}"><span style="font-size:0.72rem;color:#436B95;">30↓ 과매도</span></div>'
+        f'<div style="{_lg}"><span style="font-size:0.7rem;font-weight:700;color:#B5453F;">70↑ 과매수</span></div>'
+        f'<div style="{_lg}"><span style="font-size:0.7rem;font-weight:700;color:#436B95;">30↓ 과매도</span></div>'
         f'</div>'
 
         f'</div>',
@@ -3726,24 +3747,58 @@ def render_chart_page(market: str, use_live: bool, keyword: str = "", sectors: l
     period_high = int(df_period["high"].max())
     period_low  = int(df_period["low"].min())
 
-    cr       = snapshot["change_rate"]
-    price_c  = "var(--red)" if cr >= 0 else "var(--blue)"
-    arrow    = "▲" if cr >= 0 else "▼"
-    data_lbl = "KIS 실시간" if use_live else "데모"
+    cr        = snapshot["change_rate"]
+    price_hex = "#B5453F" if cr >= 0 else "#436B95"
+    arrow     = "▲" if cr >= 0 else "▼"
+    data_lbl  = "KIS 실시간" if use_live else "DEMO"
+    mkt_hex   = "#B5453F" if stock.market == "KOSPI" else "#436B95"
 
-    # ── 티커 정보 배지 ─────────────────────────────────
+    # ── Bauhaus 티커 카드: 3블록 구조 ─────────────────
     st.markdown(
-        f'<div style="display:flex;align-items:center;gap:14px;padding:6px 2px 4px;">'
-        f'<span style="font-weight:800;font-size:1.05rem;color:var(--white);">{stock.name}</span>'
-        f'<span style="font-family:var(--mono);font-size:0.68rem;color:var(--muted);'
-        f'letter-spacing:0.06em;">{stock.code} · {stock.market} · {stock.sector}</span>'
-        f'<span style="font-family:var(--mono);font-size:0.95rem;font-weight:700;color:{price_c};">'
-        f'{arrow} {money(snapshot["price"])} &nbsp; {cr:+.2f}%</span>'
-        f'<span style="font-size:0.77rem;color:var(--muted);">거래량 {volume_fmt(snapshot["volume"])}</span>'
-        f'<span style="font-size:0.77rem;color:var(--muted);">'
-        f'{period} 고 {money(period_high)} / 저 {money(period_low)}</span>'
-        f'<span style="font-family:var(--font);font-size:0.62rem;color:var(--muted);'
-        f'border:1px solid var(--border2);padding:1px 6px;margin-left:auto;">{data_lbl}</span>'
+        f'<div style="display:grid;grid-template-columns:auto 1fr auto;'
+        f'border:2px solid #2C4A6E;background:#FBF8F1;margin:6px 0 14px;'
+        f'font-family:var(--font);overflow:hidden;">'
+        f'<div style="display:flex;align-items:center;gap:14px;padding:14px 22px;'
+        f'background:#2C4A6E;color:#F8F4EB;">'
+        f'<div style="background:{mkt_hex};color:#FFFFFF;padding:5px 11px;'
+        f'font-weight:900;font-size:0.66rem;letter-spacing:0.2em;line-height:1;">'
+        f'{stock.market}</div>'
+        f'<div>'
+        f'<div style="font-weight:900;font-size:1.32rem;letter-spacing:-0.015em;'
+        f'line-height:1.05;color:#F8F4EB;">{stock.name}</div>'
+        f'<div style="font-family:var(--mono);font-size:0.68rem;color:#C8D4E2;'
+        f'letter-spacing:0.06em;margin-top:3px;">{stock.code} · {stock.sector}</div>'
+        f'</div>'
+        f'</div>'
+        f'<div style="display:flex;align-items:center;gap:18px;padding:14px 28px;'
+        f'background:{price_hex};color:#FFFFFF;">'
+        f'<div style="font-size:2.2rem;line-height:1;font-weight:700;">{arrow}</div>'
+        f'<div>'
+        f'<div style="font-family:var(--mono);font-weight:800;font-size:1.55rem;'
+        f'letter-spacing:0.005em;line-height:1.0;">{snapshot["price"]:,}</div>'
+        f'<div style="font-family:var(--mono);font-size:0.85rem;font-weight:600;'
+        f'letter-spacing:0.02em;margin-top:3px;opacity:0.95;">'
+        f'{cr:+.2f}% &nbsp;·&nbsp; {money_signed(snapshot["change"])}</div>'
+        f'</div>'
+        f'</div>'
+        f'<div style="display:flex;align-items:center;gap:22px;padding:14px 22px;'
+        f'background:#FBF8F1;color:var(--fg);">'
+        f'<div>'
+        f'<div style="font-size:0.6rem;letter-spacing:0.16em;text-transform:uppercase;'
+        f'color:var(--muted);margin-bottom:3px;font-weight:700;">거래량</div>'
+        f'<div style="font-family:var(--mono);font-size:0.95rem;font-weight:700;'
+        f'color:#1A1611;">{volume_fmt(snapshot["volume"])}</div>'
+        f'</div>'
+        f'<div>'
+        f'<div style="font-size:0.6rem;letter-spacing:0.16em;text-transform:uppercase;'
+        f'color:var(--muted);margin-bottom:3px;font-weight:700;">{period} 고/저</div>'
+        f'<div style="font-family:var(--mono);font-size:0.78rem;font-weight:700;'
+        f'color:#1A1611;">{money(period_high)} / {money(period_low)}</div>'
+        f'</div>'
+        f'<div style="background:#B0883A;color:#FFFFFF;padding:5px 11px;'
+        f'font-weight:800;font-size:0.62rem;letter-spacing:0.18em;line-height:1;">'
+        f'{data_lbl}</div>'
+        f'</div>'
         f'</div>',
         unsafe_allow_html=True,
     )
