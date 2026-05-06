@@ -1875,7 +1875,9 @@ def render_sidebar() -> tuple[str, str, str, list[str], bool, int]:
 
     st.sidebar.markdown('<div class="bh-sidebar-title">화면</div>', unsafe_allow_html=True)
     menu_icons = {"종목": "▦ 종목", "차트": "▲ 차트", "관심종목": "★ 관심종목", "포트폴리오": "◈ 포트폴리오"}
-    _current = st.session_state.get("current_menu", "종목")
+    # query_params 우선 → session_state 순서로 현재 메뉴 결정
+    _qp_menu = st.query_params.get("menu", "")
+    _current = _qp_menu if _qp_menu in menu_icons else st.session_state.get("current_menu", "종목")
     _default_idx = list(menu_icons.keys()).index(_current) if _current in menu_icons else 0
     menu_key = st.sidebar.radio(
         "화면",
@@ -4661,12 +4663,31 @@ def render_kotegawa_advice(stocks: list[Stock], use_live: bool) -> None:
 
 def main() -> None:
     setup_page()
+
+    # ── URL query params → session state 복원 (새로고침 대응) ──
+    qp = st.query_params
+    if "menu" in qp and "current_menu" not in st.session_state:
+        valid = {"종목", "차트", "관심종목", "포트폴리오"}
+        if qp["menu"] in valid:
+            st.session_state["current_menu"] = qp["menu"]
+    if "code" in qp and "selected_code" not in st.session_state:
+        st.session_state["selected_code"] = qp["code"]
+
     menu, market, keyword, sectors, use_live, refresh_seconds = render_sidebar()
     auto_refresh(refresh_seconds if use_live else 0)
+
     _override = st.session_state.pop("menu_override", None)
     if _override:
         menu = _override
         st.session_state["current_menu"] = _override
+
+    # ── 현재 상태를 URL에 동기화 ────────────────────────
+    st.query_params["menu"] = menu
+    _sel = st.session_state.get("selected_code", "")
+    if _sel:
+        st.query_params["code"] = _sel
+    elif "code" in st.query_params:
+        del st.query_params["code"]
 
     stocks = filtered_stocks(market, keyword, sectors)
     if menu == "종목":
