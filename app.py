@@ -1225,6 +1225,8 @@ def generate_demo_ohlcv(code: str, base_price: int, days: int) -> pd.DataFrame:
     drift = rng.normal(0.00035, 0.0002)
     volatility = rng.uniform(0.018, 0.035)
     returns = rng.normal(drift, volatility, len(dates))
+    if base_price <= 0:
+        base_price = int((seed_for(code, "base") % 90) + 10) * 1000  # 10,000~100,000 범위
     close = base_price * np.exp(np.cumsum(returns))
     open_ = close * (1 + rng.normal(0, 0.007, len(dates)))
     high = np.maximum(open_, close) * (1 + rng.uniform(0.002, 0.022, len(dates)))
@@ -1981,10 +1983,8 @@ def render_sidebar() -> tuple[str, str, str, list[str], bool, int]:
                     st.session_state["menu_override"] = "차트"
                     st.rerun()
         else:
-            # ── 로컬 미등록 종목 → 네이버 금융 자동완성 API로 폴백 ──
-            with st.sidebar:
-                with st.spinner("종목 검색 중…"):
-                    api_hits = _naver_stock_search(kw)
+            # ── 로컬 미등록 종목 → 네이버 금융 자동완성 API 자동 등록 ──
+            api_hits = _naver_stock_search(kw)
             if not api_hits:
                 st.sidebar.markdown(
                     '<div style="font-size:0.78rem;color:var(--muted);padding:6px 2px;">'
@@ -1992,17 +1992,29 @@ def render_sidebar() -> tuple[str, str, str, list[str], bool, int]:
                     unsafe_allow_html=True,
                 )
             else:
+                # 결과 즉시 등록 (KIS 없이 경량 등록 → 차트 진입 후 데이터 로드)
+                registered: list[Stock] = []
+                for hit in api_hits[:8]:
+                    registered.append(_register_dynamic_stock(hit, None))
+
+                # 단일 정확 매칭 → 자동 이동
+                exact = [s for s in registered if s.name == kw]
+                if len(registered) == 1 or (exact and len(kw) >= 2):
+                    auto_stk = exact[0] if exact else registered[0]
+                    st.session_state["selected_code"] = auto_stk.code
+                    st.session_state["menu_override"] = "차트"
+                    st.rerun()
+
+                # 복수 결과 → 버튼 선택 (이미 dynamic_stocks 등록 완료)
                 st.sidebar.markdown(
                     f'<div style="font-size:0.64rem;letter-spacing:0.08em;color:var(--muted);'
-                    f'padding:4px 2px 2px;">▸ API {len(api_hits)}개</div>',
+                    f'padding:4px 2px 2px;">▸ {len(registered)}개 결과</div>',
                     unsafe_allow_html=True,
                 )
-                _kis = get_kis_client() if _has_config else None
-                for hit in api_hits[:8]:
-                    mkt_icon = "🔴" if hit["market"] == "KOSPI" else "🔵"
-                    btn_label = f"{mkt_icon} {hit['name']}  {hit['code']}"
-                    if st.sidebar.button(btn_label, key=f"api-{hit['code']}", use_container_width=True):
-                        stk = _register_dynamic_stock(hit, _kis)
+                for stk in registered:
+                    mkt_icon = "🔴" if stk.market == "KOSPI" else "🔵"
+                    label = f"{mkt_icon} {stk.name}   {stk.code}  ·  {stk.sector}"
+                    if st.sidebar.button(label, key=f"api-{stk.code}", use_container_width=True):
                         st.session_state["selected_code"] = stk.code
                         st.session_state["menu_override"] = "차트"
                         st.rerun()
