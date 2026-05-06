@@ -385,6 +385,7 @@ BH_CSS = """
 <style>
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css');
 @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;500;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap');
+/* CDN 실패 폴백: 시스템 폰트로 자동 대체 */
 
 /* ── 프렌치 블루 × 오프화이트 ─────────────────────
    메인: 미색 크림 배경 · 프렌치 블루 액센트
@@ -2399,6 +2400,356 @@ def _build_hot_potato(use_live: bool, slot: str) -> list[dict]:
     return picks
 
 
+# ═══════════════════════════════════════════════════════════
+#  PRISM™  Predictive Resonance Index for Stock Momentum
+#  5차원 공명 기반 주식 분석 엔진  —  AI의 PICK 전용
+# ═══════════════════════════════════════════════════════════
+
+_PRISM_CACHE_VER = "v1"
+
+
+def _prism_d5_label(signals: list[float], rsi_val: float) -> str:
+    if not signals:
+        return "뚜렷한 기술적 신호 없음"
+    best = max(signals)
+    if best >= 0.85:
+        return "상승장악형 캔들 포착 (강력)"
+    if best >= 0.70:
+        return "MACD 히스토그램 상승전환"
+    if best >= 0.55:
+        return f"RSI {rsi_val:.0f} — 과매도 회복 구간"
+    return "망치형 캔들 감지"
+
+
+def _compute_prism(stock: Stock, use_live: bool) -> dict | None:
+    """단일 종목 PRISM 5차원 점수 계산."""
+    try:
+        df, _ = get_chart_data(stock, 90, use_live)
+        if len(df) < 65:
+            return None
+
+        close  = pd.to_numeric(df["close"],  errors="coerce").dropna()
+        volume = pd.to_numeric(df["volume"], errors="coerce").dropna()
+        if len(close) < 62:
+            return None
+
+        # ── D1: 모멘텀 수렴 ──────────────────────────
+        ma5   = float(close.rolling(5).mean().iloc[-1])
+        ma20  = float(close.rolling(20).mean().iloc[-1])
+        ma60  = float(close.rolling(60).mean().iloc[-1])
+        ma5p  = float(close.rolling(5).mean().iloc[-6])
+        ma20p = float(close.rolling(20).mean().iloc[-6])
+        last  = float(close.iloc[-1])
+
+        gap_now  = abs(ma5 - ma20)
+        gap_prev = abs(ma5p - ma20p)
+        converging = gap_now < gap_prev
+
+        if last > ma5 > ma20 > ma60 and converging:
+            d1 = min(1.0, 0.6 + 0.4 * (1 - gap_now / (gap_prev + 1e-9)))
+            d1_lbl = "5·20·60일 정배열 + 이평선 수렴 중"
+        elif last > ma5 > ma20 > ma60:
+            d1 = 0.55; d1_lbl = "정배열 완성"
+        elif last > ma5 > ma20:
+            d1 = 0.25; d1_lbl = "단기·중기 상승 정렬"
+        elif last < ma5 < ma20 < ma60:
+            d1 = -0.5; d1_lbl = "역배열 (하락 구조)"
+        else:
+            d1 = -0.1; d1_lbl = "혼조 배열"
+
+        # ── D2: 거래량 압력 ──────────────────────────
+        vol_ema5  = float(volume.ewm(span=5, adjust=False).mean().iloc[-1])
+        vol_avg60 = float(volume.tail(60).mean())
+        vol_ratio = vol_ema5 / (vol_avg60 + 1e-9)
+        ret5      = float(close.pct_change().tail(5).mean())
+
+        if ret5 > 0 and vol_ratio > 1.5:
+            d2 = min(1.0, 0.6 + 0.4 * min(1, vol_ratio - 1.5))
+            d2_lbl = f"거래량 {vol_ratio:.1f}배 + 상승세 (강한 매집)"
+        elif ret5 > 0 and vol_ratio > 1.0:
+            d2 = 0.35; d2_lbl = "거래량 소폭 증가 + 상승"
+        elif ret5 < 0 and vol_ratio < 0.6:
+            d2 = 0.4;  d2_lbl = "거래량 위축 하락 → 반등 기대"
+        elif ret5 < 0 and vol_ratio > 1.5:
+            d2 = -0.75; d2_lbl = "거래량 급증 + 하락 (매도 압력)"
+        else:
+            d2 = 0.0; d2_lbl = "거래량 평이"
+
+        # ── D3: 변동성 스프링 ────────────────────────
+        bb_mid = close.rolling(20).mean()
+        bb_std = close.rolling(20).std()
+        bb_w   = ((bb_mid + 2*bb_std) - (bb_mid - 2*bb_std)) / (bb_mid + 1e-9)
+        curr_w = float(bb_w.iloc[-1])
+        avg_w  = float(bb_w.tail(60).mean())
+        compr  = (avg_w - curr_w) / (avg_w + 1e-9)
+        tight  = float(bb_w.tail(5).values[-1]) < float(bb_w.tail(5).values[0])
+
+        if compr > 0.35 and tight:
+            d3 = min(1.0, 0.5 + compr)
+            d3_lbl = f"BB 폭 {compr*100:.0f}% 압축 → 돌파 임박"
+        elif compr > 0.15:
+            d3 = 0.4; d3_lbl = "밴드폭 수렴 진행"
+        elif compr < -0.2:
+            d3 = -0.5; d3_lbl = "밴드폭 확대 (변동성 고조)"
+        else:
+            d3 = 0.1; d3_lbl = "밴드폭 보통"
+
+        # ── D4: 섹터 이탈도 ──────────────────────────
+        stock_ret = float(close.iloc[-1] / close.iloc[-20] - 1) if len(close) >= 20 else 0.0
+        peers = [s for s in MARKET_STOCKS["전체"]
+                 if s.sector == stock.sector and s.code != stock.code][:4]
+        peer_rets = []
+        for p in peers:
+            try:
+                pc = generate_demo_ohlcv(p.code, p.base_price, 30)
+                if len(pc) >= 20:
+                    peer_rets.append(float(pc["close"].iloc[-1] / pc["close"].iloc[-20] - 1))
+            except Exception:
+                pass
+        sector_avg = float(np.mean(peer_rets)) if peer_rets else 0.0
+        div = stock_ret - sector_avg
+        d4 = clamp(div * 6)
+        if div > 0.05:   d4_lbl = f"섹터 대비 +{div*100:.1f}%p 아웃퍼폼"
+        elif div > 0:    d4_lbl = "섹터 수익률 소폭 상회"
+        elif div > -0.05: d4_lbl = "섹터 수익률 근접"
+        else:            d4_lbl = f"섹터 대비 {div*100:.1f}%p 언더퍼폼"
+
+        # ── D5: 패턴 인식 ────────────────────────────
+        sigs: list[float] = []
+        ema12 = close.ewm(span=12, adjust=False).mean()
+        ema26 = close.ewm(span=26, adjust=False).mean()
+        hist  = (ema12 - ema26) - (ema12 - ema26).ewm(span=9, adjust=False).mean()
+        if len(hist) >= 6:
+            hv = hist.tail(6).values.astype(float)
+            mi = int(np.argmin(hv))
+            if mi < len(hv) - 1 and hv[-1] > hv[mi]:
+                sigs.append(0.75)
+
+        delta = close.diff()
+        gain  = delta.clip(lower=0).rolling(14, min_periods=1).mean()
+        loss  = (-delta.clip(upper=0)).rolling(14, min_periods=1).mean()
+        rsi_v = float((100 - 100 / (1 + gain / loss.replace(0, np.nan))).iloc[-1])
+        if not np.isnan(rsi_v):
+            if 30 < rsi_v < 50:  sigs.append(0.65)
+            elif rsi_v <= 30:    sigs.append(0.45)
+
+        if len(df) >= 2:
+            c1, c0 = df.iloc[-2], df.iloc[-1]
+            o1, cl1 = float(c1["open"]), float(c1["close"])
+            o0, cl0 = float(c0["open"]), float(c0["close"])
+            if cl1 < o1 and cl0 > o0 and o0 <= cl1 and cl0 >= o1:
+                sigs.append(0.9)
+            elif cl0 > o0:
+                lower_wick = min(o0, cl0) - float(c0["low"])
+                if lower_wick >= abs(cl0 - o0) * 2:
+                    sigs.append(0.6)
+
+        d5     = float(np.mean(sigs)) if sigs else 0.05
+        d5_lbl = _prism_d5_label(sigs, rsi_v if not np.isnan(rsi_v) else 50)
+
+        # ── PRISM Score: 기하평균 공명 ───────────────
+        dims = [d1, d2, d3, d4, d5]
+        norm = [(d + 1) / 2 for d in dims]   # [-1,1] → [0,1]
+        geo  = float(np.prod(norm) ** (1.0 / 5))
+        prism = round(geo * 100, 1)
+
+        return {
+            "code": stock.code, "name": stock.name,
+            "sector": stock.sector, "market": stock.market,
+            "prism": prism,
+            "change_rate": float(close.pct_change().iloc[-1] * 100),
+            "price": int(last),
+            "dims": {
+                "D1": {"score": round(d1, 2), "label": d1_lbl, "name": "모멘텀 수렴"},
+                "D2": {"score": round(d2, 2), "label": d2_lbl, "name": "거래량 압력"},
+                "D3": {"score": round(d3, 2), "label": d3_lbl, "name": "변동성 스프링"},
+                "D4": {"score": round(d4, 2), "label": d4_lbl, "name": "섹터 이탈도"},
+                "D5": {"score": round(d5, 2), "label": d5_lbl, "name": "패턴 인식"},
+            },
+        }
+    except Exception:
+        return None
+
+
+def _ai_picks_today(use_live: bool) -> list[dict]:
+    """하루 1회 갱신 PRISM Top 3 (날짜+버전 session_state 캐싱)."""
+    cache_key = "_prism_cache"
+    today_str = date.today().isoformat()
+    cache = st.session_state.get(cache_key, {})
+    if (
+        cache.get("ver") == _PRISM_CACHE_VER
+        and cache.get("date") == today_str
+        and cache.get("use_live") == use_live
+        and cache.get("picks")
+    ):
+        return cache["picks"]
+
+    picks = _fetch_prism_top3(use_live)
+    st.session_state[cache_key] = {
+        "ver": _PRISM_CACHE_VER, "date": today_str,
+        "use_live": use_live, "picks": picks,
+    }
+    return picks
+
+
+def _fetch_prism_top3(use_live: bool) -> list[dict]:
+    """날짜 시드로 60개 샘플링 → PRISM 계산 → Top 3."""
+    seed = int(hashlib.sha256(date.today().isoformat().encode()).hexdigest()[:10], 16)
+    rng  = np.random.default_rng(seed % (2**32))
+    base = MARKET_STOCKS["전체"]
+    idx  = rng.choice(len(base), size=min(60, len(base)), replace=False)
+
+    results = []
+    for i in idx:
+        r = _compute_prism(base[i], use_live)
+        if r and r["prism"] > 45:
+            results.append(r)
+
+    results.sort(key=lambda x: -x["prism"])
+    return results[:3]
+
+
+def _render_ai_picks(use_live: bool) -> None:
+    """AI의 PICK — PRISM™ 분석 결과 렌더링."""
+    today_str = date.today().strftime("%Y년 %m월 %d일")
+
+    # ── 섹션 헤더 ────────────────────────────────
+    st.markdown(
+        f'<div style="display:flex;align-items:center;justify-content:space-between;'
+        f'border-bottom:2px solid #2C4A6E;padding-bottom:8px;margin-bottom:12px;">'
+        f'<div style="display:flex;align-items:center;gap:12px;">'
+        f'<div style="background:#2C4A6E;color:#F8F4EB;padding:5px 12px;'
+        f'font-weight:900;font-size:0.7rem;letter-spacing:0.18em;">PRISM™</div>'
+        f'<span style="font-weight:900;font-size:1.1rem;color:#2C4A6E;'
+        f'letter-spacing:-0.01em;">AI의 PICK</span>'
+        f'</div>'
+        f'<span style="font-size:0.7rem;color:var(--muted);font-family:var(--mono);">'
+        f'{today_str} · 매일 자정 갱신 · Predictive Resonance Index for Stock Momentum</span>'
+        f'</div>',
+        unsafe_allow_html=True,
+    )
+
+    picks = _ai_picks_today(use_live)
+
+    if not picks:
+        st.info("PRISM™ 분석 결과를 불러오는 중입니다.")
+        return
+
+    cols = st.columns(len(picks))
+    for i, pick in enumerate(picks):
+        with cols[i]:
+            _render_prism_card(pick, rank=i + 1)
+
+
+def _render_prism_card(pick: dict, rank: int) -> None:
+    """개별 PRISM 카드 렌더링."""
+    prism   = pick["prism"]
+    cr      = pick["change_rate"]
+    dims    = pick["dims"]
+    p_hex   = "#B5453F" if cr >= 0 else "#436B95"
+    arrow   = "▲" if cr >= 0 else "▼"
+    bar_w   = int(prism)
+
+    # ── 등급 계산 ────────────────────────────────
+    if prism >= 75:   grade, grade_c = "S", "#B0883A"
+    elif prism >= 60: grade, grade_c = "A", "#436B95"
+    elif prism >= 50: grade, grade_c = "B", "#6B8AAE"
+    else:             grade, grade_c = "C", "var(--muted)"
+
+    # ── 카드 상단 ─────────────────────────────────
+    st.markdown(
+        f'<div style="border:2px solid #2C4A6E;background:#FBF8F1;'
+        f'font-family:var(--font);margin-bottom:4px;">'
+
+        # 헤더 블록
+        f'<div style="display:grid;grid-template-columns:auto 1fr auto;background:#2C4A6E;">'
+        f'<div style="padding:10px 14px;font-weight:900;font-size:0.65rem;'
+        f'letter-spacing:0.2em;color:#C8D4E2;"># {rank:02d}</div>'
+        f'<div style="padding:10px 0;">'
+        f'<div style="font-weight:900;font-size:1.0rem;color:#F8F4EB;'
+        f'letter-spacing:-0.01em;line-height:1.1;">{pick["name"]}</div>'
+        f'<div style="font-family:var(--mono);font-size:0.65rem;color:#8AADC4;'
+        f'letter-spacing:0.05em;margin-top:2px;">'
+        f'{pick["code"]} · {pick["sector"]}</div>'
+        f'</div>'
+        f'<div style="background:{p_hex};padding:10px 14px;display:flex;'
+        f'flex-direction:column;align-items:flex-end;justify-content:center;">'
+        f'<span style="font-family:var(--mono);font-weight:800;font-size:0.85rem;'
+        f'color:#FFF;">{arrow} {cr:+.2f}%</span>'
+        f'</div>'
+        f'</div>'
+
+        # PRISM Score
+        f'<div style="padding:12px 14px 8px;">'
+        f'<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:6px;">'
+        f'<span style="font-family:var(--mono);font-weight:900;font-size:2rem;'
+        f'color:#2C4A6E;line-height:1;">{prism:.1f}</span>'
+        f'<span style="font-size:0.7rem;color:var(--muted);">/ 100</span>'
+        f'<div style="margin-left:auto;background:{grade_c};color:#FFF;'
+        f'padding:3px 10px;font-weight:900;font-size:0.75rem;'
+        f'letter-spacing:0.12em;">등급 {grade}</div>'
+        f'</div>'
+        # 점수 바
+        f'<div style="background:#E8E1D0;height:5px;width:100%;margin-bottom:10px;">'
+        f'<div style="background:{grade_c};height:5px;width:{bar_w}%;'
+        f'transition:width 0.4s ease;"></div>'
+        f'</div>'
+
+        # D1~D5 차원 바
+        + _prism_dims_html(dims) +
+
+        f'</div>'
+        f'</div>',
+        unsafe_allow_html=True,
+    )
+
+    # 차트 보기 버튼
+    if st.button("차트 보기", key=f"prism-chart-{pick['code']}-{rank}",
+                  use_container_width=True):
+        st.session_state["selected_code"] = pick["code"]
+        st.session_state["menu_override"] = "차트"
+        st.rerun()
+
+
+def _prism_dims_html(dims: dict) -> str:
+    """D1~D5 차원 미니 바 HTML."""
+    rows = ""
+    for key, dim in dims.items():
+        score = dim["score"]   # -1.0 ~ 1.0
+        name  = dim["name"]
+        label = dim["label"]
+
+        # 바 너비: 0~100%  (0점 = 50%)
+        fill_pct = int((score + 1) / 2 * 100)
+        bar_color = "#2C4A6E" if score >= 0 else "#B5453F"
+        score_txt = f"{score:+.2f}"
+
+        rows += (
+            f'<div style="margin-bottom:7px;">'
+            f'<div style="display:flex;justify-content:space-between;'
+            f'align-items:baseline;margin-bottom:2px;">'
+            f'<span style="font-size:0.62rem;font-weight:700;color:#2C4A6E;'
+            f'letter-spacing:0.1em;text-transform:uppercase;">{key} {name}</span>'
+            f'<span style="font-family:var(--mono);font-size:0.68rem;font-weight:700;'
+            f'color:{bar_color};">{score_txt}</span>'
+            f'</div>'
+            # 배경 바 (0~100%)
+            f'<div style="background:#E8E1D0;height:4px;position:relative;">'
+            # 중앙 기준선
+            f'<div style="position:absolute;left:50%;top:0;width:1px;height:4px;'
+            f'background:#BCB09A;"></div>'
+            # 채움 바 (중앙에서 좌우로)
+            f'<div style="position:absolute;height:4px;background:{bar_color};'
+            f'{"left:50%;width:" + str(fill_pct - 50) + "%;" if score >= 0 else "right:" + str(50 - fill_pct) + "%;width:" + str(50 - fill_pct) + "%;left:auto;"}'
+            f'"></div>'
+            f'</div>'
+            f'<div style="font-size:0.63rem;color:var(--muted);margin-top:2px;'
+            f'line-height:1.3;">{label}</div>'
+            f'</div>'
+        )
+    return rows
+
+
 def _fetch_live_news(n: int = 6) -> list[dict]:
     """네이버 금융 증권 뉴스 스크래핑 — session_state 5분 캐시."""
     cache_key = "_news_cache"
@@ -2769,6 +3120,11 @@ def render_stocks_page(stocks: list[Stock], use_live: bool, keyword: str = "") -
         f'<div class="bh-subtitle">{today_str} · {data_label} 기준</div>',
         unsafe_allow_html=True,
     )
+
+    # ── AI의 PICK — PRISM™ 엔진 ─────────────────
+    _render_ai_picks(use_live)
+
+    st.divider()
 
     # ── 뜨거운 감자 ──────────────────────────────
     st.markdown('<div class="bh-section-label">🔥 뜨거운 감자</div>', unsafe_allow_html=True)
