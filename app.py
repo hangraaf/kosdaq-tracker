@@ -1441,6 +1441,72 @@ def load_external_signals(stock: Stock) -> dict[str, float]:
     }
 
 
+def _auto_external_signals(
+    df: pd.DataFrame,
+    market_return: float = 0.0,
+    sector_return: float = 0.0,
+) -> dict[str, float]:
+    """OHLCV 데이터에서 외부 신호를 자동 계산. 범위 [-1, 1] (disclosure_risk: [0,1])."""
+    try:
+        close_s = pd.to_numeric(df["close"], errors="coerce").dropna()
+        vol_s = pd.to_numeric(df["volume"], errors="coerce") if "volume" in df.columns else pd.Series(dtype=float)
+        ret_s = close_s.pct_change().replace([np.inf, -np.inf], np.nan).dropna()
+        n = len(ret_s)
+
+        # ── 수급 (money_flow): 상승일 거래량 비율 기반 ──────
+        if n >= 5 and not vol_s.empty:
+            aligned_vol = vol_s.reindex(ret_s.index)
+            up_vol = aligned_vol.where(ret_s > 0, 0.0).tail(14).sum()
+            total_vol = aligned_vol.abs().tail(14).sum()
+            mfi_ratio = float(up_vol / total_vol) if total_vol > 0 else 0.5
+            auto_money_flow = clamp((mfi_ratio - 0.5) * 4)
+        else:
+            auto_money_flow = 0.0
+
+        # ── 뉴스 심리: 최근 5일 극단 수익률 z-score ────────
+        if n >= 10:
+            long_std = float(ret_s.std())
+            recent5 = ret_s.tail(5)
+            big = recent5[abs(recent5) > long_std * 1.2]
+            auto_news = clamp(float(big.mean()) * 6) if not big.empty else clamp(float(recent5.mean()) * 4)
+        else:
+            auto_news = 0.0
+
+        # ── 실적 서프라이즈: 최근 3영업일 누적 수익률 z-score ─
+        if n >= 10:
+            r3 = float(ret_s.tail(3).sum())
+            std3 = float(ret_s.std()) * (3 ** 0.5)
+            auto_earnings = clamp(r3 / std3) if std3 > 0 else 0.0
+        else:
+            auto_earnings = 0.0
+
+        # ── 공시 리스크: 단기 변동성 급등 탐지 ──────────────
+        if n >= 10:
+            v5 = float(ret_s.tail(5).std())
+            v30 = float(ret_s.tail(min(n, 30)).std())
+            auto_disc = clamp((v5 / v30 - 1.0) * 2.0, 0.0, 1.0) if v30 > 0 else 0.0
+        else:
+            auto_disc = 0.0
+
+        # ── 지수·업종 흐름: benchmark_return 결과 스케일링 ──
+        auto_index = clamp(market_return * 10)
+        auto_sector = clamp(sector_return * 10)
+
+    except Exception:
+        return {"news_sentiment": 0.0, "earnings_surprise": 0.0,
+                "money_flow": 0.0, "disclosure_risk": 0.0,
+                "index_flow": 0.0, "sector_flow": 0.0}
+
+    return {
+        "news_sentiment": auto_news,
+        "earnings_surprise": auto_earnings,
+        "money_flow": auto_money_flow,
+        "disclosure_risk": auto_disc,
+        "index_flow": auto_index,
+        "sector_flow": auto_sector,
+    }
+
+
 def benchmark_return(stocks: list[Stock], days: int) -> float:
     returns = []
     for stock in stocks:
@@ -1480,7 +1546,14 @@ def forecast_context(df: pd.DataFrame, stock: Stock) -> tuple[dict[str, float], 
     sector_peers = [s for s in all_stocks() if s.sector == stock.sector][:15]
     market_return = benchmark_return(market_peers, len(clean))
     sector_return = benchmark_return(sector_peers, len(clean))
-    external = load_external_signals(stock)
+
+    # 자동 계산 후 JSON 수동값으로 덮어쓰기
+    auto_ext = _auto_external_signals(df, market_return, sector_return)
+    json_ext = load_external_signals(stock)
+    external = {
+        k: json_ext[k] if abs(json_ext[k]) > 0.01 else auto_ext[k]
+        for k in auto_ext
+    }
 
     factors = {
         "ma_trend": clamp((ma_score + trend_score) / 2),
@@ -2758,7 +2831,9 @@ def render_chart(stock: Stock, period_label: str, use_live: bool) -> tuple[pd.Da
 
     # ── 외부 신호 배경 tint + 배지 ─────────────────────
     try:
-        ext = load_external_signals(stock)
+        auto_ext = _auto_external_signals(df)
+        json_ext = load_external_signals(stock)
+        ext = {k: json_ext[k] if abs(json_ext[k]) > 0.01 else auto_ext[k] for k in auto_ext}
         ext_score = (
             ext["news_sentiment"] * 0.28
             + ext["earnings_surprise"] * 0.24
