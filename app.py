@@ -2756,6 +2756,56 @@ def render_chart(stock: Stock, period_label: str, use_live: bool) -> tuple[pd.Da
                 row=1, col=1,
             )
 
+    # ── 외부 신호 배경 tint + 배지 ─────────────────────
+    try:
+        ext = load_external_signals(stock)
+        ext_score = (
+            ext["news_sentiment"] * 0.28
+            + ext["earnings_surprise"] * 0.24
+            + ext["money_flow"] * 0.24
+            + (-ext["disclosure_risk"]) * 0.12
+            + ext["index_flow"] * 0.07
+            + ext["sector_flow"] * 0.05
+        )
+        if abs(ext_score) > 0.05:
+            tint = "rgba(62,144,80,0.07)" if ext_score > 0 else "rgba(200,72,72,0.07)"
+            fig.add_hrect(
+                y0=0, y1=1, yref="paper",
+                fillcolor=tint, line_width=0,
+                row=1, col=1,
+            )
+        # 비-제로 신호 배지 (우측 상단)
+        ext_label_map = {
+            "news_sentiment": "뉴스",
+            "earnings_surprise": "실적",
+            "money_flow": "수급",
+            "disclosure_risk": "공시",
+            "index_flow": "지수",
+            "sector_flow": "업종",
+        }
+        badges = [
+            f"{lbl}{'▲' if ext[k] > 0.05 else '▼' if ext[k] < -0.05 else '→'}{ext[k]:+.1f}"
+            for k, lbl in ext_label_map.items()
+            if abs(ext[k]) > 0.01
+        ]
+        if badges:
+            signal_color = "#3E9050" if ext_score > 0.05 else "#C84848" if ext_score < -0.05 else "#888"
+            fig.add_annotation(
+                xref="paper", yref="paper",
+                x=0.01, y=0.99,
+                text="  ".join(badges),
+                showarrow=False,
+                font=dict(size=10, color=signal_color),
+                bgcolor="rgba(245,241,235,0.88)",
+                bordercolor=signal_color,
+                borderwidth=1,
+                borderpad=4,
+                align="left",
+                row=1, col=1,
+            )
+    except Exception:
+        ext_score = 0.0
+
     # ── 현재가 수평선 ────────────────────────────────
     last_close = float(df["close"].iloc[-1])
     fig.add_hline(
@@ -2919,6 +2969,15 @@ def render_forecast(df: pd.DataFrame, stock: Stock) -> None:
     col2.metric("예상 일간 수익률", f"{diagnostics['expected_daily_return'] * 100:+.2f}%")
     col3.metric("일간 변동성", f"{diagnostics['daily_volatility'] * 100:.2f}%")
 
+    # ── 요인 기여 bar 차트 ──────────────────────────
+    weights = {
+        "ma_trend": 0.16, "momentum": 0.12, "volume": 0.08,
+        "volatility": 0.10, "market_relative_strength": 0.12,
+        "sector_relative_strength": 0.10, "news_sentiment": 0.09,
+        "earnings_surprise": 0.08, "money_flow": 0.08,
+        "disclosure_risk": 0.04, "index_flow": 0.02,
+        "sector_flow_external": 0.01,
+    }
     factor_labels = {
         "ma_trend": "이동평균 추세",
         "momentum": "가격 모멘텀",
@@ -2926,16 +2985,46 @@ def render_forecast(df: pd.DataFrame, stock: Stock) -> None:
         "volatility": "변동성 패널티",
         "market_relative_strength": "지수 상대강도",
         "sector_relative_strength": "업종 상대강도",
-        "news_sentiment": "뉴스 심리",
-        "earnings_surprise": "실적 서프라이즈",
-        "money_flow": "수급",
-        "disclosure_risk": "공시 리스크",
-        "index_flow": "지수 흐름",
-        "sector_flow_external": "외부 업종 흐름",
+        "news_sentiment": "🌐 뉴스 심리",
+        "earnings_surprise": "🌐 실적 서프라이즈",
+        "money_flow": "🌐 수급",
+        "disclosure_risk": "🌐 공시 리스크",
+        "index_flow": "🌐 지수 흐름",
+        "sector_flow_external": "🌐 업종 흐름",
     }
-    factor_rows = [{"요인": label, "점수": round(float(diagnostics[key]), 3)} for key, label in factor_labels.items()]
-    st.dataframe(pd.DataFrame(factor_rows), use_container_width=True, hide_index=True)
-    st.caption("뉴스/실적/수급/공시/지수/업종 외부 요인은 data/external_signals.json 점수를 반영합니다. 신뢰구간은 최근 종가 변동성 기반의 통계적 범위입니다.")
+    contributions = {
+        k: float(diagnostics.get(k, 0.0)) * weights[k]
+        for k in weights
+    }
+    labels = [factor_labels[k] for k in weights]
+    values = [contributions[k] for k in weights]
+    bar_colors = ["#C84848" if v > 0 else "#3E9050" if v < 0 else "#AAAAAA" for v in values]
+
+    fig_factors = go.Figure(go.Bar(
+        x=values,
+        y=labels,
+        orientation="h",
+        marker_color=bar_colors,
+        text=[f"{v:+.3f}" for v in values],
+        textposition="outside",
+        hovertemplate="<b>%{y}</b><br>기여도: %{x:+.3f}<extra></extra>",
+    ))
+    fig_factors.update_layout(
+        height=360,
+        title="요인별 가중 기여도  (🌐 = 외부 신호)",
+        margin=dict(l=10, r=60, t=44, b=10),
+        xaxis=dict(
+            zeroline=True, zerolinecolor="#B0A090", zerolinewidth=1.5,
+            range=[-0.22, 0.22], gridcolor="#D4CFC6",
+            title="가중 기여도",
+        ),
+        paper_bgcolor="rgba(245,241,235,1)",
+        plot_bgcolor="rgba(237,233,226,1)",
+        font=dict(color="#3D3830", family="Nanum Gothic", size=11),
+        showlegend=False,
+    )
+    st.plotly_chart(fig_factors, use_container_width=True)
+    st.caption("🌐 표시 요인은 data/external_signals.json 외부 신호. 신뢰구간은 최근 종가 변동성 기반입니다.")
 
 
 # ─── 캔들 패턴 분석 ─────────────────────────────────────────────────────────
