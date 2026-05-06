@@ -378,7 +378,7 @@ MARKET_STOCKS = {
     "전체": KOSPI_STOCKS + KOSDAQ_STOCKS,
 }
 
-PERIODS = {"1개월": 22, "3개월": 65, "6개월": 130, "1년": 252, "2년": 504}
+PERIODS = {"5일": 5, "2주": 10, "1개월": 22, "3개월": 65, "6개월": 130, "1년": 252, "2년": 504}
 
 
 BH_CSS = """
@@ -3440,7 +3440,7 @@ def render_chart_page(market: str, use_live: bool, keyword: str = "", sectors: l
     with sel_col:
         stock = select_stock_widget(market, keyword, sectors)
     with period_col:
-        period = st.selectbox("차트 기간", list(PERIODS.keys()), index=1)
+        period = st.selectbox("차트 기간", list(PERIODS.keys()), index=3)
 
     # 컬럼 컨텍스트 밖에서 데이터 조회
     snapshot = stock_snapshot(stock, use_live)
