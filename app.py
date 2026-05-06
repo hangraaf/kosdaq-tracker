@@ -1052,33 +1052,59 @@ def find_stock(code: str) -> Stock | None:
     return next((s for s in MARKET_STOCKS["전체"] if s.code == code), None)
 
 
-@st.cache_data(ttl=3600, show_spinner=False)
+@st.cache_data(ttl=120, show_spinner=False)
 def _naver_stock_search(keyword: str) -> list[dict]:
-    """네이버 금융 자동완성으로 종목 검색 (인증 불필요)."""
+    """네이버 주식 자동완성 API로 종목 검색."""
     import requests as _req
+
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        "Referer": "https://finance.naver.com/",
+        "Accept": "application/json, text/plain, */*",
+    }
+
+    # ── 신 엔드포인트 (ac.stock.naver.com) ───────────────
     try:
         resp = _req.get(
-            "https://ac.finance.naver.com/ac",
-            params={"q": keyword, "q_enc": "UTF-8", "st": "111111", "sug": "", "m": "stock", "r": "1", "v": "2"},
-            headers={"User-Agent": "Mozilla/5.0"},
+            "https://ac.stock.naver.com/ac",
+            params={"q": keyword, "q_enc": "UTF-8", "target": "stock"},
+            headers=headers,
             timeout=5,
         )
-        resp.raise_for_status()
-        data = resp.json()
-        results = []
-        for group in data.get("items", []):
-            for item in group:
-                if isinstance(item, list) and len(item) >= 2:
-                    code = str(item[1]).zfill(6)
-                    market_flag = str(item[2]) if len(item) > 2 else "1"
-                    results.append({
-                        "name": str(item[0]),
-                        "code": code,
-                        "market": "KOSPI" if market_flag == "1" else "KOSDAQ",
-                    })
-        return results
+        if resp.status_code == 200:
+            data = resp.json()
+            results: list[dict] = []
+
+            # 형식 A: {"items": [{"code":..,"name":..,"stockExchangeType":..}, ...]}
+            raw_items = data.get("items", [])
+            if raw_items and isinstance(raw_items[0], dict):
+                for item in raw_items:
+                    code = str(item.get("code", "")).zfill(6)
+                    name = str(item.get("name", ""))
+                    exch = str(item.get("stockExchangeType", "")).upper()
+                    market = "KOSDAQ" if "KOSDAQ" in exch or exch in {"NQ", "KQ"} else "KOSPI"
+                    if code and name:
+                        results.append({"name": name, "code": code, "market": market})
+
+            # 형식 B: {"items": [[["이름","코드","시장플래그",...], ...], ...]}
+            elif raw_items and isinstance(raw_items[0], list):
+                for group in raw_items:
+                    for item in group:
+                        if isinstance(item, list) and len(item) >= 2:
+                            code = str(item[1]).zfill(6)
+                            flag = str(item[2]) if len(item) > 2 else "1"
+                            results.append({
+                                "name": str(item[0]),
+                                "code": code,
+                                "market": "KOSPI" if flag == "1" else "KOSDAQ",
+                            })
+
+            if results:
+                return results
     except Exception:
-        return []
+        pass
+
+    return []
 
 
 def _register_dynamic_stock(result: dict, kis_client: "KISClient | None") -> Stock:
