@@ -35,12 +35,11 @@ app.include_router(payments.router)
 
 @app.on_event("startup")
 async def startup_event():
-    """환경변수로 admin 계정 자동 생성/업그레이드."""
+    """환경변수로 admin plan 자동 부여 — 기존 비밀번호 유지."""
     import os, json, hashlib
     from config import DATA_DIR
     username = os.getenv("ADMIN_USERNAME", "").strip().lower()
-    password = os.getenv("ADMIN_PASSWORD", "").strip()
-    if not username or not password:
+    if not username:
         return
     users_file = DATA_DIR / "users.json"
     users = {}
@@ -49,13 +48,20 @@ async def startup_event():
             users = json.loads(users_file.read_text(encoding="utf-8"))
         except Exception:
             pass
-    pwd_hash = hashlib.sha256(password.encode()).hexdigest()
-    users[username] = {
-        "pwd_hash": pwd_hash,
-        "display": os.getenv("ADMIN_DISPLAY", username),
-        "email": os.getenv("ADMIN_EMAIL", ""),
-        "plan": "admin",
-    }
+    if username in users:
+        # 기존 계정 plan만 admin으로 승격 (비밀번호 유지)
+        users[username]["plan"] = "admin"
+    else:
+        # 계정이 없으면 새로 생성
+        password = os.getenv("ADMIN_PASSWORD", "").strip()
+        if not password:
+            return
+        users[username] = {
+            "pwd_hash": hashlib.sha256(password.encode()).hexdigest(),
+            "display": os.getenv("ADMIN_DISPLAY", username),
+            "email": os.getenv("ADMIN_EMAIL", ""),
+            "plan": "admin",
+        }
     users_file.write_text(json.dumps(users, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
