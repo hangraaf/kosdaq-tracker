@@ -44,10 +44,10 @@ function AuthPanel() {
             <div style={{ color: "#F0EBE0", fontWeight: 600, fontSize: "0.88rem" }}>{userDisplay}</div>
             <div style={{
               fontSize: "0.68rem", fontWeight: 700, letterSpacing: "0.08em",
-              color: plan === "premium" ? "#D4A030" : "#7C9BBE",
+              color: (plan === "premium" || plan === "admin") ? "#D4A030" : "#7C9BBE",
               textTransform: "uppercase",
             }}>
-              {plan === "premium" ? "★ PREMIUM" : "FREE"}
+              {plan === "admin" ? "⚙ ADMIN" : plan === "premium" ? "★ PREMIUM" : "FREE"}
             </div>
           </div>
           <button
