@@ -1,0 +1,189 @@
+const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+
+async function req<T>(path: string, options?: RequestInit): Promise<T> {
+  const token = typeof localStorage !== "undefined" ? localStorage.getItem("token") : null;
+  const res = await fetch(`${BASE}${path}`, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...options?.headers,
+    },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(err.detail ?? "API 오류가 발생했습니다.");
+  }
+  return res.json();
+}
+
+// ── Auth ─────────────────────────────────────────────────────────────────
+
+export interface TokenResponse {
+  access_token: string;
+  username: string;
+  display: string;
+  plan: string;
+}
+
+export async function apiLogin(username: string, password: string): Promise<TokenResponse> {
+  const form = new URLSearchParams({ username, password });
+  const res = await fetch(`${BASE}/auth/token`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: form.toString(),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail ?? "로그인 실패");
+  }
+  return res.json();
+}
+
+export async function apiRegister(data: {
+  username: string; password: string; display?: string; email?: string;
+}): Promise<TokenResponse> {
+  return req("/auth/register", { method: "POST", body: JSON.stringify(data) });
+}
+
+export async function apiMe(): Promise<{ username: string; display: string; plan: string; email: string }> {
+  return req("/auth/me");
+}
+
+// ── Status ───────────────────────────────────────────────────────────────
+
+export async function apiStatus(): Promise<{ live: boolean; mode: "LIVE" | "DEMO" }> {
+  return req("/stocks/status");
+}
+
+// ── Stocks ───────────────────────────────────────────────────────────────
+
+export interface StockItem {
+  code: string; name: string; market: string; sector: string; base_price: number;
+}
+
+export interface StockSnapshot {
+  code: string; name: string; market: string; sector: string;
+  price: number; change: number; change_rate: number; volume: number; market_cap: number;
+}
+
+export interface OHLCVRow {
+  date: string; open: number; high: number; low: number; close: number; volume: number;
+}
+
+export async function apiListStocks(params?: {
+  market?: string; sector?: string; q?: string;
+}): Promise<StockItem[]> {
+  const qs = new URLSearchParams(params as Record<string, string>).toString();
+  return req(`/stocks/?${qs}`);
+}
+
+export async function apiSectors(market = "전체"): Promise<string[]> {
+  return req(`/stocks/sectors?market=${encodeURIComponent(market)}`);
+}
+
+export async function apiSnapshot(code: string): Promise<StockSnapshot> {
+  return req(`/stocks/${code}/snapshot`);
+}
+
+export async function apiChart(code: string, period = "1개월"): Promise<{ live: boolean; items: OHLCVRow[] }> {
+  return req(`/stocks/${code}/chart?period=${encodeURIComponent(period)}`);
+}
+
+export async function apiTodayTopFull(market = "전체", limit = 10): Promise<{ live: boolean; items: StockSnapshot[] }> {
+  return req(`/stocks/today/top?market=${encodeURIComponent(market)}&limit=${limit}`);
+}
+
+export async function apiTodayTop(market = "전체", limit = 10): Promise<StockSnapshot[]> {
+  return req(`/stocks/today/top?market=${encodeURIComponent(market)}&limit=${limit}`);
+}
+
+// ── Portfolio ────────────────────────────────────────────────────────────
+
+export async function apiFavorites(): Promise<StockSnapshot[]> {
+  return req("/favorites");
+}
+
+export async function apiAddFavorite(code: string) {
+  return req(`/favorites/${code}`, { method: "POST" });
+}
+
+export async function apiRemoveFavorite(code: string) {
+  return req(`/favorites/${code}`, { method: "DELETE" });
+}
+
+export interface PortfolioResponse {
+  items: Array<{
+    code: string; name: string; market: string; sector: string;
+    shares: number; avg_price: number; current_price: number;
+    current_value: number; pnl: number; pnl_pct: number; change_rate: number;
+  }>;
+  total_value: number; total_cost: number; total_pnl: number; total_pnl_pct: number;
+}
+
+export async function apiPortfolio(): Promise<PortfolioResponse> {
+  return req("/portfolio");
+}
+
+export async function apiAddPortfolio(data: { code: string; shares: number; avg_price: number }) {
+  return req("/portfolio", { method: "POST", body: JSON.stringify(data) });
+}
+
+export async function apiRemovePortfolio(code: string) {
+  return req(`/portfolio/${code}`, { method: "DELETE" });
+}
+
+// ── Payments ─────────────────────────────────────────────────────────────
+
+export interface Plan {
+  id: string; name: string; amount: number; period: number;
+}
+
+export interface OrderInfo {
+  order_id: string; order_name: string; amount: number;
+  client_key: string; customer_name: string;
+}
+
+export async function apiGetPlans(): Promise<Plan[]> {
+  return req("/payments/plans");
+}
+
+export async function apiCreateOrder(plan_id: string): Promise<OrderInfo> {
+  return req("/payments/order", { method: "POST", body: JSON.stringify({ plan_id }) });
+}
+
+export async function apiConfirmPayment(data: {
+  payment_key: string; order_id: string; amount: number; plan_id: string;
+}): Promise<{ ok: boolean; plan: string; message: string }> {
+  return req("/payments/confirm", { method: "POST", body: JSON.stringify(data) });
+}
+
+export async function apiCancelSubscription(): Promise<{ ok: boolean; plan: string }> {
+  return req("/payments/cancel", { method: "POST" });
+}
+
+// ── Robo ─────────────────────────────────────────────────────────────────
+
+export interface RoboSurveyQuestion {
+  id: string; q: string; opts: string[]; w: number[];
+}
+
+export interface RoboResult {
+  profile_id: number; profile_name: string; profile_eng: string;
+  profile_desc: string; tag: string; color: string; bg: string; fg: string;
+  items: Array<{
+    code: string; name: string; sector: string;
+    prism_score: number; weight: number; reason: string;
+  }>;
+  score_total: number;
+}
+
+export async function apiRoboSurvey(): Promise<RoboSurveyQuestion[]> {
+  return req("/robo/survey");
+}
+
+export async function apiRoboRecommend(answers: {
+  q_goal: number; q_horizon: number; q_loss: number; q_exp: number; q_panic: number;
+}): Promise<RoboResult> {
+  return req("/robo/recommend", { method: "POST", body: JSON.stringify(answers) });
+}

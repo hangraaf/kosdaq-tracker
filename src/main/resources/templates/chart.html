@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>차트 분석 - KOSDAQ Tracker</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-primary: #0d1117;
+            --bg-secondary: #161b22;
+            --bg-tertiary: #21262d;
+            --text-primary: #c9d1d9;
+            --text-secondary: #8b949e;
+            --accent-green: #3fb950;
+            --accent-red: #f85149;
+            --accent-blue: #58a6ff;
+            --border-color: #30363d;
+        }
+        
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .navbar {
+            background-color: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .chart-container {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .stock-info {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+        }
+        
+        .stock-name {
+            font-size: 1.5em;
+            font-weight: 700;
+        }
+        
+        .stock-price {
+            font-size: 2em;
+            font-weight: 700;
+        }
+        
+        .price-up {
+            color: var(--accent-green);
+        }
+        
+        .price-down {
+            color: var(--accent-red);
+        }
+        
+        .btn-custom {
+            background-color: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 8px 16px;
+        }
+        
+        .btn-custom:hover, .btn-custom.active {
+            background-color: var(--accent-blue);
+            border-color: var(--accent-blue);
+        }
+        
+        .indicator-card {
+            background-color: var(--bg-tertiary);
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 10px;
+        }
+        
+        .indicator-label {
+            font-size: 0.85em;
+            color: var(--text-secondary);
+        }
+        
+        .indicator-value {
+            font-size: 1.1em;
+            font-weight: 600;
+        }
+        
+        .prediction-badge {
+            background-color: var(--accent-blue);
+            color: #fff;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-chart-line me-2"></i>KOSDAQ Tracker
+            </a>
+            <div class="d-flex">
+                <a class="btn btn-outline-light" href="/">
+                    <i class="fas fa-arrow-left me-2"></i>뒤로
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid p-4">
+        <div class="row">
+            <!-- Stock Info -->
+            <div class="col-md-3">
+                <div class="stock-info mb-3">
+                    <div class="stock-name" th:text="${stock.stockName}">종목명</div>
+                    <div class="text-muted" th:text="${stock.stockCode}">코드</div>
+                    <div class="stock-price mt-2" th:text="${stock.currentPrice} + '원'">가격</div>
+                    <div th:class="${stock.changeRate.startsWith('-')} ? 'price-down' : 'price-up'">
+                        <span th:text="${stock.changeRate} + '%'">등락률</span>
+                        <i th:class="${stock.changeRate.startsWith('-')} ? 'fas fa-caret-down' : 'fas fa-caret-up'"></i>
+                    </div>
+                </div>
+                
+                <!-- Quick Actions -->
+                <div class="stock-info mb-3">
+                    <h6 class="mb-3">빠른 실행</h6>
+                    <button class="btn btn-custom w-100 mb-2" onclick="addToPortfolio()">
+                        <i class="fas fa-plus me-2"></i>포트폴리오 추가
+                    </button>
+                    <button class="btn btn-custom w-100 mb-2" onclick="setAlert()">
+                        <i class="fas fa-bell me-2"></i>가격 알림 설정
+                    </button>
+                    <button class="btn btn-custom w-100" onclick="addFavorite()">
+                        <i class="far fa-star me-2"></i>즐겨찾기 추가
+                    </button>
+                </div>
+                
+                <!-- Technical Indicators -->
+                <div class="stock-info">
+                    <h6 class="mb-3">기술 지표</h6>
+                    <div class="indicator-card">
+                        <div class="indicator-label">RSI (14)</div>
+                        <div class="indicator-value" id="rsi-value">--</div>
+                    </div>
+                    <div class="indicator-card">
+                        <div class="indicator-label">MACD</div>
+                        <div class="indicator-value" id="macd-value">--</div>
+                    </div>
+                    <div class="indicator-card">
+                        <div class="indicator-label">시그널</div>
+                        <div class="indicator-value" id="signal-value">--</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Chart -->
+            <div class="col-md-9">
+                <!-- Period Buttons -->
+                <div class="chart-container">
+                    <div class="btn-group mb-3" role="group">
+                        <button type="button" class="btn btn-custom active" onclick="changePeriod('day')">일</button>
+                        <button type="button" class="btn btn-custom" onclick="changePeriod('week')">주</button>
+                        <button type="button" class="btn btn-custom" onclick="changePeriod('month')">월</button>
+                    </div>
+                    
+                    <!-- Main Chart -->
+                    <canvas id="mainChart" height="100"></canvas>
+                </div>
+                
+                <!-- Prediction Chart -->
+                <div class="chart-container">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="mb-0"><i class="fas fa-crystal-ball me-2"></i>예측 차트</h5>
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-sm btn-custom active" 
+                                    onclick="changePrediction('week')">1주일</button>
+                            <button type="button" class="btn btn-sm btn-custom" 
+                                    onclick="changePrediction('month')">1개월</button>
+                        </div>
+                    </div>
+                    <canvas id="predictionChart" height="80"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script th:inline="javascript">
+        const stockCode = /*[[${stock.stockCode}]]*/ '';
+        let mainChart = null;
+        let predictionChart = null;
+        
+        // Load chart data
+        function loadChartData(period) {
+            fetch('/api/chart/' + stockCode + '/' + period)
+                .then(response => response.json())
+                .then(data => {
+                    updateMainChart(data);
+                    updateIndicators(data);
+                });
+        }
+        
+        // Update main chart
+        function updateMainChart(data) {
+            const ctx = document.getElementById('mainChart').getContext('2d');
+            
+            if (mainChart) {
+                mainChart.destroy();
+            }
+            
+            const labels = data.map(d => d.date);
+            const closePrices = data.map(d => parseFloat(d.closePrice));
+            const ma5 = data.map(d => d.ma5 ? parseFloat(d.ma5) : null);
+            const ma20 = data.map(d => d.ma20 ? parseFloat(d.ma20) : null);
+            const ma60 = data.map(d => d.ma60 ? parseFloat(d.ma60) : null);
+            
+            mainChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: '종가',
+                            data: closePrices,
+                            borderColor: '#58a6ff',
+                            backgroundColor: 'rgba(88, 166, 255, 0.1)',
+                            fill: true,
+                            tension: 0.1
+                        },
+                        {
+                            label: '5일 이동평균',
+                            data: ma5,
+                            borderColor: '#f0883e',
+                            borderDash: [5, 5],
+                            tension: 0.1
+                        },
+                        {
+                            label: '20일 이동평균',
+                            data: ma20,
+                            borderColor: '#a371f7',
+                            borderDash: [5, 5],
+                            tension: 0.1
+                        },
+                        {
+                            label: '60일 이동평균',
+                            data: ma60,
+                            borderColor: '#8b949e',
+                            borderDash: [5, 5],
+                            tension: 0.1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    },
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#c9d1d9'
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { color: '#8b949e' },
+                            grid: { color: '#30363d' }
+                        },
+                        y: {
+                            ticks: { color: '#8b949e' },
+                            grid: { color: '#30363d' }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Update indicators
+        function updateIndicators(data) {
+            if (data.length > 0) {
+                const latest = data[data.length - 1];
+                document.getElementById('rsi-value').textContent = latest.rsi || '--';
+                document.getElementById('macd-value').textContent = latest.macd || '--';
+                document.getElementById('signal-value').textContent = latest.signal || '--';
+            }
+        }
+        
+        // Load prediction data
+        function loadPrediction(period) {
+            fetch('/api/chart/' + stockCode + '/prediction?period=' + period)
+                .then(response => response.json())
+                .then(data => {
+                    updatePredictionChart(data, period);
+                });
+        }
+        
+        // Update prediction chart
+        function updatePredictionChart(data, period) {
+            const ctx = document.getElementById('predictionChart').getContext('2d');
+            
+            if (predictionChart) {
+                predictionChart.destroy();
+            }
+            
+            const labels = data.map(d => d.date);
+            const prices = data.map(d => parseFloat(d.closePrice));
+            
+            predictionChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: period === 'week' ? '1주일 예측' : '1개월 예측',
+                        data: prices,
+                        borderColor: '#58a6ff',
+                        backgroundColor: 'rgba(88, 166, 255, 0.2)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#c9d1d9'
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { color: '#8b949e' },
+                            grid: { color: '#30363d' }
+                        },
+                        y: {
+                            ticks: { color: '#8b949e' },
+                            grid: { color: '#30363d' }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Change period
+        function changePeriod(period) {
+            document.querySelectorAll('.btn-group:first-child .btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            loadChartData(period);
+        }
+        
+        // Change prediction
+        function changePrediction(period) {
+            document.querySelectorAll('.btn-group:last-child .btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            loadPrediction(period);
+        }
+        
+        // Add to portfolio
+        function addToPortfolio() {
+            const quantity = prompt('수량을 입력하세요:');
+            if (quantity) {
+                fetch('/portfolio/add', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: 'stockCode=' + stockCode + '&stockName=' + encodeURIComponent(/*[[${stock.stockName}]]*/ '') + '&quantity=' + quantity + '&avgPrice=' + encodeURIComponent(/*[[${stock.currentPrice}]]*/ '')
+                }).then(response => {
+                    if (response.ok) {
+                        alert('포트폴리오에 추가되었습니다.');
+                    }
+                });
+            }
+        }
+        
+        // Set alert
+        function setAlert() {
+            alert('가격 알림 기능은 준비 중입니다.');
+        }
+        
+        // Add favorite
+        function addFavorite() {
+            fetch('/favorite/add', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: 'stockCode=' + stockCode + '&stockName=' + encodeURIComponent(/*[[${stock.stockName}]]*/ '')
+            }).then(response => {
+                if (response.ok) {
+                    alert('즐겨찾기에 추가되었습니다.');
+                }
+            });
+        }
+        
+        // Initial load
+        loadChartData('day');
+        loadPrediction('week');
+    </script>
+</body>
+</html>

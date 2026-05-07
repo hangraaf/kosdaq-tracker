@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>포트폴리오 - KOSDAQ Tracker</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-primary: #0d1117;
+            --bg-secondary: #161b22;
+            --bg-tertiary: #21262d;
+            --text-primary: #c9d1d9;
+            --text-secondary: #8b949e;
+            --accent-green: #3fb950;
+            --accent-red: #f85149;
+            --accent-blue: #58a6ff;
+            --border-color: #30363d;
+        }
+        
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .navbar {
+            background-color: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .portfolio-card {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .summary-card {
+            background: linear-gradient(135deg, #1a1f2e 0%, #0d1117 100%);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 25px;
+        }
+        
+        .total-value {
+            font-size: 2.5em;
+            font-weight: 700;
+        }
+        
+        .profit-rate {
+            font-size: 1.2em;
+            font-weight: 600;
+        }
+        
+        .price-up {
+            color: var(--accent-green);
+        }
+        
+        .price-down {
+            color: var(--accent-red);
+        }
+        
+        .btn-custom {
+            background-color: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 8px 16px;
+        }
+        
+        .btn-custom:hover {
+            background-color: var(--accent-blue);
+            border-color: var(--accent-blue);
+        }
+        
+        .table {
+            color: var(--text-primary);
+        }
+        
+        .table-dark {
+            --bs-table-bg: var(--bg-secondary);
+            --bs-table-striped-bg: var(--bg-tertiary);
+            --bs-table-hover-bg: var(--bg-tertiary);
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-chart-line me-2"></i>KOSDAQ Tracker
+            </a>
+            <div class="d-flex">
+                <a class="btn btn-outline-light" href="/">
+                    <i class="fas fa-home me-2"></i>홈
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid p-4">
+        <!-- Summary -->
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="summary-card">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="text-secondary">총 평가금액</div>
+                            <div class="total-value text-white" id="total-value">0원</div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-secondary">총 수익금</div>
+                            <div class="profit-rate" id="total-profit">0원</div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-secondary">총 수익률</div>
+                            <div class="profit-rate" id="total-profit-rate">0%</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Add Portfolio Form -->
+        <div class="portfolio-card mb-4">
+            <h5 class="mb-3"><i class="fas fa-plus-circle me-2"></i>종목 추가</h5>
+            <form action="/portfolio/add" method="post" class="row g-3">
+                <div class="col-md-3">
+                    <input type="text" name="stockCode" class="form-control" placeholder="종목코드" required>
+                </div>
+                <div class="col-md-3">
+                    <input type="text" name="stockName" class="form-control" placeholder="종목명" required>
+                </div>
+                <div class="col-md-2">
+                    <input type="number" name="quantity" class="form-control" placeholder="수량" required>
+                </div>
+                <div class="col-md-2">
+                    <input type="text" name="avgPrice" class="form-control" placeholder="평균가" required>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-custom w-100">추가</button>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Portfolio List -->
+        <div class="portfolio-card">
+            <h5 class="mb-3"><i class="fas fa-briefcase me-2"></i>보유 종목</h5>
+            <div class="table-responsive">
+                <table class="table table-dark">
+                    <thead>
+                        <tr>
+                            <th>종목코드</th>
+                            <th>종목명</th>
+                            <th>수량</th>
+                            <th>평균가</th>
+                            <th>현재가</th>
+                            <th>수익금</th>
+                            <th>수익률</th>
+                            <th>관리</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="portfolio : ${portfolios}">
+                            <td th:text="${portfolio.stockCode}">코드</td>
+                            <td th:text="${portfolio.stockName}">종목명</td>
+                            <td th:text="${portfolio.quantity}">수량</td>
+                            <td th:text="${portfolio.avgPrice} + '원'">평균가</td>
+                            <td th:text="${portfolio.currentPrice} + '원'">현재가</td>
+                            <td class="profit-cell">수익금</td>
+                            <td class="rate-cell">수익률</td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-danger" 
+                                        th:onclick="'removePortfolio(\'' + ${portfolio.stockCode} + '\')'">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(portfolios)}">
+                            <td colspan="8" class="text-center text-muted">
+                                보유한 종상이 없습니다. 종상을 추가해주세요.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script th:inline="javascript">
+        // Calculate portfolio summary
+        function calculateSummary() {
+            const portfolios = /*[[${portfolios}]]*/ [];
+            
+            let totalValue = 0;
+            let totalCost = 0;
+            
+            portfolios.forEach(p => {
+                const quantity = parseInt(p.quantity) || 0;
+                const avgPrice = parseFloat(p.avgPrice.replace(/,/g, '')) || 0;
+                const currentPrice = parseFloat(p.currentPrice.replace(/,/g, '')) || avgPrice;
+                
+                totalCost += quantity * avgPrice;
+                totalValue += quantity * currentPrice;
+            });
+            
+            const profit = totalValue - totalCost;
+            const profitRate = totalCost > 0 ? (profit / totalCost) * 100 : 0;
+            
+            document.getElementById('total-value').textContent = totalValue.toLocaleString() + '원';
+            document.getElementById('total-profit').textContent = profit.toLocaleString() + '원';
+            document.getElementById('total-profit').className = 'profit-rate ' + (profit >= 0 ? 'price-up' : 'price-down');
+            document.getElementById('total-profit-rate').textContent = profitRate.toFixed(2) + '%';
+            document.getElementById('total-profit-rate').className = 'profit-rate ' + (profitRate >= 0 ? 'price-up' : 'price-down');
+        }
+        
+        // Remove portfolio
+        function removePortfolio(stockCode) {
+            if (confirm('해당 종목을 포트폴리오에서 삭제하시겠습니까?')) {
+                location.href = '/portfolio/remove/' + stockCode;
+            }
+        }
+        
+        // Initial calculation
+        calculateSummary();
+    </script>
+</body>
+</html>

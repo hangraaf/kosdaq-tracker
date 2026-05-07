@@ -1,0 +1,28 @@
+import type { Metadata } from "next";
+import "./globals.css";
+import NewsTicker from "@/components/Ticker/NewsTicker";
+import Sidebar from "@/components/Sidebar";
+
+export const metadata: Metadata = {
+  title: "Mr. Stock Buddy — KOSPI · KOSDAQ Tracker",
+  description: "PRISM™ 기반 한국 주식 트래커",
+};
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="ko">
+      <body style={{ minHeight: "100vh", display: "flex", flexDirection: "column", background: "var(--bg)" }}>
+        {/* 최상단 뉴스 티커 */}
+        <NewsTicker />
+
+        {/* 메인 영역 */}
+        <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
+          <Sidebar />
+          <main style={{ flex: 1, overflowY: "auto", padding: "24px 28px" }}>
+            {children}
+          </main>
+        </div>
+      </body>
+    </html>
+  );
+}

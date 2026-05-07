@@ -1,0 +1,104 @@
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
+@import "tailwindcss";
+
+/* ── 마루부리 폰트 ──────────────────────────── */
+@font-face {
+  font-family: 'MaruBuri';
+  font-weight: 400;
+  font-display: swap;
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2107@1.1/MaruBuri-Regular.woff') format('woff');
+}
+@font-face {
+  font-family: 'MaruBuri';
+  font-weight: 600;
+  font-display: swap;
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2107@1.1/MaruBuri-SemiBold.woff') format('woff');
+}
+@font-face {
+  font-family: 'MaruBuri';
+  font-weight: 700;
+  font-display: swap;
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2107@1.1/MaruBuri-Bold.woff') format('woff');
+}
+
+:root {
+  --bg:          #F8F4EB;
+  --surf:        #F1ECDF;
+  --surf2:       #E9E2D2;
+  --border:      #BCB09A;
+  --blue:        #436B95;
+  --blue-deep:   #2C4A6E;
+  --blue-soft:   #6B8AAE;
+  --blue-pale:   #C8D4E2;
+  --red:         #B5453F;
+  --yellow:      #B0883A;
+  --fg:          #3D362A;
+  --muted:       #7C7264;
+  --font:        'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+  --mono:        'JetBrains Mono', monospace;
+  --maru:        'MaruBuri', 'Noto Serif KR', Georgia, serif;
+  /* Morinaga 로고 팔레트 */
+  --morinaga-gold:   #D4A030;
+  --morinaga-wine:   #5A1810;
+  --morinaga-brown:  #3A1208;
+  --morinaga-inner:  #E8B838;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font);
+  line-height: 1.7;
+}
+
+/* ── SVG 애니메이션 ───────────────────────────── */
+@keyframes bh-ring-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+@keyframes bh-blink {
+  0%, 90%, 100% { transform: scaleY(1); }
+  95%           { transform: scaleY(0.08); }
+}
+@keyframes bh-monocle-lift {
+  0%, 80%, 100% { transform: translateY(0); }
+  85%           { transform: translateY(-4px) rotate(-3deg); }
+}
+
+/* ── 뉴스 티커 ────────────────────────────────── */
+@keyframes ticker-scroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+.ticker-track {
+  display: flex;
+  animation: ticker-scroll 60s linear infinite;
+  white-space: nowrap;
+}
+
+.ticker-track:hover {
+  animation-play-state: paused;
+}
+
+/* ── 공통 카드 ────────────────────────────────── */
+.bh-card {
+  background: var(--surf);
+  border: 1px solid var(--border);
+  border-top: 2px solid var(--blue);
+  border-radius: 4px;
+  padding: 16px;
+}
+
+/* ── 수익/손실 색상 ───────────────────────────── */
+.up   { color: var(--red); }
+.down { color: var(--blue); }
+.flat { color: var(--muted); }
+
+/* ── 스크롤바 ─────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--surf); }
+::-webkit-scrollbar-thumb { background: var(--blue-soft); border-radius: 3px; }

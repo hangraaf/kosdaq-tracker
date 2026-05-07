@@ -22,7 +22,77 @@ APP_DIR = Path(__file__).resolve().parent
 DATA_DIR = APP_DIR / "data"
 FAVORITES_FILE = DATA_DIR / "favorites.json"
 PORTFOLIO_FILE = DATA_DIR / "portfolio.json"
-TOKEN_FILE = DATA_DIR / "kis_token.json"
+TOKEN_FILE     = DATA_DIR / "kis_token.json"
+ROBO_FILE      = DATA_DIR / "robo_portfolio.json"
+USERS_FILE     = DATA_DIR / "users.json"
+
+# ── PRISM™ 로보어드바이저 — 설문 문항 ──────────────────────────
+ROBO_SURVEY: list[dict] = [
+    {
+        "id": "q_goal", "q": "투자 목표를 선택해 주세요.",
+        "opts": ["원금 보전이 최우선", "안정적 이자 이상 수익", "성장·수익 균형 추구", "공격적 자산 증식", "최대 수익 (손실 감내)"],
+        "w": [1, 2, 3, 4, 5],
+    },
+    {
+        "id": "q_horizon", "q": "투자 기간은 얼마나 생각하시나요?",
+        "opts": ["6개월 미만", "6개월~1년", "1~3년", "3~5년", "5년 이상"],
+        "w": [1, 2, 3, 4, 5],
+    },
+    {
+        "id": "q_loss", "q": "투자금의 몇 %까지 손실을 감내할 수 있나요?",
+        "opts": ["5% 미만", "5~10%", "10~20%", "20~30%", "30% 이상"],
+        "w": [1, 2, 3, 4, 5],
+    },
+    {
+        "id": "q_exp", "q": "주식 투자 경험은 어느 정도인가요?",
+        "opts": ["없음", "1년 미만", "1~3년", "3~7년", "7년 이상"],
+        "w": [1, 2, 3, 4, 5],
+    },
+    {
+        "id": "q_panic", "q": "보유 종목이 20% 하락 시 어떻게 하시겠나요?",
+        "opts": ["즉시 전량 매도", "절반 이상 매도", "관망", "일부 추가 매수", "공격적 추가 매수"],
+        "w": [1, 2, 3, 4, 5],
+    },
+]
+
+# ── PRISM™ 로보어드바이저 — 투자 성향 프로필 ──────────────────
+ROBO_PROFILES: dict[int, dict] = {
+    1: {
+        "name": "보수형", "eng": "CONSERVATIVE", "icon": "🛡",
+        "desc": "원금 보전 최우선. 낮은 변동성과 안정적 배당 종목 위주로 포트폴리오를 구성합니다.",
+        "tag": "안정·배당 우선", "color": "#436B95", "bg": "#D6E4F0", "fg": "#0D2A4A",
+        "sectors": ["금융", "통신", "보험", "식품", "에너지", "유통", "음료"],
+        "min_prism": 30,
+    },
+    2: {
+        "name": "안정형", "eng": "STABLE", "icon": "⚓",
+        "desc": "우량 대형주 중심 분산 투자. 꾸준한 수익과 낮은 변동성을 목표합니다.",
+        "tag": "대형주·분산 투자", "color": "#5C7FA8", "bg": "#C8D8EC", "fg": "#0D2A4A",
+        "sectors": ["금융", "통신", "자동차", "화학", "식품", "유통", "보험", "철강"],
+        "min_prism": 38,
+    },
+    3: {
+        "name": "균형형", "eng": "BALANCED", "icon": "⚖",
+        "desc": "성장성과 안정성을 균형 있게 추구. PRISM™ 점수 상위 다양한 섹터를 균등 배분합니다.",
+        "tag": "섹터 균형 포트폴리오", "color": "#B0883A", "bg": "#F0E0B0", "fg": "#4A2E00",
+        "sectors": ["반도체", "자동차", "금융", "화학", "바이오", "건설", "IT서비스", "제약"],
+        "min_prism": 44,
+    },
+    4: {
+        "name": "성장형", "eng": "GROWTH", "icon": "🚀",
+        "desc": "중장기 성장 섹터 집중 투자. 변동성을 감수하고 높은 수익을 목표합니다.",
+        "tag": "성장 섹터 집중", "color": "#B5453F", "bg": "#F0C8B0", "fg": "#4A0A00",
+        "sectors": ["반도체", "2차전지", "바이오", "IT서비스", "인터넷", "로보틱스", "AI·소프트웨어", "반도체장비"],
+        "min_prism": 50,
+    },
+    5: {
+        "name": "공격형", "eng": "AGGRESSIVE", "icon": "⚡",
+        "desc": "PRISM™ 최고 점수 종목만 선별. 최대 리스크를 감수하며 최대 수익을 추구합니다.",
+        "tag": "고수익·고위험", "color": "#8B1A1A", "bg": "#F0B0B0", "fg": "#3A0000",
+        "sectors": ["반도체", "2차전지소재", "바이오", "로보틱스", "AI·소프트웨어", "의료기기", "반도체장비", "게임"],
+        "min_prism": 56,
+    },
+}
 EXTERNAL_SIGNALS_FILE = DATA_DIR / "external_signals.json"
 
 
@@ -237,6 +307,88 @@ KOSPI_STOCKS: list[Stock] = [
     Stock("001460", "BYC", "KOSPI", "섬유", 300000),
     # 기타 대형주
     Stock("402340", "SK스퀘어", "KOSPI", "IT지주", 65000),
+    # ── 반도체·전자·디스플레이 추가 ─────────────────────────────────
+    Stock("034220", "LG디스플레이", "KOSPI", "반도체·전자", 13000),
+    Stock("000990", "DB하이텍", "KOSPI", "반도체", 45000),
+    Stock("064760", "티씨케이", "KOSPI", "반도체소재", 90000),
+    Stock("011790", "SKC", "KOSPI", "반도체소재", 75000),
+    Stock("353200", "대덕전자", "KOSPI", "반도체·전자", 22000),
+    Stock("007340", "한국전기초자", "KOSPI", "반도체소재", 22000),
+    Stock("036490", "SK가스", "KOSPI", "에너지", 200000),
+    # ── 자동차부품 추가 (합계 ~21) ────────────────────────────────────
+    Stock("015750", "성우하이텍", "KOSPI", "자동차부품", 8000),
+    Stock("005850", "에스엘", "KOSPI", "자동차부품", 25000),
+    Stock("010690", "화신", "KOSPI", "자동차부품", 8000),
+    Stock("200880", "서연이화", "KOSPI", "자동차부품", 11000),
+    Stock("043460", "평화정공", "KOSPI", "자동차부품", 8000),
+    Stock("000430", "대원강업", "KOSPI", "자동차부품", 5000),
+    Stock("033530", "세종공업", "KOSPI", "자동차부품", 7000),
+    Stock("014030", "동국실업", "KOSPI", "자동차부품", 13000),
+    Stock("092210", "센트랄", "KOSPI", "자동차부품", 13000),
+    Stock("012200", "계양전기", "KOSPI", "자동차부품", 7000),
+    Stock("025420", "한일단조", "KOSPI", "자동차부품", 9000),
+    Stock("024890", "지엠비코리아", "KOSPI", "자동차부품", 10000),
+    # ── 2차전지소재 추가 (합계 ~9) ───────────────────────────────────
+    Stock("005420", "코스모화학", "KOSPI", "2차전지소재", 15000),
+    Stock("005070", "코스모신소재", "KOSPI", "2차전지소재", 45000),
+    Stock("093370", "후성", "KOSPI", "2차전지소재", 12000),
+    Stock("025900", "동화기업", "KOSPI", "2차전지소재", 30000),
+    # ── 건설 추가 (합계 ~20) ─────────────────────────────────────────
+    Stock("294870", "HDC현대산업개발", "KOSPI", "건설", 18000),
+    Stock("009410", "태영건설", "KOSPI", "건설", 3000),
+    Stock("002990", "금호산업", "KOSPI", "건설", 8000),
+    Stock("003070", "코오롱글로벌", "KOSPI", "건설", 20000),
+    Stock("004960", "한신공영", "KOSPI", "건설", 15000),
+    Stock("013580", "계룡건설산업", "KOSPI", "건설", 18000),
+    Stock("005960", "동부건설", "KOSPI", "건설", 10000),
+    Stock("014790", "한라", "KOSPI", "건설", 28000),
+    Stock("011160", "두산건설", "KOSPI", "건설", 5000),
+    # ── 건자재·시멘트 추가 ───────────────────────────────────────────
+    Stock("003410", "쌍용C&E", "KOSPI", "건자재", 7000),
+    Stock("004980", "성신양회", "KOSPI", "건자재", 14000),
+    Stock("183190", "아세아시멘트", "KOSPI", "건자재", 200000),
+    Stock("300720", "한일시멘트", "KOSPI", "건자재", 15000),
+    Stock("009450", "경동나비엔", "KOSPI", "건자재", 65000),
+    Stock("344820", "KCC글라스", "KOSPI", "건자재", 40000),
+    # ── 방산 추가 (합계 ~6) ──────────────────────────────────────────
+    Stock("079550", "LIG넥스원", "KOSPI", "방산", 220000),
+    Stock("272210", "한화시스템", "KOSPI", "방산", 20000),
+    Stock("010820", "퍼스텍", "KOSPI", "방산", 9000),
+    # ── 철강·금속 추가 (합계 ~16) ────────────────────────────────────
+    Stock("016380", "KG스틸", "KOSPI", "철강", 7000),
+    Stock("306200", "세아제강", "KOSPI", "철강", 30000),
+    Stock("058650", "세아홀딩스", "KOSPI", "철강", 200000),
+    Stock("079590", "대한제강", "KOSPI", "철강", 8000),
+    Stock("004560", "현대비앤지스틸", "KOSPI", "철강", 20000),
+    Stock("083450", "동국씨엠", "KOSPI", "철강", 10000),
+    Stock("000670", "영풍", "KOSPI", "비철금속", 700000),
+    Stock("001340", "알루코", "KOSPI", "비철금속", 4000),
+    Stock("002560", "성광벤드", "KOSPI", "조선·철강", 14000),
+    Stock("023160", "태광", "KOSPI", "조선·철강", 19000),
+    Stock("058430", "포스코스틸리온", "KOSPI", "철강", 40000),
+    # ── 식품·음료 추가 (합계 ~14) ────────────────────────────────────
+    Stock("049770", "동원F&B", "KOSPI", "식품", 35000),
+    Stock("136480", "하림", "KOSPI", "식품", 5000),
+    Stock("011150", "CJ씨푸드", "KOSPI", "식품", 3000),
+    Stock("017810", "풀무원", "KOSPI", "식품", 14000),
+    Stock("002840", "미원홀딩스", "KOSPI", "식품", 120000),
+    Stock("014820", "동원시스템즈", "KOSPI", "식품·포장", 32000),
+    # ── 에너지·유틸리티 추가 ────────────────────────────────────────
+    Stock("071320", "한국지역난방공사", "KOSPI", "에너지", 35000),
+    Stock("267970", "HD현대마린솔루션", "KOSPI", "에너지서비스", 100000),
+    # ── 항공 추가 (합계 ~5) ──────────────────────────────────────────
+    Stock("089590", "제주항공", "KOSPI", "항공", 8000),
+    Stock("272450", "진에어", "KOSPI", "항공", 10000),
+    Stock("091810", "티웨이항공", "KOSPI", "항공", 3500),
+    # ── 유통·서비스 추가 ─────────────────────────────────────────────
+    Stock("021240", "코웨이", "KOSPI", "생활서비스", 55000),
+    Stock("057050", "현대홈쇼핑", "KOSPI", "유통", 45000),
+    Stock("071840", "롯데하이마트", "KOSPI", "유통", 10000),
+    Stock("031440", "신세계푸드", "KOSPI", "외식서비스", 55000),
+    # ── 증권 추가 (합계 ~9) ──────────────────────────────────────────
+    Stock("030610", "교보증권", "KOSPI", "증권", 6000),
+    Stock("016610", "DB금융투자", "KOSPI", "증권", 5000),
+    Stock("001720", "신영증권", "KOSPI", "증권", 60000),
 ]
 
 KOSDAQ_STOCKS: list[Stock] = [
@@ -370,6 +522,82 @@ KOSDAQ_STOCKS: list[Stock] = [
     Stock("348340", "뉴로메카", "KOSDAQ", "로보틱스", 22000),
     Stock("215100", "오토닉스", "KOSDAQ", "산업자동화", 55000),
     Stock("083310", "에스티아이", "KOSDAQ", "산업자동화", 15000),
+    # ── 2차전지소재·장비 추가 (합계 ~21) ──────────────────────────────
+    Stock("278280", "천보", "KOSDAQ", "2차전지소재", 100000),
+    Stock("121600", "나노신소재", "KOSDAQ", "2차전지소재", 50000),
+    Stock("078600", "대주전자재료", "KOSDAQ", "2차전지소재", 80000),
+    Stock("336370", "솔루스첨단소재", "KOSDAQ", "2차전지소재", 12000),
+    Stock("348370", "엔켐", "KOSDAQ", "2차전지소재", 30000),
+    Stock("222080", "씨아이에스", "KOSDAQ", "2차전지장비", 15000),
+    Stock("267320", "나인테크", "KOSDAQ", "2차전지장비", 8000),
+    Stock("047310", "파워로직스", "KOSDAQ", "2차전지소재", 10000),
+    Stock("299880", "하나기술", "KOSDAQ", "2차전지장비", 20000),
+    Stock("089980", "상아프론테크", "KOSDAQ", "2차전지소재", 28000),
+    Stock("397030", "에코프로HN", "KOSDAQ", "2차전지소재", 35000),
+    Stock("217820", "원익피앤이", "KOSDAQ", "2차전지장비", 18000),
+    # ── 의료기기·디지털헬스 추가 (합계 ~21) ──────────────────────────
+    Stock("228670", "레이", "KOSDAQ", "의료기기", 18000),
+    Stock("039840", "디오", "KOSDAQ", "의료기기", 30000),
+    Stock("149040", "하이로닉", "KOSDAQ", "의료기기", 18000),
+    Stock("214370", "케어젠", "KOSDAQ", "의료기기", 55000),
+    Stock("253840", "수젠텍", "KOSDAQ", "의료기기", 8000),
+    Stock("039860", "나노엔텍", "KOSDAQ", "의료기기", 8000),
+    Stock("264600", "피씨엘", "KOSDAQ", "의료기기", 5000),
+    Stock("041920", "메디아나", "KOSDAQ", "의료기기", 12000),
+    Stock("042520", "한스바이오메드", "KOSDAQ", "의료기기", 18000),
+    Stock("226340", "본느", "KOSDAQ", "의료기기", 8000),
+    # ── 게임 추가 (합계 ~15) ─────────────────────────────────────────
+    Stock("067000", "조이시티", "KOSDAQ", "게임", 4000),
+    Stock("058630", "엠게임", "KOSDAQ", "게임", 5000),
+    Stock("289220", "위지윅스튜디오", "KOSDAQ", "게임·콘텐츠", 6000),
+    Stock("047080", "그라비티", "KOSDAQ", "게임", 55000),
+    Stock("217270", "넵튠", "KOSDAQ", "게임", 5000),
+    Stock("063080", "컴투스홀딩스", "KOSDAQ", "게임", 35000),
+    # ── 엔터 추가 (합계 ~10) ─────────────────────────────────────────
+    Stock("068050", "팬엔터테인먼트", "KOSDAQ", "엔터", 3000),
+    Stock("054780", "키이스트", "KOSDAQ", "엔터", 4000),
+    Stock("032800", "판타지오", "KOSDAQ", "엔터", 2000),
+    Stock("160550", "NEW", "KOSDAQ", "엔터·미디어", 5000),
+    # ── 화장품·뷰티 추가 (합계 ~18) ──────────────────────────────────
+    Stock("018290", "브이티", "KOSDAQ", "화장품", 18000),
+    Stock("078520", "에이블씨엔씨", "KOSDAQ", "화장품", 5000),
+    Stock("214420", "토니모리", "KOSDAQ", "화장품", 12000),
+    Stock("363470", "씨앤씨인터내셔널", "KOSDAQ", "화장품", 45000),
+    Stock("078140", "대봉엘에스", "KOSDAQ", "화장품원료", 12000),
+    Stock("241710", "코스메카코리아", "KOSDAQ", "화장품", 15000),
+    Stock("115960", "연우", "KOSDAQ", "화장품용기", 22000),
+    Stock("024720", "한국콜마홀딩스", "KOSDAQ", "화장품", 20000),
+    Stock("114460", "아이패밀리에스씨", "KOSDAQ", "화장품", 12000),
+    Stock("216050", "제이준코스메틱", "KOSDAQ", "화장품", 5000),
+    # ── IT·소프트웨어·플랫폼 추가 (합계 ~21) ─────────────────────────
+    Stock("181710", "NHN", "KOSDAQ", "인터넷·IT", 14000),
+    Stock("093520", "케이아이엔엑스", "KOSDAQ", "IT서비스", 50000),
+    Stock("030520", "한글과컴퓨터", "KOSDAQ", "소프트웨어", 15000),
+    Stock("304100", "솔트룩스", "KOSDAQ", "AI·소프트웨어", 25000),
+    Stock("035600", "KG이니시스", "KOSDAQ", "핀테크", 15000),
+    Stock("078070", "유비쿼스홀딩스", "KOSDAQ", "IT서비스", 9000),
+    Stock("038680", "에스넷", "KOSDAQ", "IT서비스", 8000),
+    Stock("052400", "코나아이", "KOSDAQ", "핀테크", 12000),
+    Stock("242040", "나무기술", "KOSDAQ", "클라우드", 10000),
+    Stock("224790", "씨이랩", "KOSDAQ", "AI·소프트웨어", 8000),
+    Stock("060310", "NICE평가정보", "KOSDAQ", "IT서비스", 14000),
+    Stock("148140", "비트나인", "KOSDAQ", "AI·소프트웨어", 8000),
+    # ── 로보틱스·자동화 추가 (합계 ~14) ──────────────────────────────
+    Stock("389020", "에스비비테크", "KOSDAQ", "로보틱스", 25000),
+    Stock("117730", "티로보틱스", "KOSDAQ", "로보틱스", 18000),
+    Stock("059120", "아진엑스텍", "KOSDAQ", "산업자동화", 15000),
+    Stock("049950", "미래컴퍼니", "KOSDAQ", "수술로봇", 28000),
+    Stock("098460", "고영", "KOSDAQ", "검사장비", 45000),
+    Stock("099540", "스맥", "KOSDAQ", "공작기계", 4000),
+    Stock("014460", "삼익THK", "KOSDAQ", "산업기계", 15000),
+    # ── 반도체장비·소재 추가 (합계 ~21) ──────────────────────────────
+    Stock("080520", "에스씨디", "KOSDAQ", "반도체장비", 12000),
+    Stock("108380", "대주전자재료", "KOSDAQ", "반도체소재", 15000),
+    Stock("140860", "파크시스템스", "KOSDAQ", "반도체장비", 180000),
+    Stock("196300", "애니포스", "KOSDAQ", "반도체소재", 10000),
+    # ── 바이오·신약 추가 (합계 보완) ─────────────────────────────────
+    Stock("084990", "메디오젠", "KOSDAQ", "바이오", 10000),
+    Stock("318660", "피에스케이홀딩스", "KOSDAQ", "반도체장비", 28000),
 ]
 
 MARKET_STOCKS = {
@@ -385,6 +613,28 @@ BH_CSS = """
 <style>
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css');
 @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;500;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap');
+/* 마루부리 — 네이버 무료 폰트 */
+@font-face {
+  font-family: 'MaruBuri';
+  font-style: normal;
+  font-weight: 400;
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2107@1.1/MaruBuri-Regular.woff') format('woff');
+  font-display: swap;
+}
+@font-face {
+  font-family: 'MaruBuri';
+  font-style: normal;
+  font-weight: 600;
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2107@1.1/MaruBuri-SemiBold.woff') format('woff');
+  font-display: swap;
+}
+@font-face {
+  font-family: 'MaruBuri';
+  font-style: normal;
+  font-weight: 700;
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2107@1.1/MaruBuri-Bold.woff') format('woff');
+  font-display: swap;
+}
 /* CDN 실패 폴백: 시스템 폰트로 자동 대체 */
 
 /* ── 프렌치 블루 × 오프화이트 ─────────────────────
@@ -425,6 +675,7 @@ BH_CSS = """
 
   /* 타이포 — 통일된 디자인 언어 */
   --serif: 'Noto Serif KR', 'Nanum Myeongjo', serif;
+  --maru:  'MaruBuri', 'Noto Serif KR', 'Nanum Myeongjo', Georgia, serif;
   --font:  'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   --mono:  'JetBrains Mono', 'Pretendard', monospace;
   color-scheme: light;
@@ -453,8 +704,8 @@ body, .stApp {
   font-size: 0.88rem !important;
   color: #F0EBE0 !important;
 }
-[data-testid="stSidebar"] p,
-[data-testid="stSidebar"] div {
+/* p 태그만 크림색 — div 전역 적용은 컴포넌트 내부를 오염시키므로 제거 */
+[data-testid="stSidebar"] p {
   color: #E5DECD !important;
 }
 
@@ -604,28 +855,62 @@ div[data-testid="stMetric"] [data-testid="stMetricDelta"] {
   box-shadow: 0 0 0 3px rgba(176, 136, 58, 0.35) !important;
   outline: none !important;
 }
-/* 사이드바 multiselect */
+/* 사이드바 selectbox / multiselect 컨테이너 */
 [data-testid="stSidebar"] [data-baseweb="select"] > div {
-  background: rgba(248, 244, 235, 0.95) !important;
-  border: 1px solid rgba(248, 244, 235, 0.4) !important;
-  border-radius: 22px !important;
-  color: #1A2638 !important;
+  background: #F5F0E6 !important;
+  border: 1.5px solid rgba(180,165,140,0.5) !important;
+  border-radius: 8px !important;
+  color: #0D1A2A !important;
   font-family: var(--font) !important;
   font-size: 0.88rem !important;
+  font-weight: 600 !important;
   min-height: 42px !important;
   padding: 6px 14px !important;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.15) !important;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.18) !important;
 }
 [data-testid="stSidebar"] [data-baseweb="select"] > div:focus-within {
   border-color: var(--yellow) !important;
   box-shadow: 0 0 0 3px rgba(176, 136, 58, 0.35) !important;
 }
+/* 드롭다운 내부 텍스트 — div 전역 룰에 덮이는 문제 해결 */
+[data-testid="stSidebar"] [data-baseweb="select"] div,
+[data-testid="stSidebar"] [data-baseweb="select"] span,
+[data-testid="stSidebar"] [data-baseweb="select"] p {
+  color: #0D1A2A !important;
+  font-weight: 600 !important;
+}
+/* 플레이스홀더 — 약간 연하게 */
+[data-testid="stSidebar"] [data-baseweb="select"] [data-baseweb="placeholder"] {
+  color: #6B7D90 !important;
+  font-weight: 500 !important;
+}
+/* 화살표 아이콘 */
+[data-testid="stSidebar"] [data-baseweb="select"] svg {
+  fill: #2C4A6E !important;
+}
+/* 선택된 태그 (multiselect) */
 [data-testid="stSidebar"] [data-baseweb="tag"] {
   border-radius: 12px !important;
-  background: var(--yellow) !important;
+  background: var(--blue) !important;
   color: #FFFFFF !important;
   font-weight: 600 !important;
   font-size: 0.76rem !important;
+}
+[data-testid="stSidebar"] [data-baseweb="tag"] span {
+  color: #FFFFFF !important;
+}
+/* 사이드바 text input 테두리/배경 통일 */
+[data-testid="stSidebar"] .stTextInput input,
+[data-testid="stSidebar"] .stNumberInput input {
+  background: #F5F0E6 !important;
+  border: 1.5px solid rgba(180,165,140,0.5) !important;
+  border-radius: 8px !important;
+  color: #0D1A2A !important;
+  font-family: var(--font) !important;
+  font-weight: 600 !important;
+  font-size: 0.88rem !important;
+  padding: 8px 14px !important;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.18) !important;
 }
 
 /* ── Tabs ────────────────────────────────────── */
@@ -718,32 +1003,45 @@ hr {
   opacity: 0.8 !important;
 }
 
-/* ── Sidebar 검색 결과 버튼 — 옅은 크림 필 ───── */
+/* ── Sidebar 검색 결과 버튼 ───────────────────── */
 [data-testid="stSidebar"] .stButton > button {
   text-align: left !important;
   justify-content: flex-start !important;
   font-size: 0.84rem !important;
-  font-weight: 600 !important;
-  background: rgba(248, 244, 235, 0.92) !important;
-  border: 1px solid rgba(248, 244, 235, 0.3) !important;
-  border-radius: 20px !important;
-  color: #1A2638 !important;
-  padding: 7px 16px !important;
+  font-weight: 700 !important;
+  background: #F5F0E6 !important;
+  border: 1.5px solid rgba(180,165,140,0.5) !important;
+  border-radius: 8px !important;
+  color: #0D1A2A !important;
+  padding: 8px 14px !important;
   height: auto !important;
   min-height: 0 !important;
-  margin-bottom: 4px !important;
+  margin-bottom: 5px !important;
   white-space: nowrap !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
-  transition: all 0.18s ease !important;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.12) !important;
+  transition: all 0.15s ease !important;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.18) !important;
+  letter-spacing: 0.01em !important;
+}
+/* 버튼 내부 div/p/span 에 !important 가 덮어씌워지는 문제 해결 */
+[data-testid="stSidebar"] .stButton > button div,
+[data-testid="stSidebar"] .stButton > button p,
+[data-testid="stSidebar"] .stButton > button span {
+  color: #0D1A2A !important;
+  font-weight: 700 !important;
 }
 [data-testid="stSidebar"] .stButton > button:hover {
-  background: var(--yellow) !important;
+  background: #2C4A6E !important;
   color: #FFFFFF !important;
-  border-color: var(--yellow) !important;
-  box-shadow: 0 3px 8px rgba(176, 136, 58, 0.4) !important;
-  transform: translateY(-1px) !important;
+  border-color: #436B95 !important;
+  box-shadow: 0 3px 10px rgba(44, 74, 110, 0.5) !important;
+  transform: translateX(3px) !important;
+}
+[data-testid="stSidebar"] .stButton > button:hover div,
+[data-testid="stSidebar"] .stButton > button:hover p,
+[data-testid="stSidebar"] .stButton > button:hover span {
+  color: #FFFFFF !important;
 }
 
 /* ── Toggle ──────────────────────────────────── */
@@ -758,15 +1056,37 @@ hr {
   font-size: 0.9rem !important;
   color: var(--fg) !important;
 }
-/* 사이드바 라디오 */
-[data-testid="stSidebar"] [data-testid="stRadio"] label {
+/* 사이드바 라디오 — 내부 p/div/span 모두 커버 */
+[data-testid="stSidebar"] [data-testid="stRadio"] label,
+[data-testid="stSidebar"] [data-testid="stRadio"] label p,
+[data-testid="stSidebar"] [data-testid="stRadio"] label span,
+[data-testid="stSidebar"] [data-testid="stRadio"] label div {
   color: #F0EBE0 !important;
   font-weight: 600 !important;
   font-size: 0.92rem !important;
 }
-[data-testid="stSidebar"] [data-testid="stRadio"] [data-checked="true"] + span {
+[data-testid="stSidebar"] [data-testid="stRadio"] [data-checked="true"] + span,
+[data-testid="stSidebar"] [data-testid="stRadio"] [data-checked="true"] ~ label,
+[data-testid="stSidebar"] [data-testid="stRadio"] [data-checked="true"] ~ label span {
   color: var(--yellow) !important;
   font-weight: 700 !important;
+}
+/* 사이드바 토글 라벨 */
+[data-testid="stSidebar"] [data-testid="stToggle"] label,
+[data-testid="stSidebar"] [data-testid="stToggle"] label p,
+[data-testid="stSidebar"] [data-testid="stToggle"] label span {
+  color: #F0EBE0 !important;
+  font-weight: 600 !important;
+}
+/* 사이드바 일반 텍스트 — markdown 렌더 p만 크림색, div는 상속 차단 */
+[data-testid="stSidebar"] p {
+  color: #E5DECD !important;
+}
+/* div 전역 룰을 덜 공격적으로: 명시적 컴포넌트 내부 div는 제외 */
+[data-testid="stSidebar"] > div,
+[data-testid="stSidebar"] .element-container > div,
+[data-testid="stSidebar"] .stMarkdown div {
+  color: #E5DECD !important;
 }
 
 /* ── Grid 컨테이너 통일 ──────────────────────── */
@@ -831,115 +1151,339 @@ hr {
 .bh-delta.down { color: var(--blue); }
 .bh-delta.flat { color: var(--muted); }
 
-/* ── Sidebar 로고 — Itten/Kandinsky 기하학 컴포지션 ──
-   3원색 3원형 (정사각형=빨강·삼각형=노랑·원=파랑) Bauhaus 도그마
-   ─────────────────────────────────────────────── */
+/* ── 원형 마스코트 로고 — Mr. Stock Buddy ──────────── */
 .bh-logo {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  margin-bottom: 28px;
-  padding-bottom: 22px;
+  display: block;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
   border-bottom: 2px solid var(--yellow);
+  text-align: center;
 }
-.bh-logo-mark {
-  width: 70px; height: 70px;
-  background: #F8F4EB;
-  flex-shrink: 0;
+.bh-mascot {
   display: block;
-  position: relative;
-  overflow: hidden;
-  border-radius: 0;            /* 샤프 코너 */
-  box-shadow: 4px 4px 0 var(--yellow), 4px 4px 0 1px var(--blue-deep);
+  margin: 0 auto;
+  width: 92%;
+  max-width: 215px;
+  filter: drop-shadow(0 6px 16px rgba(0,0,0,0.45));
 }
-/* 노란 정사각형 — 좌하단 (Itten: 사각형=정적/안정) */
-.bh-logo-mark::before {
-  content: '';
-  position: absolute;
-  left: 0; bottom: 0;
-  width: 32px; height: 32px;
-  background: var(--yellow);
+/* 텍스트 링 회전 */
+@keyframes bh-ring-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
 }
-/* 빨간 정사각형 — 우상단 모서리 (Kandinsky: 빨강=땅/정지) */
-.bh-logo-mark::after {
-  content: '';
-  position: absolute;
-  top: 5px; right: 5px;
-  width: 14px; height: 14px;
-  background: var(--red);
+.bh-ring-rotate {
+  animation: bh-ring-spin 55s linear infinite;
+  transform-box: fill-box;
+  transform-origin: center center;
 }
-/* 파란 삼각형 — 중앙 위, 큰 ▲ 글리프 (역동/상승) */
-.bh-logo-tri {
-  position: absolute;
-  top: 4px; left: 18px;
-  font-size: 2.2rem;
-  color: var(--blue);
-  line-height: 1;
-  font-weight: 700;
-  letter-spacing: 0;
-  z-index: 2;
+/* 몸통 흔들기 */
+@keyframes bh-sway {
+  0%, 100% { transform: rotate(0deg); }
+  30%       { transform: rotate(1.3deg); }
+  70%       { transform: rotate(-1.3deg); }
 }
-/* KRX 텍스트 — 우하단, 노란 사각형 위로 살짝 */
-.bh-logo-krx {
-  position: absolute;
-  bottom: 4px; right: 6px;
-  font-family: var(--font);
-  font-size: 0.56rem;
-  font-weight: 900;
-  letter-spacing: 0.2em;
-  color: var(--blue-deep);
-  text-transform: uppercase;
-  z-index: 3;
+.bh-mascot-body {
+  animation: bh-sway 4.8s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center 90%;
 }
-.bh-logo-text { line-height: 1; }
+/* 눈 깜빡임 */
+@keyframes bh-blink {
+  0%, 84%, 100% { transform: scaleY(1); }
+  90%            { transform: scaleY(0.06); }
+}
+.bh-eye-l {
+  animation: bh-blink 5.5s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center center;
+}
+.bh-eye-r {
+  animation: bh-blink 5.5s ease-in-out infinite 0.1s;
+  transform-box: fill-box;
+  transform-origin: center center;
+}
+/* 접안경 치켜올리기 */
+@keyframes bh-monocle-up {
+  0%, 60%, 100% { transform: translateY(0px); }
+  72%            { transform: translateY(-7px); }
+  84%            { transform: translateY(-5px); }
+}
+.bh-monocle {
+  animation: bh-monocle-up 8s ease-in-out infinite 2.5s;
+  transform-box: fill-box;
+  transform-origin: center bottom;
+}
+/* 하단 로고 텍스트 */
 .bh-logo-title {
-  font-family: var(--font);
-  font-size: 1.45rem;
-  font-weight: 900;
-  letter-spacing: 0.04em;
-  color: #F8F4EB;
-  text-transform: uppercase;
-  line-height: 1;
-  display: block;
-}
-.bh-logo-tracker {
-  font-family: var(--font);
-  font-size: 0.72rem;
+  font-family: var(--maru);
+  font-size: 1.4rem;
   font-weight: 700;
-  letter-spacing: 0.32em;
-  color: var(--yellow);
+  letter-spacing: 0.1em;
+  color: #E8B838;
   text-transform: uppercase;
-  display: inline-block;
-  margin-top: 5px;
-  line-height: 1;
-  background: transparent;
-  padding: 3px 0;
-  border-bottom: 2px solid var(--red);
+  display: block;
+  margin-top: 12px;
+  text-shadow: 1px 2px 0 #3A1208;
 }
 .bh-logo-sub {
-  font-family: var(--mono);
-  font-size: 0.6rem;
-  font-weight: 500;
-  letter-spacing: 0.18em;
-  color: rgba(229, 222, 205, 0.7);
-  margin-top: 8px;
-  padding-top: 5px;
+  font-family: var(--maru);
+  font-size: 0.66rem;
+  font-weight: 400;
+  letter-spacing: 0.24em;
+  color: rgba(232,184,56,0.75);
+  margin-top: 6px;
   display: block;
 }
 
-/* ── Section label — 프렌치 블루 강조 ──────── */
-.bh-section-label {
+/* ── Sidebar Auth — 로그인/회원가입 ─────────────── */
+.bh-auth-btns {
+  display: flex;
+  gap: 7px;
+  margin-bottom: 18px;
+}
+.bh-auth-btn {
+  flex: 1;
+  padding: 8px 0;
+  border-radius: 7px;
   font-family: var(--font);
-  font-size: 0.74rem;
+  font-size: 0.76rem;
   font-weight: 700;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.04em;
+  text-align: center;
+  cursor: pointer;
+  border: 1.5px solid;
+  transition: all 0.15s ease;
+}
+.bh-auth-btn-login {
+  background: #0052CC;
+  color: #FFFFFF;
+  border-color: #0052CC;
+}
+.bh-auth-btn-signup {
+  background: transparent;
+  color: #C8A450;
+  border-color: #C8A450;
+}
+/* 로그인 후 유저 카드 */
+.bh-user-card {
+  background: linear-gradient(135deg, #112240 0%, #1A3260 100%);
+  border: 1.5px solid rgba(200,164,80,0.4);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 18px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.25);
+}
+.bh-user-avatar {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #C8A450, #8A6020);
+  color: #0D1F3C;
+  font-family: 'Impact', var(--font), sans-serif;
+  font-size: 1rem;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(200,164,80,0.4);
+  letter-spacing: 0.02em;
+}
+.bh-user-info { flex: 1; min-width: 0; }
+.bh-user-name {
+  font-family: var(--font);
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #F0E8D0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+}
+.bh-user-plan {
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  color: rgba(200,164,80,0.8);
+  letter-spacing: 0.1em;
   text-transform: uppercase;
+  margin-top: 2px;
+  display: block;
+}
+.bh-user-greeting {
+  font-family: var(--font);
+  font-size: 0.68rem;
+  color: rgba(200,220,255,0.65);
+  margin-top: 1px;
+  display: block;
+}
+
+/* ══════════════════════════════════════════════
+   PRISM™ 로보어드바이저 — Premium UI
+   ══════════════════════════════════════════════ */
+
+/* 잠금 화면 */
+.robo-lock-wrap {
+  text-align: center;
+  padding: 40px 20px;
+  background: linear-gradient(160deg, #0D1F3C 0%, #162B50 100%);
+  border-radius: 12px;
+  border: 1.5px solid #2A4A80;
+  position: relative;
+  overflow: hidden;
+}
+.robo-lock-wrap::before {
+  content: '';
+  position: absolute;
+  top: -40px; left: -40px;
+  width: 200px; height: 200px;
+  background: radial-gradient(circle, rgba(176,136,58,0.15), transparent 70%);
+  pointer-events: none;
+}
+.robo-lock-icon { font-size: 3.2rem; margin-bottom: 14px; display: block; }
+.robo-lock-title {
+  font-family: 'Impact', var(--font), sans-serif;
+  font-size: 1.6rem; font-weight: 900;
+  color: #FFFFFF;
+  letter-spacing: 0.06em;
+  text-shadow: 0 0 20px rgba(176,136,58,0.5);
+  margin: 0 0 6px;
+}
+.robo-lock-sub {
+  font-family: var(--font);
+  font-size: 0.72rem; color: var(--yellow);
+  letter-spacing: 0.22em; text-transform: uppercase;
+  font-weight: 700; margin-bottom: 20px; display: block;
+}
+.robo-lock-features {
+  text-align: left; list-style: none; padding: 0;
+  margin: 0 auto 24px; max-width: 320px;
+}
+.robo-lock-features li {
+  font-family: var(--font); font-size: 0.82rem;
+  color: #C8D8EE; padding: 5px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.robo-lock-features li::before { content: "✦ "; color: var(--yellow); }
+
+/* 설문 */
+.robo-progress-bar {
+  height: 4px; background: var(--surf2); border-radius: 2px;
+  margin-bottom: 28px; overflow: hidden;
+}
+.robo-progress-fill {
+  height: 100%; background: linear-gradient(90deg, #436B95, #B0883A);
+  border-radius: 2px; transition: width 0.4s ease;
+}
+.robo-q-label {
+  font-family: var(--font); font-size: 1rem; font-weight: 700;
+  color: var(--fg); margin-bottom: 14px; line-height: 1.4;
+  display: block;
+}
+.robo-q-num {
+  font-family: var(--mono); font-size: 0.68rem; font-weight: 700;
+  color: var(--blue); letter-spacing: 0.1em; display: block;
+  margin-bottom: 6px;
+}
+
+/* 프로필 결과 카드 */
+.robo-profile-card {
+  border-radius: 10px; padding: 22px 20px 18px;
+  margin-bottom: 24px; position: relative; overflow: hidden;
+}
+.robo-profile-badge {
+  display: inline-block; font-family: 'Impact', var(--font), sans-serif;
+  font-size: 0.62rem; font-weight: 900; letter-spacing: 0.22em;
+  text-transform: uppercase; padding: 3px 10px; border-radius: 3px;
+  margin-bottom: 10px;
+}
+.robo-profile-name {
+  font-family: 'Impact', var(--font), sans-serif;
+  font-size: 2rem; font-weight: 900; letter-spacing: 0.06em;
+  line-height: 1; margin: 0 0 8px;
+}
+.robo-profile-desc {
+  font-family: var(--font); font-size: 0.82rem;
+  color: var(--fg); line-height: 1.6; margin: 0;
+}
+
+/* 추천 종목 카드 */
+.robo-stock-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 24px; }
+.robo-stock-card {
+  background: var(--surf); border: 1px solid var(--border);
+  border-radius: 8px; padding: 12px 14px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  cursor: default;
+}
+.robo-stock-card:hover { border-color: var(--blue-soft); box-shadow: 0 2px 8px rgba(67,107,149,0.15); }
+.robo-stock-name { font-family: var(--font); font-size: 0.84rem; font-weight: 700; color: var(--fg); display: block; }
+.robo-stock-meta { font-family: var(--mono); font-size: 0.7rem; color: var(--muted); margin: 2px 0 8px; display: block; }
+.robo-prism-bar-wrap { background: var(--surf2); height: 5px; border-radius: 3px; overflow: hidden; }
+.robo-prism-bar-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, #436B95, #B0883A); }
+.robo-prism-score { font-family: var(--mono); font-size: 0.72rem; font-weight: 700; color: var(--blue); float: right; }
+
+/* 대시보드 */
+.robo-dash-header {
+  background: linear-gradient(135deg, var(--blue-deep) 0%, #162B50 100%);
+  border-radius: 10px; padding: 20px 22px; margin-bottom: 24px;
+  color: white; display: flex; align-items: center; gap: 18px;
+}
+.robo-dash-profile-icon { font-size: 2.4rem; flex-shrink: 0; }
+.robo-dash-profile-name { font-family: 'Impact', var(--font), sans-serif; font-size: 1.4rem; letter-spacing: 0.06em; }
+.robo-dash-meta { font-family: var(--mono); font-size: 0.65rem; color: rgba(200,220,255,0.7); letter-spacing: 0.1em; margin-top: 4px; }
+.robo-holding-card {
+  background: var(--surf); border: 1.5px solid var(--border);
+  border-radius: 8px; padding: 14px 16px; margin-bottom: 10px;
+}
+.robo-holding-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.robo-holding-name { font-family: var(--font); font-size: 0.9rem; font-weight: 700; color: var(--fg); }
+.robo-signal {
+  font-family: var(--font); font-size: 0.68rem; font-weight: 700;
+  padding: 3px 9px; border-radius: 12px; letter-spacing: 0.06em;
+}
+.robo-signal-hold    { background: #D6EED6; color: #1A5C1A; }
+.robo-signal-watch   { background: #FFF0C8; color: #6A4000; }
+.robo-signal-replace { background: #FFE0D8; color: #8B1A1A; }
+.robo-prism-compare {
+  display: flex; align-items: center; gap: 8px;
+  font-family: var(--mono); font-size: 0.75rem;
+}
+.robo-prism-now  { font-weight: 700; color: var(--blue-deep); }
+.robo-prism-prev { color: var(--muted); }
+.robo-prism-delta-up   { color: #2A7A2A; font-weight: 700; }
+.robo-prism-delta-down { color: #B5453F; font-weight: 700; }
+
+/* ── Section label — 프렌치 블루 강조 + 좌측 두꺼운 액센트 ── */
+.bh-section-label {
+  font-family: 'Noto Serif KR', var(--font), serif;
+  font-size: 0.92rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
   color: var(--blue-deep);
-  border-bottom: 1px solid var(--blue-soft);
-  padding-bottom: 5px;
-  margin: 24px 0 12px;
+  border-left: 5px solid #B82828;
+  padding: 2px 0 4px 12px;
+  margin: 32px 0 14px;
   display: block;
   background: transparent;
+  position: relative;
+}
+.bh-section-label::after {
+  content: '';
+  display: block;
+  position: absolute;
+  left: 0; right: 0; bottom: -3px;
+  height: 1px;
+  background: linear-gradient(90deg, var(--blue-deep), transparent 60%);
+}
+/* 메인 컨텐츠 섹션 박스 — 카드형 그룹 */
+.bh-section-block {
+  background: rgba(248, 244, 235, 0.4);
+  border: 1px solid rgba(67, 107, 149, 0.12);
+  border-radius: 8px;
+  padding: 18px 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 1px 3px rgba(67, 107, 149, 0.06);
 }
 
 /* ── Status pill ─────────────────────────────── */
@@ -1029,6 +1573,9 @@ hr {
   width: 100%;
   background: #001533;
   border-top: 3px solid #0052CC;
+  border-bottom: 3px solid var(--blue-deep) !important;
+  margin-bottom: 36px !important;
+  position: relative;
   border-bottom: 1px solid #0A2A6E;
   overflow: hidden;
   padding: 0;
@@ -2026,25 +2573,120 @@ def _ai_screen_stocks(query: str, market: str, use_live: bool = False,
 
 
 def render_sidebar() -> tuple[str, str, str, list[str], bool, int]:
-    st.sidebar.markdown(
-        """
-        <div class="bh-logo">
-          <div class="bh-logo-mark">
-            <span class="bh-logo-tri">▲</span>
-            <span class="bh-logo-krx">KRX</span>
-          </div>
-          <div class="bh-logo-text">
-            <span class="bh-logo-title">STOCK</span>
-            <span class="bh-logo-tracker">TRACKER</span>
-            <span class="bh-logo-sub">KOSPI &nbsp;·&nbsp; KOSDAQ</span>
-          </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
+    _mascot_svg = (
+'<div class="bh-logo">'
+'<svg class="bh-mascot" viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg">'
+'<defs>'
+'<clipPath id="msb-clip"><circle cx="110" cy="110" r="89"/></clipPath>'
+'<path id="msb-ring" d="M 110 6 A 104 104 0 1 1 109.97 6"/>'
+'</defs>'
+'<circle cx="110" cy="110" r="110" fill="#D4A030"/>'
+'<circle cx="110" cy="110" r="110" fill="none" stroke="#3A1208" stroke-width="2"/>'
+'<circle cx="110" cy="110" r="106" fill="none" stroke="#5A1810" stroke-width="2"/>'
+'<circle cx="110" cy="110" r="103" fill="none" stroke="#3A1208" stroke-width="0.6"/>'
+'<circle cx="110" cy="110" r="98" fill="none" stroke="#3A1208" stroke-width="0.5" stroke-dasharray="1.2,2.5"/>'
+'<g fill="#3A1208" opacity="0.85">'
+'<circle cx="110" cy="14" r="2.4"/>'
+'<circle cx="178" cy="42" r="2.4"/>'
+'<circle cx="206" cy="110" r="2.4"/>'
+'<circle cx="178" cy="178" r="2.4"/>'
+'<circle cx="110" cy="206" r="2.4"/>'
+'<circle cx="42" cy="178" r="2.4"/>'
+'<circle cx="14" cy="110" r="2.4"/>'
+'<circle cx="42" cy="42" r="2.4"/>'
+'</g>'
+'<g style="animation:bh-ring-spin 55s linear infinite;transform-origin:110px 110px;">'
+'<text font-size="13.5" font-family="\'MaruBuri\',\'Noto Serif KR\',Georgia,serif" font-weight="700" fill="#3A1208" letter-spacing="5">'
+'<textPath href="#msb-ring" startOffset="2%">MR. STOCK BUDDY</textPath>'
+'</text>'
+'<text font-size="11" font-family="\'MaruBuri\',\'Noto Serif KR\',Georgia,serif" font-weight="700" fill="#5A1810" letter-spacing="4">'
+'<textPath href="#msb-ring" startOffset="58%">&#10047; EST. 1978 &#10047;</textPath>'
+'</text>'
+'</g>'
+'<circle cx="110" cy="110" r="91" fill="none" stroke="#5A1810" stroke-width="3"/>'
+'<circle cx="110" cy="110" r="89" fill="none" stroke="#3A1208" stroke-width="0.8"/>'
+'<circle cx="110" cy="110" r="88" fill="#E8B838"/>'
+'<circle cx="110" cy="110" r="85" fill="none" stroke="#5A1810" stroke-width="0.5" stroke-dasharray="2,3" opacity="0.55"/>'
+'<g fill="#5A1810" opacity="0.7">'
+'<circle cx="110" cy="28" r="1.5"/>'
+'<circle cx="110" cy="192" r="1.5"/>'
+'<circle cx="28" cy="110" r="1.5"/>'
+'<circle cx="192" cy="110" r="1.5"/>'
+'</g>'
+'<g clip-path="url(#msb-clip)">'
+'<g class="bh-mascot-body">'
+'<path d="M 52,205 Q 52,162 82,148 L 110,136 L 138,148 Q 168,162 168,205 Z" fill="#0C1D38"/>'
+'<polygon points="110,136 87,153 69,136 82,118" fill="#FFF5DC"/>'
+'<polygon points="110,136 133,153 151,136 138,118" fill="#FFF5DC"/>'
+'<polygon points="110,136 100,150 106,158 110,143" fill="white"/>'
+'<polygon points="110,136 120,150 114,158 110,143" fill="white"/>'
+'<polygon points="110,140 106,159 110,168 114,159" fill="#5A1810"/>'
+'<polygon points="107,155 110,140 113,155 110,149" fill="#3A1208"/>'
+'<path d="M138,165 L148,160 L150,168 L140,171Z" fill="rgba(242,232,204,0.85)"/>'
+'<circle cx="110" cy="178" r="3.5" fill="#152C50"/>'
+'<path d="M65,172 Q46,183 38,198" stroke="#0C1D38" stroke-width="19" fill="none" stroke-linecap="round"/>'
+'<ellipse cx="35" cy="201" rx="13" ry="12" fill="#E8D8A0"/>'
+'<path d="M28,200 Q24,193 32,196" fill="none" stroke="#D4BE80" stroke-width="3.5" stroke-linecap="round"/>'
+'<path d="M33,204 Q27,198 33,192" fill="none" stroke="#D4BE80" stroke-width="3" stroke-linecap="round"/>'
+'<path d="M155,172 Q173,182 180,196" stroke="#0C1D38" stroke-width="19" fill="none" stroke-linecap="round"/>'
+'<rect x="168" y="174" width="36" height="29" rx="4" fill="#FFF5DC"/>'
+'<rect x="168" y="174" width="36" height="29" rx="4" fill="none" stroke="#0C1D38" stroke-width="2.2"/>'
+'<line x1="175" y1="181" x2="175" y2="199" stroke="#0C1D38" stroke-width="1.4"/>'
+'<rect x="173" y="185" width="4" height="8" fill="#0C1D38"/>'
+'<line x1="182" y1="177" x2="182" y2="196" stroke="#0C1D38" stroke-width="1.4"/>'
+'<rect x="180" y="180" width="4" height="10" fill="#0C1D38"/>'
+'<line x1="189" y1="175" x2="189" y2="192" stroke="#0C1D38" stroke-width="1.4"/>'
+'<rect x="187" y="177" width="4" height="9" fill="#0C1D38"/>'
+'<polyline points="175,190 182,184 189,179" stroke="#0C1D38" stroke-width="1.8" fill="none"/>'
+'<polygon points="189,179 183,180 188,186" fill="#0C1D38"/>'
+'<rect x="83" y="63" width="54" height="43" rx="3" fill="#0C1D38"/>'
+'<ellipse cx="110" cy="107" rx="8" ry="9.5" fill="#0C1D38"/>'
+'<ellipse cx="110" cy="106" rx="36" ry="7.5" fill="#0C1D38"/>'
+'<rect x="83" y="97" width="54" height="9" fill="#162C54"/>'
+'<rect x="83" y="63" width="9" height="43" rx="2" fill="rgba(255,255,255,0.07)"/>'
+'<ellipse cx="78" cy="121" rx="8" ry="10" fill="#E8D8A0"/>'
+'<ellipse cx="78" cy="121" rx="4.5" ry="6" fill="#D4BE80"/>'
+'<ellipse cx="142" cy="121" rx="8" ry="10" fill="#E8D8A0"/>'
+'<ellipse cx="142" cy="121" rx="4.5" ry="6" fill="#D4BE80"/>'
+'<ellipse cx="110" cy="120" rx="31" ry="35" fill="#E8D8A0"/>'
+'<ellipse cx="110" cy="102" rx="24" ry="8" fill="rgba(12,29,56,0.2)"/>'
+'<path d="M87,106 Q95,99 102,103" fill="none" stroke="#180C02" stroke-width="4" stroke-linecap="round"/>'
+'<path d="M118,103 Q125,99 133,106" fill="none" stroke="#180C02" stroke-width="4" stroke-linecap="round"/>'
+'<g class="bh-eye-l">'
+'<path d="M87,114 Q96,107 103,114" fill="none" stroke="#180C02" stroke-width="3.8" stroke-linecap="round"/>'
+'</g>'
+'<g class="bh-monocle">'
+'<path d="M132,115 Q138,126 134,134" fill="none" stroke="#A08030" stroke-width="2.5" stroke-linecap="round"/>'
+'<circle cx="122" cy="112" rx="14" ry="14" fill="none" stroke="#A08030" stroke-width="4"/>'
+'<circle cx="122" cy="112" rx="12" fill="rgba(160,128,48,0.06)"/>'
+'<g class="bh-eye-r">'
+'<path d="M112,112 Q122,105 131,112" fill="none" stroke="#180C02" stroke-width="3.8" stroke-linecap="round"/>'
+'</g>'
+'</g>'
+'<ellipse cx="110" cy="130" rx="4.5" ry="3.5" fill="rgba(12,29,56,0.12)"/>'
+'<path d="M96,141 Q82,133 80,122 Q88,132 97,138 Q103,134 110,137 Q117,134 123,138 Q132,132 140,122 Q138,133 124,141 Q117,146 110,142 Q103,146 96,141Z" fill="#180C02"/>'
+'<path d="M103,148 Q110,155 117,148" fill="none" stroke="#B09060" stroke-width="2.2" stroke-linecap="round"/>'
+'<rect x="103" y="131" width="14" height="10" rx="3" fill="#E8D8A0"/>'
+'</g>'
+'</g>'
+'</svg>'
+'<span class="bh-logo-title">STOCK TRACKER</span>'
+'<span class="bh-logo-sub">KOSPI &nbsp;&middot;&nbsp; KOSDAQ</span>'
+'</div>'
     )
+    st.sidebar.markdown(_mascot_svg, unsafe_allow_html=True)
+
+    # ── 로그인/유저 카드 ──────────────────────────────
+    _render_sidebar_auth()
 
     st.sidebar.markdown('<div class="bh-sidebar-title">화면</div>', unsafe_allow_html=True)
-    menu_icons = {"종목": "▦ 종목", "차트": "▲ 차트", "관심종목": "★ 관심종목", "포트폴리오": "◈ 포트폴리오"}
+    menu_icons = {
+        "종목":        "▦ 종목",
+        "차트":        "▲ 차트",
+        "관심종목":    "★ 관심종목",
+        "포트폴리오":  "◈ 포트폴리오",
+        "로보어드바이저": "🤖 로보어드바이저",
+    }
     # session_state 기반 — index= 파라미터를 쓰지 않아 첫 클릭부터 즉시 반영
     if "bh_menu_radio" not in st.session_state:
         _init = st.session_state.get("current_menu", "종목")
@@ -2138,9 +2780,9 @@ def render_sidebar() -> tuple[str, str, str, list[str], bool, int]:
         matches = filtered_stocks("전체", kw, [])[:10]
         if matches:
             st.sidebar.markdown(
-                f'<div style="font-size:0.64rem;letter-spacing:0.1em;text-transform:uppercase;'
-                f'color:var(--muted);padding:4px 2px 2px;">'
-                f'검색 결과 {len(matches)}개</div>',
+                f'<div style="font-size:0.65rem;letter-spacing:0.12em;text-transform:uppercase;'
+                f'color:#B0C8E8;font-weight:600;padding:6px 2px 4px;">'
+                f'검색 결과 &nbsp;{len(matches)}개</div>',
                 unsafe_allow_html=True,
             )
             for stk in matches:
@@ -5158,6 +5800,548 @@ def render_portfolio_advisor_summary(rows: list[dict]) -> None:
         st.success(f"달리오 관점: {len(unique_sectors)}개 섹터에 분산 — 기본 분산 조건 충족")
 
 
+# ══════════════════════════════════════════════════════════════════
+# 사용자 인증 — 파일 기반 (users.json)
+# ══════════════════════════════════════════════════════════════════
+
+def _load_users() -> dict:
+    if USERS_FILE.exists():
+        try:
+            return json.loads(USERS_FILE.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+    return {}
+
+
+def _save_users(users: dict) -> None:
+    DATA_DIR.mkdir(exist_ok=True)
+    USERS_FILE.write_text(json.dumps(users, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def _hash_pw(password: str) -> str:
+    return hashlib.sha256(password.encode("utf-8")).hexdigest()
+
+
+def _authenticate(username: str, password: str) -> dict | None:
+    """로그인 검증 — 성공 시 사용자 정보 dict 반환."""
+    users = _load_users()
+    uname = username.strip().lower()
+    u = users.get(uname)
+    if u and u.get("pwd_hash") == _hash_pw(password):
+        return {"username": uname, "display": u.get("display", username), "plan": u.get("plan", "free"), "email": u.get("email", "")}
+    return None
+
+
+def _register(username: str, email: str, password: str, display: str) -> tuple[bool, str]:
+    """회원가입 — (성공여부, 메시지) 반환."""
+    uname = username.strip().lower()
+    if not uname or len(uname) < 2:
+        return False, "사용자 ID는 2자 이상이어야 합니다."
+    if len(password) < 6:
+        return False, "비밀번호는 6자 이상이어야 합니다."
+    import re as _re
+    if not _re.match(r'^[a-z0-9_]+$', uname):
+        return False, "ID는 영소문자, 숫자, 밑줄(_)만 사용 가능합니다."
+    users = _load_users()
+    if uname in users:
+        return False, "이미 사용 중인 ID입니다."
+    users[uname] = {
+        "display":    display.strip() or username,
+        "email":      email.strip(),
+        "pwd_hash":   _hash_pw(password),
+        "plan":       "free",
+        "created_at": date.today().isoformat(),
+    }
+    _save_users(users)
+    return True, "가입 완료!"
+
+
+def _render_sidebar_auth() -> None:
+    """사이드바 로그인/유저 카드 렌더링."""
+    user     = st.session_state.get("current_user")
+    am       = st.session_state.get("auth_mode")   # None | "login" | "signup"
+
+    # ── 로그인 상태 ─────────────────────────────────
+    if user:
+        initials = "".join(w[0].upper() for w in user["display"].split()[:2]) or user["display"][:2].upper()
+        plan_label = {"free": "FREE · 일반 회원", "premium": "★ PREMIUM 회원"}.get(user["plan"], "FREE")
+        greet_hour = datetime.now().hour
+        greet = "좋은 아침이에요" if greet_hour < 12 else ("안녕하세요" if greet_hour < 18 else "좋은 저녁이에요")
+
+        st.sidebar.markdown(
+            f'<div class="bh-user-card">'
+            f'<div class="bh-user-avatar">{initials}</div>'
+            f'<div class="bh-user-info">'
+            f'<span class="bh-user-name">{user["display"]}</span>'
+            f'<span class="bh-user-plan">{plan_label}</span>'
+            f'<span class="bh-user-greeting">{greet}, {user["display"].split()[0]}님 👋</span>'
+            f'</div>'
+            f'</div>',
+            unsafe_allow_html=True,
+        )
+        if st.sidebar.button("로그아웃", key="btn_logout", use_container_width=True):
+            st.session_state.pop("current_user", None)
+            st.session_state.pop("robo_unlocked", None)
+            st.rerun()
+        return
+
+    # ── 로그인 폼 ────────────────────────────────────
+    if am == "login":
+        st.sidebar.markdown('<div class="bh-sidebar-title">로그인</div>', unsafe_allow_html=True)
+        uid  = st.sidebar.text_input("아이디", key="login_uid", placeholder="영소문자·숫자")
+        pwd  = st.sidebar.text_input("비밀번호", key="login_pwd", type="password", placeholder="6자 이상")
+        c1, c2 = st.sidebar.columns(2)
+        if c1.button("로그인", key="do_login", type="primary", use_container_width=True):
+            result = _authenticate(uid, pwd)
+            if result:
+                st.session_state["current_user"]   = result
+                st.session_state["robo_unlocked"]  = True
+                st.session_state.pop("auth_mode", None)
+                st.rerun()
+            else:
+                st.sidebar.error("ID 또는 비밀번호가 올바르지 않습니다.")
+        if c2.button("취소", key="cancel_login", use_container_width=True):
+            st.session_state.pop("auth_mode", None)
+            st.rerun()
+        st.sidebar.markdown(
+            '<div style="text-align:center;font-size:0.7rem;color:rgba(200,220,255,0.5);margin-top:6px;">'
+            '계정이 없으신가요?</div>',
+            unsafe_allow_html=True,
+        )
+        if st.sidebar.button("✨ 회원가입하기", key="go_signup", use_container_width=True):
+            st.session_state["auth_mode"] = "signup"
+            st.rerun()
+        return
+
+    # ── 회원가입 폼 ──────────────────────────────────
+    if am == "signup":
+        st.sidebar.markdown('<div class="bh-sidebar-title">회원가입</div>', unsafe_allow_html=True)
+        s_uid  = st.sidebar.text_input("아이디 *", key="su_uid",  placeholder="영소문자·숫자·밑줄")
+        s_disp = st.sidebar.text_input("표시 이름", key="su_disp", placeholder="홍길동")
+        s_email= st.sidebar.text_input("이메일",   key="su_email",placeholder="abc@email.com")
+        s_pwd  = st.sidebar.text_input("비밀번호 *",key="su_pwd", type="password", placeholder="6자 이상")
+        s_pwd2 = st.sidebar.text_input("비밀번호 확인 *", key="su_pwd2", type="password")
+        c1, c2 = st.sidebar.columns(2)
+        if c1.button("가입하기", key="do_signup", type="primary", use_container_width=True):
+            if s_pwd != s_pwd2:
+                st.sidebar.error("비밀번호가 일치하지 않습니다.")
+            else:
+                ok, msg = _register(s_uid, s_email, s_pwd, s_disp)
+                if ok:
+                    st.sidebar.success(msg)
+                    user_info = _authenticate(s_uid, s_pwd)
+                    if user_info:
+                        st.session_state["current_user"]  = user_info
+                        st.session_state["robo_unlocked"] = True
+                        st.session_state.pop("auth_mode", None)
+                    st.rerun()
+                else:
+                    st.sidebar.error(msg)
+        if c2.button("취소", key="cancel_signup", use_container_width=True):
+            st.session_state.pop("auth_mode", None)
+            st.rerun()
+        return
+
+    # ── 기본: 로그인 / 회원가입 버튼 ────────────────
+    st.sidebar.markdown(
+        '<div style="font-size:0.62rem;color:rgba(232,184,56,0.8);'
+        'letter-spacing:0.18em;text-transform:uppercase;margin-bottom:8px;'
+        'font-weight:700;text-align:center;">'
+        '✦ MEMBERS ONLY ✦</div>',
+        unsafe_allow_html=True,
+    )
+    c1, c2 = st.sidebar.columns(2)
+    if c1.button("🔑 로그인", key="btn_to_login", type="primary", use_container_width=True):
+        st.session_state["auth_mode"] = "login"
+        st.rerun()
+    if c2.button("✨ 회원가입", key="btn_to_signup", use_container_width=True):
+        st.session_state["auth_mode"] = "signup"
+        st.rerun()
+
+
+# ══════════════════════════════════════════════════════════════════
+# PRISM™ 로보어드바이저
+# ══════════════════════════════════════════════════════════════════
+
+def _load_robo() -> dict:
+    if ROBO_FILE.exists():
+        try:
+            return json.loads(ROBO_FILE.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+    return {}
+
+
+def _save_robo(data: dict) -> None:
+    DATA_DIR.mkdir(exist_ok=True)
+    ROBO_FILE.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def _score_to_profile(total: int) -> int:
+    if total <= 8:   return 1
+    if total <= 12:  return 2
+    if total <= 16:  return 3
+    if total <= 20:  return 4
+    return 5
+
+
+def _robo_recommend(profile_id: int, use_live: bool, n: int = 10) -> list[dict]:
+    """PRISM™ 기반 성향별 종목 상위 n개 추천 (세션 캐시)."""
+    cache_key = f"_robo_rec_{profile_id}"
+    today_str = date.today().isoformat()
+    cached = st.session_state.get(cache_key)
+    if cached and cached.get("date") == today_str:
+        return cached["picks"]
+
+    prof   = ROBO_PROFILES[profile_id]
+    target = prof["sectors"]
+    min_p  = prof["min_prism"]
+
+    pool = [s for s in MARKET_STOCKS["전체"]
+            if any(sec in s.sector for sec in target)]
+
+    seed = int(hashlib.sha256(f"{today_str}robo{profile_id}".encode()).hexdigest()[:10], 16)
+    rng  = np.random.default_rng(seed % (2**32))
+    size = min(90, len(pool))
+    sample = [pool[int(i)] for i in rng.choice(len(pool), size=size, replace=False)]
+
+    scored: list[dict] = []
+    for stk in sample:
+        pr = _compute_prism(stk, use_live)
+        if pr and pr["prism"] >= min_p:
+            scored.append(pr)
+
+    scored.sort(key=lambda x: x["prism"], reverse=True)
+
+    # 섹터 분산: 동일 섹터 최대 2개
+    sector_cnt: dict[str, int] = {}
+    picks: list[dict] = []
+    for r in scored:
+        sec = r.get("sector", "기타")
+        if sector_cnt.get(sec, 0) >= 2:
+            continue
+        sector_cnt[sec] = sector_cnt.get(sec, 0) + 1
+        picks.append(r)
+        if len(picks) >= n:
+            break
+
+    # 부족하면 min_prism 완화해서 채우기
+    if len(picks) < n:
+        existing = {p["code"] for p in picks}
+        for stk in sample:
+            if len(picks) >= n:
+                break
+            if stk.code in existing:
+                continue
+            pr = _compute_prism(stk, use_live)
+            if pr:
+                picks.append(pr)
+                existing.add(stk.code)
+
+    st.session_state[cache_key] = {"date": today_str, "picks": picks}
+    return picks
+
+
+def _render_robo_lock() -> None:
+    """프리미엄 잠금 화면."""
+    st.markdown(
+        '<div class="robo-lock-wrap">'
+        '<span class="robo-lock-icon">🔐</span>'
+        '<div class="robo-lock-title">PRISM™ ROBO-ADVISOR</div>'
+        '<span class="robo-lock-sub">Premium Subscription Required</span>'
+        '<ul class="robo-lock-features">'
+        '<li>PRISM™ 엔진 기반 투자 성향 분석</li>'
+        '<li>맞춤형 10종목 자동 포트폴리오 구성</li>'
+        '<li>실시간 리밸런싱 신호 (유지/관찰/교체)</li>'
+        '<li>PRISM™ 점수 변화 모니터링</li>'
+        '<li>공격형~보수형 5단계 성향 관리</li>'
+        '</ul>'
+        '</div>',
+        unsafe_allow_html=True,
+    )
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("🔓 무료 체험 시작", type="primary", use_container_width=True):
+            st.session_state["robo_unlocked"] = True
+            st.rerun()
+    with col2:
+        st.button("💳 구독 플랜 보기", use_container_width=True)
+
+
+def _render_robo_survey() -> None:
+    """5문항 설문 (step=survey)."""
+    today_str = date.today().strftime("%Y년 %m월 %d일")
+    st.markdown(
+        f'<div style="font-family:var(--font);font-size:0.7rem;color:var(--muted);'
+        f'letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px;">'
+        f'PRISM™ 투자 성향 분석 · {today_str}</div>',
+        unsafe_allow_html=True,
+    )
+    st.markdown("### 5가지 질문으로 나의 투자 성향을 알아봅니다.")
+
+    answers: dict[str, int] = {}
+    for i, q in enumerate(ROBO_SURVEY):
+        progress = (i) / len(ROBO_SURVEY)
+        st.markdown(
+            f'<div class="robo-progress-bar">'
+            f'<div class="robo-prism-bar-fill" style="width:{int(progress*100)}%;background:linear-gradient(90deg,#436B95,#B0883A);"></div>'
+            f'</div>'
+            f'<span class="robo-q-num">Q{i+1} / {len(ROBO_SURVEY)}</span>'
+            f'<span class="robo-q-label">{q["q"]}</span>',
+            unsafe_allow_html=True,
+        )
+        sel = st.radio(
+            q["q"], q["opts"],
+            key=f"robo_q_{q['id']}",
+            label_visibility="collapsed",
+        )
+        idx = q["opts"].index(sel)
+        answers[q["id"]] = q["w"][idx]
+        st.divider()
+
+    if st.button("투자 성향 분석하기 →", type="primary", use_container_width=True):
+        total      = sum(answers.values())
+        profile_id = _score_to_profile(total)
+        st.session_state["robo_profile_id"]  = profile_id
+        st.session_state["robo_survey_score"] = total
+        st.session_state["robo_step"]         = "recommend"
+        st.rerun()
+
+
+def _render_robo_recommendation(use_live: bool) -> None:
+    """프로필 결과 + 10종목 추천 + 포트폴리오 확정 (step=recommend)."""
+    profile_id = st.session_state.get("robo_profile_id", 3)
+    prof       = ROBO_PROFILES[profile_id]
+
+    # ── 프로필 결과 카드 ──
+    st.markdown(
+        f'<div class="robo-profile-card" style="background:linear-gradient(135deg,{prof["bg"]} 0%,#F8F4EB 100%);">'
+        f'<span class="robo-profile-badge" style="background:{prof["color"]};color:white;">'
+        f'{prof["eng"]}</span>'
+        f'<div class="robo-profile-name" style="color:{prof["color"]};">'
+        f'{prof["icon"]} {prof["name"]}</div>'
+        f'<p class="robo-profile-desc">{prof["desc"]}</p>'
+        f'<div style="font-family:var(--mono);font-size:0.68rem;color:{prof["color"]};'
+        f'margin-top:10px;font-weight:700;letter-spacing:0.1em;">'
+        f'▶ {prof["tag"]}</div>'
+        f'</div>',
+        unsafe_allow_html=True,
+    )
+
+    # ── PRISM™ 추천 종목 로딩 ──
+    st.markdown(
+        f'<div class="bh-section-label">PRISM™ 추천 종목 TOP 10</div>',
+        unsafe_allow_html=True,
+    )
+
+    with st.spinner("PRISM™ 엔진이 종목을 분석 중입니다…"):
+        picks = _robo_recommend(profile_id, use_live, n=10)
+
+    if not picks:
+        st.warning("현재 조건에 맞는 종목을 찾지 못했습니다. 설문을 다시 진행해 주세요.")
+        if st.button("← 설문 다시하기"):
+            st.session_state["robo_step"] = "survey"
+            st.rerun()
+        return
+
+    # ── 종목 카드 2열 그리드 + 선택 체크박스 ──
+    st.markdown("아래 종목 중 포트폴리오에 포함할 종목을 선택하세요. *(기본 전체 선택)*")
+    selections: list[bool] = []
+    cols_list = st.columns(2)
+    for i, pick in enumerate(picks):
+        col = cols_list[i % 2]
+        with col:
+            bar_pct = min(int(pick["prism"]), 100)
+            grade_map = {"S": "#B5453F", "A": "#B0883A", "B": "#436B95", "C": "#7C7264"}
+            grade     = pick.get("grade", "B")
+            g_color   = grade_map.get(grade, "#7C7264")
+            st.markdown(
+                f'<div class="robo-stock-card">'
+                f'<span class="robo-stock-name">{pick["name"]}</span>'
+                f'<span class="robo-stock-meta">{pick["code"]} · {pick.get("sector","")}</span>'
+                f'<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">'
+                f'<div class="robo-prism-bar-wrap" style="flex:1;">'
+                f'<div class="robo-prism-bar-fill" style="width:{bar_pct}%;"></div></div>'
+                f'<span style="font-family:var(--mono);font-size:0.72rem;font-weight:700;color:{g_color};">'
+                f'{grade} {pick["prism"]}</span>'
+                f'</div>'
+                f'</div>',
+                unsafe_allow_html=True,
+            )
+            checked = st.checkbox(
+                "포함", value=True,
+                key=f"robo_sel_{i}",
+                label_visibility="visible",
+            )
+            selections.append(checked)
+
+    st.divider()
+    selected_picks = [p for p, sel in zip(picks, selections) if sel]
+
+    col_a, col_b = st.columns([3, 1])
+    with col_a:
+        st.markdown(
+            f'<span style="font-family:var(--mono);font-size:0.8rem;color:var(--muted);">'
+            f'선택 종목: {len(selected_picks)}개</span>',
+            unsafe_allow_html=True,
+        )
+    with col_b:
+        if st.button("← 다시 설문", use_container_width=True):
+            st.session_state["robo_step"] = "survey"
+            st.rerun()
+
+    if st.button(
+        f"✅ 포트폴리오 확정 ({len(selected_picks)}종목)",
+        type="primary",
+        use_container_width=True,
+        disabled=len(selected_picks) == 0,
+    ):
+        portfolio = {
+            "profile_id": profile_id,
+            "created_at": datetime.now().isoformat(),
+            "holdings": [
+                {
+                    "code":        p["code"],
+                    "name":        p["name"],
+                    "sector":      p.get("sector", ""),
+                    "entry_prism": p["prism"],
+                    "entry_date":  date.today().isoformat(),
+                }
+                for p in selected_picks
+            ],
+        }
+        _save_robo(portfolio)
+        st.session_state.pop("robo_step", None)
+        st.success("포트폴리오가 확정되었습니다! 로보어드바이저가 시작됩니다.")
+        st.rerun()
+
+
+def _render_robo_dashboard(portfolio: dict, use_live: bool) -> None:
+    """활성 포트폴리오 대시보드."""
+    profile_id = portfolio.get("profile_id", 3)
+    prof       = ROBO_PROFILES[profile_id]
+    holdings   = portfolio.get("holdings", [])
+    created    = portfolio.get("created_at", "")[:10]
+
+    # ── 헤더 ──
+    st.markdown(
+        f'<div class="robo-dash-header">'
+        f'<span class="robo-dash-profile-icon">{prof["icon"]}</span>'
+        f'<div>'
+        f'<div class="robo-dash-profile-name">{prof["name"]} 포트폴리오</div>'
+        f'<div class="robo-dash-meta">'
+        f'PRISM™ ROBO-ADVISOR &nbsp;·&nbsp; 종목 {len(holdings)}개 &nbsp;·&nbsp; 개설 {created}'
+        f'</div>'
+        f'</div>'
+        f'</div>',
+        unsafe_allow_html=True,
+    )
+
+    # ── 보유 종목 PRISM 모니터 ──
+    st.markdown(
+        '<div class="bh-section-label">PRISM™ 실시간 모니터링</div>',
+        unsafe_allow_html=True,
+    )
+
+    replace_count = 0
+    for holding in holdings:
+        stk = next((s for s in MARKET_STOCKS["전체"] if s.code == holding["code"]), None)
+        entry_p = holding.get("entry_prism", 50.0)
+
+        if stk:
+            pr = _compute_prism(stk, use_live)
+            cur_p = pr["prism"] if pr else entry_p
+        else:
+            cur_p = entry_p
+
+        delta  = round(cur_p - entry_p, 1)
+        delta_str = f"+{delta}" if delta > 0 else str(delta)
+        delta_cls = "robo-prism-delta-up" if delta >= 0 else "robo-prism-delta-down"
+
+        if delta >= -5:
+            signal_cls, signal_txt = "robo-signal-hold",    "🟢 유지"
+        elif delta >= -12:
+            signal_cls, signal_txt = "robo-signal-watch",   "🟡 관찰"
+        else:
+            signal_cls, signal_txt = "robo-signal-replace", "🔴 교체 검토"
+            replace_count += 1
+
+        bar_now  = min(int(cur_p), 100)
+
+        st.markdown(
+            f'<div class="robo-holding-card">'
+            f'<div class="robo-holding-header">'
+            f'<span class="robo-holding-name">{holding["name"]}'
+            f'<span style="font-family:var(--mono);font-size:0.68rem;color:var(--muted);margin-left:8px;">'
+            f'{holding["code"]} · {holding.get("sector","")}</span></span>'
+            f'<span class="robo-signal {signal_cls}">{signal_txt}</span>'
+            f'</div>'
+            f'<div class="robo-prism-compare">'
+            f'<span>현재 PRISM™</span>'
+            f'<span class="robo-prism-now">{cur_p}</span>'
+            f'<span class="robo-prism-prev">/ 진입 {entry_p}</span>'
+            f'<span class="{delta_cls}">&nbsp;({delta_str})</span>'
+            f'</div>'
+            f'<div style="display:flex;gap:4px;align-items:center;margin-top:8px;">'
+            f'<div style="flex:1;background:var(--surf2);height:4px;border-radius:2px;overflow:hidden;">'
+            f'<div style="width:{bar_now}%;height:100%;background:linear-gradient(90deg,#436B95,#B0883A);border-radius:2px;"></div>'
+            f'</div>'
+            f'</div>'
+            f'</div>',
+            unsafe_allow_html=True,
+        )
+
+    # ── 요약 ──
+    if replace_count > 0:
+        st.warning(f"⚠️ {replace_count}개 종목의 PRISM™ 점수가 크게 하락했습니다. 리밸런싱을 검토하세요.")
+
+    st.divider()
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("🔄 포트폴리오 재설문", use_container_width=True):
+            ROBO_FILE.unlink(missing_ok=True)
+            for k in [k for k in st.session_state if k.startswith("robo_")]:
+                st.session_state.pop(k, None)
+            st.rerun()
+    with col2:
+        if st.button("📊 차트에서 분석", use_container_width=True):
+            if holdings:
+                st.session_state["selected_code"] = holdings[0]["code"]
+                st.session_state["menu_override"]  = "차트"
+                st.rerun()
+
+
+def render_robo_page(use_live: bool) -> None:
+    """PRISM™ 로보어드바이저 메인 페이지."""
+    st.title("PRISM™ 로보어드바이저")
+    st.markdown(
+        '<div class="bh-subtitle">PRISM™ 엔진 기반 · 맞춤 포트폴리오 자동 관리</div>',
+        unsafe_allow_html=True,
+    )
+
+    # 프리미엄 미잠금
+    if not st.session_state.get("robo_unlocked", False):
+        _render_robo_lock()
+        return
+
+    portfolio = _load_robo()
+
+    # 온보딩 중
+    step = st.session_state.get("robo_step", None)
+    if not portfolio.get("holdings") or step in ("survey", "recommend"):
+        if step is None:
+            st.session_state["robo_step"] = "survey"
+            st.rerun()
+        elif step == "survey":
+            _render_robo_survey()
+        else:
+            _render_robo_recommendation(use_live)
+        return
+
+    # 대시보드
+    _render_robo_dashboard(portfolio, use_live)
+
+
 def render_portfolio_page(market: str, use_live: bool) -> None:
     st.title("포트폴리오")
     portfolio = read_json(PORTFOLIO_FILE, [])
@@ -5741,7 +6925,11 @@ def main() -> None:
 
     # ── menu_override를 render_sidebar 전에 처리 ─────────────
     # 이렇게 해야 라디오 버튼이 즉시 올바른 메뉴를 표시함
-    _menu_icons = {"종목": "▦ 종목", "차트": "▲ 차트", "관심종목": "★ 관심종목", "포트폴리오": "◈ 포트폴리오"}
+    _menu_icons = {
+        "종목": "▦ 종목", "차트": "▲ 차트",
+        "관심종목": "★ 관심종목", "포트폴리오": "◈ 포트폴리오",
+        "로보어드바이저": "🤖 로보어드바이저",
+    }
     _override = st.session_state.pop("menu_override", None)
     if _override and _override in _menu_icons:
         st.session_state["current_menu"] = _override
@@ -5765,6 +6953,8 @@ def main() -> None:
         render_chart_page(market, use_live, keyword, sectors)
     elif menu == "관심종목":
         render_favorites_page(use_live)
+    elif menu == "로보어드바이저":
+        render_robo_page(use_live)
     else:
         render_portfolio_page(market, use_live)
 

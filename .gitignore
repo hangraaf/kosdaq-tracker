@@ -1,21 +1,31 @@
-# Streamlit secrets — API 키 절대 커밋 금지
+# ── Secrets / API 키 절대 커밋 금지 ─────────────────────────────────────
 .streamlit/secrets.toml
+.env
+backend/.env
+frontend/.env.local
 
-# 로컬 데이터 (포트폴리오·관심종목은 각자 로컬에서 관리)
-data/portfolio.json
-data/favorites.json
-data/kis_token.json
-data/external_signals.json
+# ── 런타임 생성 데이터 ────────────────────────────────────────────────────
+data/
+backend/data/
 
-# Python 캐시
+# ── Python ────────────────────────────────────────────────────────────────
 __pycache__/
 *.pyc
 *.pyo
-.env
+.venv/
+venv/
 
-# 런타임 로그
+# ── Node / Next.js ────────────────────────────────────────────────────────
+frontend/node_modules/
+frontend/.next/
+
+# ── 런타임 로그 ───────────────────────────────────────────────────────────
 .runtime/
 
-# IDE
+# ── IDE ───────────────────────────────────────────────────────────────────
 .vscode/
 .idea/
+
+# ── OS ────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
