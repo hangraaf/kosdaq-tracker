@@ -3,7 +3,7 @@
 import { useState } from "react";
 import MrStockBuddy from "./Logo/MrStockBuddy";
 import { useAuthStore, useUIStore } from "@/lib/store";
-import { apiLogin, apiRegister } from "@/lib/api";
+import { apiLogin, apiMe, apiRegister } from "@/lib/api";
 
 const MENU_ITEMS = [
   { key: "종목",           icon: "▦",  label: "종목" },
@@ -95,7 +95,10 @@ function AuthPanel() {
       } else {
         res = await apiRegister({ username, password, display });
       }
+      // 로그인 후 /me로 최신 plan 재조회
       setAuth(res.access_token, res.username, res.display, res.plan);
+      const me = await apiMe();
+      setAuth(res.access_token, me.username, me.display, me.plan);
     } catch (err: unknown) {
       setError((err as Error).message);
     }
