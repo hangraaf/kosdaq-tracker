@@ -40,7 +40,9 @@ async def startup_event():
     import os, json, hashlib
     from config import DATA_DIR
     username = os.getenv("ADMIN_USERNAME", "").strip().lower()
+    print(f"[STARTUP] ADMIN_USERNAME={repr(username)}")
     if not username:
+        print("[STARTUP] ADMIN_USERNAME 미설정 — 건너뜀")
         return
     users_file = DATA_DIR / "users.json"
     users = {}
@@ -50,12 +52,12 @@ async def startup_event():
         except Exception:
             pass
     if username in users:
-        # 기존 계정 plan만 admin으로 승격 (비밀번호 유지)
         users[username]["plan"] = "admin"
+        print(f"[STARTUP] {username} → admin 승격 완료")
     else:
-        # 계정이 없으면 새로 생성
         password = os.getenv("ADMIN_PASSWORD", "").strip()
         if not password:
+            print("[STARTUP] ADMIN_PASSWORD 미설정 — 건너뜀")
             return
         users[username] = {
             "pwd_hash": hashlib.sha256(password.encode()).hexdigest(),
@@ -63,7 +65,23 @@ async def startup_event():
             "email": os.getenv("ADMIN_EMAIL", ""),
             "plan": "admin",
         }
+        print(f"[STARTUP] {username} 신규 admin 계정 생성 완료")
     users_file.write_text(json.dumps(users, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+@app.get("/debug/admin")
+def debug_admin():
+    """admin 계정 존재 여부 확인용 (비밀번호 제외)."""
+    import os, json
+    from config import DATA_DIR
+    users_file = DATA_DIR / "users.json"
+    if not users_file.exists():
+        return {"users_file": "없음", "users": []}
+    users = json.loads(users_file.read_text(encoding="utf-8"))
+    return {
+        "users_file": "존재",
+        "users": [{"username": k, "plan": v.get("plan"), "display": v.get("display")} for k, v in users.items()],
+    }
 
 
 @app.get("/")
