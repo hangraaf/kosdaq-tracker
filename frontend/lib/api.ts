@@ -94,6 +94,18 @@ export async function apiTodayTopFull(market = "전체", limit = 10): Promise<{ 
   return req(`/stocks/today/top?market=${encodeURIComponent(market)}&limit=${limit}`);
 }
 
+export interface Indicators {
+  dates: string[];
+  rsi: number[];
+  macd: number[];
+  signal: number[];
+  hist: number[];
+}
+
+export async function apiIndicators(code: string, period = "3개월"): Promise<Indicators> {
+  return req(`/stocks/${code}/indicators?period=${encodeURIComponent(period)}`);
+}
+
 export async function apiTodayTop(market = "전체", limit = 10): Promise<StockSnapshot[]> {
   return req(`/stocks/today/top?market=${encodeURIComponent(market)}&limit=${limit}`);
 }
@@ -160,6 +172,30 @@ export async function apiConfirmPayment(data: {
 
 export async function apiCancelSubscription(): Promise<{ ok: boolean; plan: string }> {
   return req("/payments/cancel", { method: "POST" });
+}
+
+// ── Guru ─────────────────────────────────────────────────────────────────
+
+export interface GuruInfo {
+  key: string; name: string; eng: string; style: string;
+  icon: string; color: string; desc: string;
+}
+
+export interface GuruVerdict {
+  guru: string; guru_name: string; guru_eng: string;
+  style: string; icon: string; color: string;
+  rating: string; action: string; action_color: string;
+  score: number; comment: string;
+  scores: { momentum: number; stability: number; value: number; growth: number; moat: number };
+  desc: string; stock_name: string; stock_code: string; sector: string;
+}
+
+export async function apiGuruList(): Promise<GuruInfo[]> {
+  return req("/guru/list");
+}
+
+export async function apiGuruAnalyze(code: string, guru: string): Promise<GuruVerdict> {
+  return req(`/guru/${code}?guru=${encodeURIComponent(guru)}`);
 }
 
 // ── Robo ─────────────────────────────────────────────────────────────────

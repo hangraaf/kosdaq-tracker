@@ -10,7 +10,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from config import settings
-from routers import auth, payments, portfolio, robo, stocks
+from routers import auth, guru, payments, portfolio, robo, stocks
 
 app = FastAPI(
     title="KOSDAQ Tracker API",
@@ -31,6 +31,7 @@ app.include_router(stocks.router)
 app.include_router(portfolio.router)
 app.include_router(robo.router)
 app.include_router(payments.router)
+app.include_router(guru.router)
 
 
 @app.on_event("startup")

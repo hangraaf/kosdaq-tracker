@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { apiChart, apiSnapshot, type OHLCVRow, type StockSnapshot } from "@/lib/api";
+import { apiChart, apiIndicators, apiSnapshot, type Indicators, type OHLCVRow, type StockSnapshot } from "@/lib/api";
 import LiveBadge from "@/components/LiveBadge";
 import TradingChart from "@/components/Chart/TradingChart";
+import IndicatorPanel from "@/components/Chart/IndicatorPanel";
 import { useUIStore } from "@/lib/store";
 
 const PERIODS = ["5일", "2주", "1개월", "3개월", "6개월", "1년", "2년"];
@@ -14,8 +15,9 @@ function pct(v: number) {
 
 export default function ChartPage() {
   const { selectedCode, period, setPeriod } = useUIStore();
-  const [snap, setSnap]   = useState<StockSnapshot | null>(null);
-  const [ohlcv, setOhlcv] = useState<OHLCVRow[]>([]);
+  const [snap, setSnap]     = useState<StockSnapshot | null>(null);
+  const [ohlcv, setOhlcv]   = useState<OHLCVRow[]>([]);
+  const [indic, setIndic]   = useState<Indicators | null>(null);
   const [isLive, setIsLive] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -25,10 +27,12 @@ export default function ChartPage() {
     Promise.all([
       apiSnapshot(selectedCode),
       apiChart(selectedCode, period),
-    ]).then(([s, c]) => {
+      apiIndicators(selectedCode, period),
+    ]).then(([s, c, ind]) => {
       setSnap(s);
       setOhlcv(c.items);
       setIsLive(c.live);
+      setIndic(ind);
     }).finally(() => setLoading(false));
   }, [selectedCode, period]);
 
@@ -100,7 +104,7 @@ export default function ChartPage() {
         ))}
       </div>
 
-      {/* 차트 */}
+      {/* 캔들 차트 */}
       <div className="bh-card" style={{ padding: "12px" }}>
         {loading ? (
           <div style={{ height: "360px", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--muted)" }}>
@@ -114,6 +118,20 @@ export default function ChartPage() {
           <LiveBadge live={isLive} />
         </div>
       </div>
+
+      {/* RSI 패널 */}
+      {indic && (
+        <div className="bh-card" style={{ padding: "12px", marginTop: "8px" }}>
+          <IndicatorPanel data={indic} type="RSI" height={100} />
+        </div>
+      )}
+
+      {/* MACD 패널 */}
+      {indic && (
+        <div className="bh-card" style={{ padding: "12px", marginTop: "8px" }}>
+          <IndicatorPanel data={indic} type="MACD" height={100} />
+        </div>
+      )}
     </div>
   );
 }

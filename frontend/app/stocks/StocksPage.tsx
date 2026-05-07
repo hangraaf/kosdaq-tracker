@@ -3,9 +3,9 @@
 import { useEffect, useState } from "react";
 import { apiListStocks, apiSectors, apiSnapshot, type StockItem, type StockSnapshot } from "@/lib/api";
 import { useUIStore } from "@/lib/store";
+import TodayStocks from "@/components/Stocks/TodayStocks";
 
 const MARKETS = ["전체", "코스피", "코스닥"];
-const PERIODS = ["5일", "2주", "1개월", "3개월", "6개월", "1년", "2년"];
 
 function pct(v: number) {
   return `${v >= 0 ? "+" : ""}${v.toFixed(2)}%`;
@@ -101,6 +101,9 @@ export default function StocksPage() {
       <h1 style={{ fontFamily: "var(--maru)", color: "var(--blue-deep)", marginBottom: "20px" }}>
         종목 탐색
       </h1>
+
+      {/* 오늘의 종목 */}
+      <TodayStocks />
 
       {/* 필터 바 */}
       <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "20px" }}>

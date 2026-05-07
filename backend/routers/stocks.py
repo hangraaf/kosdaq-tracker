@@ -4,6 +4,7 @@ from __future__ import annotations
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
+import numpy as np
 from fastapi import APIRouter, HTTPException, Query
 
 from kis_client import KISError
@@ -90,3 +91,52 @@ def chart(code: str, period: str = Query("1개월")):
             pass
     df = generate_demo_ohlcv(code, stock.base_price, days)
     return {"live": False, "items": df.to_dict(orient="records")}
+
+
+@router.get("/{code}/indicators")
+def indicators(code: str, period: str = Query("3개월")):
+    """RSI · MACD · 볼린저밴드 지표 반환."""
+    stock = STOCK_MAP.get(code)
+    if not stock:
+        raise HTTPException(404, detail=f"종목 코드 {code}를 찾을 수 없습니다.")
+    days = PERIODS.get(period, 65)
+    if kis_available():
+        try:
+            df = live_chart(code, days)
+        except KISError:
+            df = generate_demo_ohlcv(code, stock.base_price, days)
+    else:
+        df = generate_demo_ohlcv(code, stock.base_price, days)
+
+    closes = df["close"].astype(float).values
+    dates  = df["date"].tolist() if isinstance(df["date"].iloc[0], str) else [d.strftime("%Y-%m-%d") for d in df["date"]]
+
+    # RSI (14)
+    delta = np.diff(closes, prepend=closes[0])
+    gain  = np.where(delta > 0, delta, 0.0)
+    loss  = np.where(delta < 0, -delta, 0.0)
+    avg_gain = np.convolve(gain, np.ones(14)/14, mode='same')
+    avg_loss = np.convolve(loss, np.ones(14)/14, mode='same')
+    rs  = np.where(avg_loss == 0, 100.0, avg_gain / (avg_loss + 1e-10))
+    rsi = 100 - (100 / (1 + rs))
+
+    # MACD (12, 26, 9)
+    def ema(arr: np.ndarray, span: int) -> np.ndarray:
+        k, result = 2 / (span + 1), arr.copy().astype(float)
+        for i in range(1, len(result)):
+            result[i] = arr[i] * k + result[i-1] * (1 - k)
+        return result
+
+    ema12  = ema(closes, 12)
+    ema26  = ema(closes, 26)
+    macd   = ema12 - ema26
+    signal = ema(macd, 9)
+    hist   = macd - signal
+
+    return {
+        "dates":  dates,
+        "rsi":    [round(float(v), 2) for v in rsi],
+        "macd":   [round(float(v), 2) for v in macd],
+        "signal": [round(float(v), 2) for v in signal],
+        "hist":   [round(float(v), 2) for v in hist],
+    }
