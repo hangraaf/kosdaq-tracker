@@ -101,3 +101,25 @@ def login(form: Annotated[OAuth2PasswordRequestForm, Depends()]):
 @router.get("/me", response_model=UserProfile)
 def me(current: Annotated[dict, Depends(get_current_user)]):
     return UserProfile(**current)
+
+
+@router.post("/upgrade")
+def upgrade_plan(
+    username: str,
+    plan: str,
+    admin_secret: str,
+):
+    """관리자 플랜 변경 — ADMIN_SECRET 키로 보호."""
+    import os
+    expected = os.getenv("ADMIN_SECRET", settings.secret_key)
+    if admin_secret != expected:
+        raise HTTPException(status_code=403, detail="권한이 없습니다.")
+    if plan not in ("free", "premium", "admin"):
+        raise HTTPException(status_code=400, detail="유효하지 않은 플랜입니다.")
+    users = _load_users()
+    uname = username.strip().lower()
+    if uname not in users:
+        raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다.")
+    users[uname]["plan"] = plan
+    _save_users(users)
+    return {"ok": True, "username": uname, "plan": plan}
