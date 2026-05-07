@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import MrStockBuddy from "./Logo/MrStockBuddy";
 import { useAuthStore, useUIStore } from "@/lib/store";
 import { apiLogin, apiMe, apiRegister } from "@/lib/api";
@@ -22,6 +22,11 @@ function AuthPanel() {
   const [display, setDisplay] = useState("");
   const [error, setError] = useState("");
   const { token, display: userDisplay, plan, setAuth, clearAuth } = useAuthStore();
+
+  useEffect(() => {
+    if (!token) return;
+    apiMe().then(me => setAuth(token, me.username, me.display, me.plan)).catch(() => {});
+  }, [token]);
 
   if (token) {
     return (
