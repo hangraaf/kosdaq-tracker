@@ -30,8 +30,10 @@ class Settings(BaseSettings):
     cors_origins: list[str] = [
         "http://localhost:3000",
         "http://127.0.0.1:3000",
+        "https://mr-stock-buddy-app.vercel.app",
+        "https://mr-stock-buddy.vercel.app",
     ]
-    cors_origins_extra: str = ""   # 배포 시 "https://your-app.vercel.app" 형식으로 추가
+    cors_origins_extra: str = ""
 
     def all_cors_origins(self) -> list[str]:
         extras = [o.strip() for o in self.cors_origins_extra.split(",") if o.strip()]
