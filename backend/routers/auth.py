@@ -103,7 +103,7 @@ def me(current: Annotated[dict, Depends(get_current_user)]):
     return UserProfile(**current)
 
 
-@router.post("/upgrade")
+@router.get("/upgrade")
 def upgrade_plan(
     username: str,
     plan: str,
