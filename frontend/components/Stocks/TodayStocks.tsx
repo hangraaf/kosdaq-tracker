@@ -79,7 +79,7 @@ export default function TodayStocks() {
   const { setSelectedCode, setMenu } = useUIStore();
 
   useEffect(() => {
-    apiTodayTopFull("전체", 20)
+    apiTodayTopFull("전체", 500)
       .then(res => setItems(res.items))
       .catch(() => {})
       .finally(() => setLoading(false));

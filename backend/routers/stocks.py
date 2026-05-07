@@ -62,11 +62,10 @@ def list_sectors(market: str = Query("전체")):
 
 
 @router.get("/today/top")
-def today_top(market: str = Query("전체"), limit: int = Query(10, le=50)):
+def today_top(market: str = Query("전체"), limit: int = Query(10, le=500)):
     stocks = MARKET_STOCKS.get(market, MARKET_STOCKS["전체"])
     results = [stock_demo_snapshot(s.code, s.name, s.market, s.sector, s.base_price) for s in stocks]
-    results.sort(key=lambda x: -x["change_rate"])
-    return {"live": False, "items": results[:limit]}
+    return {"live": False, "items": results}
 
 
 @router.get("/{code}/snapshot", response_model=StockSnapshot)
