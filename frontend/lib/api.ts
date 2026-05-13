@@ -187,6 +187,7 @@ export interface GuruVerdict {
   rating: string; action: string; action_color: string;
   score: number; comment: string;
   scores: { momentum: number; stability: number; value: number; growth: number; moat: number };
+  reasons: string[];
   desc: string; stock_name: string; stock_code: string; sector: string;
 }
 
@@ -196,6 +197,28 @@ export async function apiGuruList(): Promise<GuruInfo[]> {
 
 export async function apiGuruAnalyze(code: string, guru: string): Promise<GuruVerdict> {
   return req(`/guru/${code}?guru=${encodeURIComponent(guru)}`);
+}
+
+// ── News ─────────────────────────────────────────────────────────────────
+
+export interface NewsItem {
+  title: string;
+  title_orig?: string;
+  link: string;
+  desc: string;
+  source: string;
+  region: "KR" | "GLOBAL";
+  published: string;
+  score: number;
+}
+
+export async function apiNews(params?: { limit?: number; region?: string }): Promise<{ items: NewsItem[]; cached_at: string }> {
+  const qs = new URLSearchParams(params as Record<string, string>).toString();
+  return req(`/news/?${qs}`);
+}
+
+export async function apiNewsRefresh(): Promise<{ ok: boolean }> {
+  return req("/news/refresh", { method: "POST" });
 }
 
 // ── Robo ─────────────────────────────────────────────────────────────────

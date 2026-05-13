@@ -48,7 +48,7 @@ interface UIState {
 }
 
 export const useUIStore = create<UIState>()((set) => ({
-  menu: "종목",
+  menu: "뉴스",
   selectedCode: null,
   market: "전체",
   period: "1개월",
@@ -57,3 +57,23 @@ export const useUIStore = create<UIState>()((set) => ({
   setMarket: (market) => set({ market }),
   setPeriod: (period) => set({ period }),
 }));
+
+// ── 클라이언트 스냅샷 캐시 (페이지 이동 시 재사용) ─────────────────────
+
+import type { StockSnapshot } from "./api";
+
+const SNAP_TTL_MS = 30_000; // 30초
+
+interface SnapEntry { data: StockSnapshot; ts: number }
+const _snapCache: Map<string, SnapEntry> = new Map();
+
+export function getCachedSnap(code: string): StockSnapshot | null {
+  const entry = _snapCache.get(code);
+  if (!entry) return null;
+  if (Date.now() - entry.ts > SNAP_TTL_MS) return null;
+  return entry.data;
+}
+
+export function setCachedSnap(code: string, data: StockSnapshot): void {
+  _snapCache.set(code, { data, ts: Date.now() });
+}

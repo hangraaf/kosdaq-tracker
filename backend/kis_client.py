@@ -77,6 +77,27 @@ class KISClient:
         self._write_cached_token(str(token), int(data.get("expires_in", 86400)))
         return str(token)
 
+    def get_approval_key(self) -> str:
+        """WebSocket 실시간 스트리밍용 접속키 발급."""
+        response = requests.post(
+            f"{self.config.base_url}/oauth2/Approval",
+            headers={"content-type": "application/json; charset=utf-8"},
+            json={
+                "grant_type": "client_credentials",
+                "appkey": self.config.app_key,
+                "secretkey": self.config.app_secret,
+            },
+            timeout=10,
+        )
+        try:
+            data = response.json()
+        except ValueError as exc:
+            raise KISError("approval_key: KIS 응답이 JSON이 아닙니다.") from exc
+        key = data.get("approval_key")
+        if not key:
+            raise KISError(f"approval_key 누락: {data}")
+        return str(key)
+
     def _headers(self, tr_id: str) -> dict[str, str]:
         return {
             "authorization": f"Bearer {self.access_token()}",

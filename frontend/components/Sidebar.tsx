@@ -6,12 +6,12 @@ import { useAuthStore, useUIStore } from "@/lib/store";
 import { apiLogin, apiMe, apiRegister } from "@/lib/api";
 
 const MENU_ITEMS = [
+  { key: "뉴스",           icon: "📰", label: "뉴스" },
   { key: "종목",           icon: "▦",  label: "종목" },
   { key: "차트",           icon: "▲",  label: "차트" },
   { key: "관심종목",       icon: "★",  label: "관심종목" },
   { key: "포트폴리오",     icon: "◈",  label: "포트폴리오" },
   { key: "로보어드바이저", icon: "🤖", label: "로보어드바이저" },
-  { key: "투자대가",       icon: "🎩", label: "투자 대가" },
   { key: "프리미엄",       icon: "✦",  label: "프리미엄" },
 ];
 

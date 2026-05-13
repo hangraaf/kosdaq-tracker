@@ -6,11 +6,17 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 
+# Windows cp949 터미널에서 한글/유니코드 출력 오류 방지
+if sys.stdout.encoding and sys.stdout.encoding.lower() not in ("utf-8", "utf8"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+if sys.stderr.encoding and sys.stderr.encoding.lower() not in ("utf-8", "utf8"):
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from config import settings
-from routers import auth, guru, payments, portfolio, robo, stocks
+from routers import auth, guru, news, payments, portfolio, robo, stocks
 
 app = FastAPI(
     title="KOSDAQ Tracker API",
@@ -32,10 +38,14 @@ app.include_router(portfolio.router)
 app.include_router(robo.router)
 app.include_router(payments.router)
 app.include_router(guru.router)
+app.include_router(news.router)
 
 
 @app.on_event("startup")
 async def startup_event():
+    import db as _db
+    _db.init_db()
+    print("[STARTUP] SQLite 캐시 DB 초기화 완료")
     """환경변수로 admin plan 자동 부여 — 기존 비밀번호 유지."""
     import os, json, hashlib
     from config import DATA_DIR
@@ -67,6 +77,24 @@ async def startup_event():
         }
         print(f"[STARTUP] {username} 신규 admin 계정 생성 완료")
     users_file.write_text(json.dumps(users, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+@app.get("/debug/kis")
+def debug_kis():
+    """KIS 설정 상태 확인용."""
+    from pathlib import Path
+    from config import settings, BASE_DIR
+    from kis_service import kis_available, get_kis_client
+    env_path = BASE_DIR / ".env"
+    client = get_kis_client()
+    return {
+        "env_file": str(env_path),
+        "env_exists": env_path.exists(),
+        "kis_app_key_prefix": settings.kis_app_key[:8] if settings.kis_app_key else "(없음)",
+        "kis_env": settings.kis_env,
+        "kis_available": kis_available(),
+        "client_type": type(client).__name__ if client else None,
+    }
 
 
 @app.get("/debug/admin")

@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   apiChart, apiSnapshot,
   type OHLCVRow, type StockSnapshot,
 } from "@/lib/api";
 import LiveBadge from "@/components/LiveBadge";
 import TradingChart from "@/components/Chart/TradingChart";
+import GuruPage from "@/app/guru/GuruPage";
 import { useUIStore } from "@/lib/store";
 
 const PERIODS = ["5일", "2주", "1개월", "3개월", "6개월", "1년", "2년"];
@@ -155,6 +156,9 @@ function SigCard({ title, value, valueColor, desc, badge }: SigCardProps) {
   );
 }
 
+const WS_BASE = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000")
+  .replace(/^http/, "ws");
+
 export default function ChartPage() {
   const { selectedCode, period, setPeriod } = useUIStore();
   const [snap, setSnap]       = useState<StockSnapshot | null>(null);
@@ -162,7 +166,9 @@ export default function ChartPage() {
   const [ohlcv3m, setOhlcv3m] = useState<OHLCVRow[]>([]);
   const [isLive, setIsLive]   = useState(false);
   const [loading, setLoading] = useState(false);
+  const wsRef = useRef<WebSocket | null>(null);
 
+  // 초기 데이터 로드
   useEffect(() => {
     if (!selectedCode) return;
     setLoading(true);
@@ -177,6 +183,54 @@ export default function ChartPage() {
       setOhlcv3m(c3m.items);
     }).finally(() => setLoading(false));
   }, [selectedCode, period]);
+
+  // KIS WebSocket 실시간 가격 스트리밍
+  useEffect(() => {
+    if (!selectedCode) return;
+
+    const connectWs = () => {
+      const ws = new WebSocket(`${WS_BASE}/stocks/ws/${selectedCode}`);
+      wsRef.current = ws;
+
+      ws.onmessage = (ev) => {
+        try {
+          const data = JSON.parse(ev.data);
+          if (data.ping || data.error) return;
+          setSnap(prev => prev ? {
+            ...prev,
+            price:       data.price       ?? prev.price,
+            change:      data.change      ?? prev.change,
+            change_rate: data.change_rate ?? prev.change_rate,
+            volume:      data.volume      ?? prev.volume,
+          } : prev);
+          setIsLive(true);
+        } catch { /* ignore */ }
+      };
+
+      ws.onerror = () => ws.close();
+      ws.onclose = () => {
+        wsRef.current = null;
+      };
+    };
+
+    connectWs();
+    return () => {
+      wsRef.current?.close();
+      wsRef.current = null;
+    };
+  }, [selectedCode]);
+
+  // REST 폴링 — WS 미사용 시 또는 장중 보조 새로고침 (10초)
+  useEffect(() => {
+    if (!selectedCode) return;
+    const id = setInterval(async () => {
+      try {
+        const s = await apiSnapshot(selectedCode);
+        setSnap(s);
+      } catch { /* ignore */ }
+    }, 10_000);
+    return () => clearInterval(id);
+  }, [selectedCode]);
 
   if (!selectedCode) {
     return (
@@ -481,6 +535,11 @@ export default function ChartPage() {
           </div>
         </div>
       </details>
+
+      {/* ── 투자 대가 조언 ────────────────────────────── */}
+      <div style={{ marginTop: "24px", borderTop: "2px solid var(--border)", paddingTop: "20px" }}>
+        <GuruPage />
+      </div>
     </div>
   );
 }

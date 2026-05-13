@@ -1,14 +1,16 @@
 """종목 조회 라우터 — demo / KIS live 자동 전환."""
 from __future__ import annotations
 
+import asyncio
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 import numpy as np
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, WebSocket, WebSocketDisconnect
 
 from kis_client import KISError
-from kis_service import kis_available, live_chart, live_snapshot
+from kis_realtime import get_realtime_manager
+from kis_service import get_kis_client, kis_available, live_chart, live_snapshot
 from models import StockSnapshot
 from stock_data import MARKET_STOCKS, PERIODS, STOCK_MAP
 from utils import generate_demo_ohlcv, stock_demo_snapshot
@@ -63,9 +65,72 @@ def list_sectors(market: str = Query("전체")):
 
 @router.get("/today/top")
 def today_top(market: str = Query("전체"), limit: int = Query(10, le=500)):
-    stocks = MARKET_STOCKS.get(market, MARKET_STOCKS["전체"])
-    results = [stock_demo_snapshot(s.code, s.name, s.market, s.sector, s.base_price) for s in stocks]
-    return {"live": False, "items": results}
+    all_stocks = MARKET_STOCKS.get(market, MARKET_STOCKS["전체"])
+    results = []
+    live_mode = False
+
+    if kis_available():
+        live_mode = True
+        # KIS API는 limit 범위 내에서만 실시간 조회 (과도한 호출 방지)
+        for s in all_stocks[:limit]:
+            try:
+                snap = live_snapshot(s.code)
+                results.append({
+                    "code": s.code, "name": s.name,
+                    "market": s.market, "sector": s.sector,
+                    **snap,
+                })
+            except KISError:
+                results.append(stock_demo_snapshot(s.code, s.name, s.market, s.sector, s.base_price))
+        # limit 초과분은 데모로 채움
+        for s in all_stocks[limit:]:
+            results.append(stock_demo_snapshot(s.code, s.name, s.market, s.sector, s.base_price))
+    else:
+        results = [stock_demo_snapshot(s.code, s.name, s.market, s.sector, s.base_price) for s in all_stocks]
+
+    return {"live": live_mode, "items": results}
+
+
+@router.websocket("/ws/{code}")
+async def stock_ws(websocket: WebSocket, code: str):
+    """KIS 실시간 주가 스트리밍 WebSocket."""
+    await websocket.accept()
+
+    if code not in STOCK_MAP:
+        await websocket.send_json({"error": f"종목 코드 {code}를 찾을 수 없습니다."})
+        await websocket.close()
+        return
+
+    if not kis_available():
+        await websocket.send_json({"error": "KIS API 키 미설정 — 실시간 스트리밍 불가"})
+        await websocket.close()
+        return
+
+    client = get_kis_client()
+    try:
+        approval_key = client.get_approval_key()
+    except KISError as e:
+        await websocket.send_json({"error": str(e)})
+        await websocket.close()
+        return
+
+    from config import settings
+    manager = get_realtime_manager()
+    await manager.start(approval_key, settings.kis_env)
+
+    queue: asyncio.Queue = asyncio.Queue(maxsize=30)
+    await manager.subscribe(code, queue)
+    try:
+        while True:
+            try:
+                data = await asyncio.wait_for(queue.get(), timeout=30.0)
+                await websocket.send_json(data)
+            except asyncio.TimeoutError:
+                await websocket.send_json({"ping": True})
+    except WebSocketDisconnect:
+        pass
+    finally:
+        await manager.unsubscribe(code, queue)
 
 
 @router.get("/{code}/snapshot", response_model=StockSnapshot)
