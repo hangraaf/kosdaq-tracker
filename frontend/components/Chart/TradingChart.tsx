@@ -271,7 +271,8 @@ export default function TradingChart({ data }: Props) {
         domain: [0, 1], anchor: "y",
         showgrid: false, gridcolor: C.grid,
         rangeslider: { visible: false },
-        type: "category",
+        type: "date",
+        rangebreaks: [{ bounds: ["sat", "mon"] }],
         tickfont: { size: 10 },
       },
       // y1: 가격 (52%)

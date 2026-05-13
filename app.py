@@ -640,7 +640,7 @@ BH_CSS = """
 /* ── 프렌치 블루 × 오프화이트 ─────────────────────
    메인: 미색 크림 배경 · 프렌치 블루 액센트
    서브: 머스크 레드(상승) · 짙은 블루(하락) · 머스타드 골드(강조)
-   타이포: Pretendard(본문) · Noto Serif KR(제목) · JetBrains Mono(숫자)
+   타이포: MaruBuri(전체) · JetBrains Mono(숫자)
    ─────────────────────────────────────────────── */
 :root {
   /* 배경 — 따뜻한 오프화이트(미색) */
@@ -674,9 +674,9 @@ BH_CSS = """
   --glow-y: none; --glow-r: none; --glow-b: none; --glow-c: none;
 
   /* 타이포 — 통일된 디자인 언어 */
-  --serif: 'Noto Serif KR', 'Nanum Myeongjo', serif;
-  --maru:  'MaruBuri', 'Noto Serif KR', 'Nanum Myeongjo', Georgia, serif;
-  --font:  'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --serif: 'MaruBuri', 'Noto Serif KR', serif;
+  --maru:  'MaruBuri', 'Noto Serif KR', Georgia, serif;
+  --font:  'MaruBuri', 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   --mono:  'JetBrains Mono', 'Pretendard', monospace;
   color-scheme: light;
 }
@@ -1686,6 +1686,163 @@ hr {
   color: #2D5499;
   font-size: 0.63rem;
 }
+
+/* ── 종목 페이지 티커 카드 — 반응형 ───────────── */
+.bh-stock-card {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  border: 2px solid #2C4A6E;
+  background: #FBF8F1;
+  margin: 6px 0 14px;
+  font-family: var(--font);
+  overflow: hidden;
+}
+.bh-stock-card-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 22px;
+  background: #2C4A6E;
+  color: #F8F4EB;
+}
+.bh-stock-card-mid {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 14px 28px;
+}
+.bh-stock-card-right {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 14px 18px;
+  background: #FBF8F1;
+  color: var(--fg);
+  flex-wrap: wrap;
+}
+.bh-stock-name {
+  font-weight: 900;
+  font-size: 1.32rem;
+  letter-spacing: -0.015em;
+  line-height: 1.05;
+  color: #F8F4EB;
+}
+.bh-stock-code {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  color: #C8D4E2;
+  letter-spacing: 0.06em;
+  margin-top: 3px;
+}
+.bh-price-arrow {
+  font-size: 2.2rem;
+  line-height: 1;
+  font-weight: 700;
+}
+.bh-price-main {
+  font-family: var(--mono);
+  font-weight: 800;
+  font-size: 1.55rem;
+  letter-spacing: 0.005em;
+  line-height: 1.0;
+}
+.bh-price-sub {
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  margin-top: 3px;
+  opacity: 0.95;
+}
+.bh-stat-label {
+  font-size: 0.58rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 3px;
+  font-weight: 700;
+}
+.bh-stat-val {
+  font-family: var(--mono);
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #1A1611;
+}
+.bh-stat-val-lg {
+  font-family: var(--mono);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #1A1611;
+}
+.bh-hl-high { color: #B5453F; font-weight: 800; }
+.bh-hl-low  { color: #436B95; font-weight: 800; }
+.bh-hl-pct  { font-size: 0.72rem; opacity: 0.85; }
+.bh-src-badge {
+  background: #B0883A;
+  color: #FFFFFF;
+  padding: 5px 11px;
+  font-weight: 800;
+  font-size: 0.62rem;
+  letter-spacing: 0.18em;
+  line-height: 1;
+}
+
+/* 3개월 고/저 배너 */
+.bh-hl3m-bar {
+  display: flex;
+  gap: 0;
+  border: 2px solid #2C4A6E;
+  border-top: none;
+  background: #F3EEE3;
+  font-family: var(--font);
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.bh-hl3m-section {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 18px;
+  border-right: 1px solid #D0C8B8;
+  flex: 1;
+  min-width: 120px;
+}
+.bh-hl3m-section:last-child { border-right: none; }
+.bh-hl3m-tag {
+  font-size: 0.58rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 700;
+}
+.bh-hl3m-val { font-family: var(--mono); font-weight: 800; font-size: 0.92rem; }
+.bh-hl3m-pct { font-family: var(--mono); font-size: 0.75rem; margin-left: 4px; }
+
+/* 범례 — 모바일에서 스크롤 가능하도록 */
+.bh-legend-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 700px) {
+  .bh-stock-card {
+    grid-template-columns: 1fr;
+  }
+  .bh-stock-card-left {
+    padding: 12px 16px;
+  }
+  .bh-stock-card-mid {
+    padding: 12px 16px;
+  }
+  .bh-stock-card-right {
+    padding: 10px 16px;
+    gap: 14px;
+  }
+  .bh-stock-name { font-size: 1.1rem; }
+  .bh-price-main { font-size: 1.3rem; }
+  .bh-price-arrow { font-size: 1.8rem; }
+  .bh-hl3m-section { padding: 7px 12px; }
+}
 </style>
 """
 
@@ -2688,7 +2845,9 @@ def render_sidebar() -> tuple[str, str, str, list[str], bool, int]:
         "로보어드바이저": "🤖 로보어드바이저",
     }
     # session_state 기반 — index= 파라미터를 쓰지 않아 첫 클릭부터 즉시 반영
-    if "bh_menu_radio" not in st.session_state:
+    # 구버전 세션(예: 삭제된 "프리미엄" 메뉴 값)이 남아 있으면 초기화
+    _valid_menu_values = set(menu_icons.values())
+    if st.session_state.get("bh_menu_radio") not in _valid_menu_values:
         _init = st.session_state.get("current_menu", "종목")
         st.session_state["bh_menu_radio"] = menu_icons.get(_init, "▦ 종목")
     menu_key = st.sidebar.radio(
@@ -2697,7 +2856,7 @@ def render_sidebar() -> tuple[str, str, str, list[str], bool, int]:
         key="bh_menu_radio",
         label_visibility="collapsed",
     )
-    menu = next(k for k, v in menu_icons.items() if v == menu_key)
+    menu = next((k for k, v in menu_icons.items() if v == menu_key), "종목")
     st.session_state["current_menu"] = menu
 
     market = "전체"
@@ -4309,14 +4468,53 @@ def render_chart(stock: Stock, period_label: str, use_live: bool) -> tuple[pd.Da
     except Exception:
         ext_score = 0.0
 
-    # ── 현재가 수평선 ────────────────────────────────
+    # ── 현재가 + 기간 고/저 수평선 ──────────────────
     last_close = float(df["close"].iloc[-1])
+    period_h   = float(df["high"].max())
+    period_l   = float(df["low"].min())
+    pct_to_h   = (period_h / last_close - 1) * 100 if last_close > 0 else 0.0
+    pct_to_l   = (period_l / last_close - 1) * 100 if last_close > 0 else 0.0
+
+    # 기간 최고가 라인 (빨강 점선)
     fig.add_hline(
-        y=last_close,
-        line_dash="dash", line_color="#B0883A", line_width=1.2,
+        y=period_h,
+        line_dash="dot", line_color="#B5453F", line_width=1.2, opacity=0.75,
         row=1, col=1,
     )
-    # 현재가 라벨을 플롯 내부 우측 상단에 배치 (외부 마진 제거)
+    fig.add_annotation(
+        xref="x domain", yref="y", row=1, col=1,
+        x=0.01, y=period_h,
+        text=f"  기간최고 {period_h:,.0f}  <span style='opacity:0.8'>({pct_to_h:+.1f}%)</span>",
+        xanchor="left", yanchor="bottom",
+        showarrow=False,
+        font=dict(size=10, color="#B5453F", family="Pretendard, sans-serif"),
+        bgcolor="rgba(253,250,244,0.88)",
+        bordercolor="#B5453F", borderwidth=1, borderpad=3,
+    )
+
+    # 기간 최저가 라인 (파랑 점선)
+    fig.add_hline(
+        y=period_l,
+        line_dash="dot", line_color="#436B95", line_width=1.2, opacity=0.75,
+        row=1, col=1,
+    )
+    fig.add_annotation(
+        xref="x domain", yref="y", row=1, col=1,
+        x=0.01, y=period_l,
+        text=f"  기간최저 {period_l:,.0f}  <span style='opacity:0.8'>({pct_to_l:+.1f}%)</span>",
+        xanchor="left", yanchor="top",
+        showarrow=False,
+        font=dict(size=10, color="#436B95", family="Pretendard, sans-serif"),
+        bgcolor="rgba(253,250,244,0.88)",
+        bordercolor="#436B95", borderwidth=1, borderpad=3,
+    )
+
+    # 현재가 라인 (머스타드 골드 실선)
+    fig.add_hline(
+        y=last_close,
+        line_dash="dash", line_color="#B0883A", line_width=1.4,
+        row=1, col=1,
+    )
     fig.add_annotation(
         xref="x domain", yref="y", row=1, col=1,
         x=1, y=last_close,
@@ -4402,18 +4600,29 @@ def render_chart(stock: Stock, period_label: str, use_live: bool) -> tuple[pd.Da
     # ── 레이아웃 (Plotly 기본 범례 숨김 → 커스텀 HTML 범례 사용) ──
     fig.update_layout(
         template="plotly_white",
-        height=860,
-        margin=dict(l=15, r=15, t=20, b=10),
+        height=820,
+        margin=dict(l=10, r=55, t=22, b=10),
         xaxis_rangeslider_visible=False,
         showlegend=False,
         paper_bgcolor="rgba(248,244,235,1)",
         plot_bgcolor="rgba(253,250,244,1)",
-        font=dict(color="#3D3830", family="Pretendard, sans-serif"),
+        font=dict(color="#3D3830", family="Pretendard, sans-serif", size=11),
         hoverlabel=dict(bgcolor="#FFFFFF", font_size=12, namelength=-1, font_color="#1C1916"),
+        dragmode="zoom",
     )
-    fig.update_yaxes(tickformat=",", row=1, col=1, gridcolor="#E8E1D0", zerolinecolor="#BCB09A")
-    fig.update_yaxes(title_text="RSI", range=[0, 100], row=4, col=1, gridcolor="#E8E1D0")
-    fig.update_xaxes(gridcolor="#E8E1D0", showgrid=False)
+    fig.update_yaxes(
+        tickformat=",", row=1, col=1,
+        gridcolor="#E8E1D0", zerolinecolor="#BCB09A",
+        tickfont=dict(size=10), side="right",
+    )
+    fig.update_yaxes(
+        row=2, col=1,
+        gridcolor="#E8E1D0", tickfont=dict(size=9), side="right",
+        tickformat=".2s",
+    )
+    fig.update_yaxes(row=3, col=1, gridcolor="#E8E1D0", tickfont=dict(size=9), side="right")
+    fig.update_yaxes(title_text="RSI", range=[0, 100], row=4, col=1, gridcolor="#E8E1D0", tickfont=dict(size=9), side="right")
+    fig.update_xaxes(gridcolor="#E8E1D0", showgrid=False, tickfont=dict(size=9))
     fig.update_layout(clickmode="event+select")
 
     # ── Bauhaus 범례 ─────────────────────────────────
@@ -4922,57 +5131,93 @@ def render_chart_page(market: str, use_live: bool, keyword: str = "", sectors: l
     period_high = int(df_period["high"].max())
     period_low  = int(df_period["low"].min())
 
+    # 3개월 고/저 (항상 계산 — 선택 기간과 무관하게 표시)
+    _days_3m = PERIODS["3개월"]
+    try:
+        df_3m, _ = get_chart_data(stock, _days_3m, use_live)
+        h3m = int(df_3m["high"].max())
+        l3m = int(df_3m["low"].min())
+    except Exception:
+        h3m, l3m = period_high, period_low
+
+    cur_price   = snapshot["price"]
+    pct_h3m     = (h3m / cur_price - 1) * 100 if cur_price > 0 else 0.0
+    pct_l3m     = (l3m / cur_price - 1) * 100 if cur_price > 0 else 0.0
+    cr_period_h = (period_high / cur_price - 1) * 100 if cur_price > 0 else 0.0
+    cr_period_l = (period_low  / cur_price - 1) * 100 if cur_price > 0 else 0.0
+
     cr        = snapshot["change_rate"]
     price_hex = "#B5453F" if cr >= 0 else "#436B95"
     arrow     = "▲" if cr >= 0 else "▼"
     data_lbl  = "KIS 실시간" if use_live else "DEMO"
     mkt_hex   = "#B5453F" if stock.market == "KOSPI" else "#436B95"
 
-    # ── Bauhaus 티커 카드: 3블록 구조 ─────────────────
+    # ── Bauhaus 티커 카드 (반응형 CSS 클래스 사용) ────
     st.markdown(
-        f'<div style="display:grid;grid-template-columns:auto 1fr auto;'
-        f'border:2px solid #2C4A6E;background:#FBF8F1;margin:6px 0 14px;'
-        f'font-family:var(--font);overflow:hidden;">'
-        f'<div style="display:flex;align-items:center;gap:14px;padding:14px 22px;'
-        f'background:#2C4A6E;color:#F8F4EB;">'
-        f'<div style="background:{mkt_hex};color:#FFFFFF;padding:5px 11px;'
-        f'font-weight:900;font-size:0.66rem;letter-spacing:0.2em;line-height:1;">'
+        f'<div class="bh-stock-card">'
+        # 좌: 시장 배지 + 종목명/코드
+        f'<div class="bh-stock-card-left">'
+        f'<div style="background:{mkt_hex};color:#FFF;padding:5px 11px;'
+        f'font-weight:900;font-size:0.66rem;letter-spacing:0.2em;line-height:1;white-space:nowrap;">'
         f'{stock.market}</div>'
         f'<div>'
-        f'<div style="font-weight:900;font-size:1.32rem;letter-spacing:-0.015em;'
-        f'line-height:1.05;color:#F8F4EB;">{stock.name}</div>'
-        f'<div style="font-family:var(--mono);font-size:0.68rem;color:#C8D4E2;'
-        f'letter-spacing:0.06em;margin-top:3px;">{stock.code} · {stock.sector}</div>'
+        f'<div class="bh-stock-name">{stock.name}</div>'
+        f'<div class="bh-stock-code">{stock.code} · {stock.sector}</div>'
         f'</div>'
         f'</div>'
-        f'<div style="display:flex;align-items:center;gap:18px;padding:14px 28px;'
-        f'background:{price_hex};color:#FFFFFF;">'
-        f'<div style="font-size:2.2rem;line-height:1;font-weight:700;">{arrow}</div>'
+        # 중: 화살표 + 현재가 + 등락
+        f'<div class="bh-stock-card-mid" style="background:{price_hex};color:#FFF;">'
+        f'<div class="bh-price-arrow">{arrow}</div>'
         f'<div>'
-        f'<div style="font-family:var(--mono);font-weight:800;font-size:1.55rem;'
-        f'letter-spacing:0.005em;line-height:1.0;">{snapshot["price"]:,}</div>'
-        f'<div style="font-family:var(--mono);font-size:0.85rem;font-weight:600;'
-        f'letter-spacing:0.02em;margin-top:3px;opacity:0.95;">'
-        f'{cr:+.2f}% &nbsp;·&nbsp; {money_signed(snapshot["change"])}</div>'
+        f'<div class="bh-price-main">{cur_price:,}</div>'
+        f'<div class="bh-price-sub">{cr:+.2f}% &nbsp;·&nbsp; {money_signed(snapshot["change"])}</div>'
         f'</div>'
         f'</div>'
-        f'<div style="display:flex;align-items:center;gap:22px;padding:14px 22px;'
-        f'background:#FBF8F1;color:var(--fg);">'
+        # 우: 거래량 + 기간 고/저 + 데이터 배지
+        f'<div class="bh-stock-card-right">'
         f'<div>'
-        f'<div style="font-size:0.6rem;letter-spacing:0.16em;text-transform:uppercase;'
-        f'color:var(--muted);margin-bottom:3px;font-weight:700;">거래량</div>'
-        f'<div style="font-family:var(--mono);font-size:0.95rem;font-weight:700;'
-        f'color:#1A1611;">{volume_fmt(snapshot["volume"])}</div>'
+        f'<div class="bh-stat-label">거래량</div>'
+        f'<div class="bh-stat-val-lg">{volume_fmt(snapshot["volume"])}</div>'
         f'</div>'
         f'<div>'
-        f'<div style="font-size:0.6rem;letter-spacing:0.16em;text-transform:uppercase;'
-        f'color:var(--muted);margin-bottom:3px;font-weight:700;">{period} 고/저</div>'
-        f'<div style="font-family:var(--mono);font-size:0.78rem;font-weight:700;'
-        f'color:#1A1611;">{money(period_high)} / {money(period_low)}</div>'
+        f'<div class="bh-stat-label">{period} 고 / 저</div>'
+        f'<div class="bh-stat-val">'
+        f'<span class="bh-hl-high">{money(period_high)}</span>'
+        f'<span class="bh-hl-pct"> ({cr_period_h:+.1f}%)</span>'
+        f' &nbsp;/&nbsp; '
+        f'<span class="bh-hl-low">{money(period_low)}</span>'
+        f'<span class="bh-hl-pct"> ({cr_period_l:+.1f}%)</span>'
         f'</div>'
-        f'<div style="background:#B0883A;color:#FFFFFF;padding:5px 11px;'
-        f'font-weight:800;font-size:0.62rem;letter-spacing:0.18em;line-height:1;">'
-        f'{data_lbl}</div>'
+        f'</div>'
+        f'<div class="bh-src-badge">{data_lbl}</div>'
+        f'</div>'
+        f'</div>',
+        unsafe_allow_html=True,
+    )
+
+    # ── 3개월 최고가 / 최저가 배너 ──────────────────
+    st.markdown(
+        f'<div class="bh-hl3m-bar">'
+        f'<div class="bh-hl3m-section">'
+        f'<span class="bh-hl3m-tag">3개월 최고가</span>'
+        f'<span class="bh-hl3m-val" style="color:#B5453F;">{h3m:,}원</span>'
+        f'<span class="bh-hl3m-pct" style="color:#B5453F;">({pct_h3m:+.1f}%)</span>'
+        f'</div>'
+        f'<div class="bh-hl3m-section">'
+        f'<span class="bh-hl3m-tag">3개월 최저가</span>'
+        f'<span class="bh-hl3m-val" style="color:#436B95;">{l3m:,}원</span>'
+        f'<span class="bh-hl3m-pct" style="color:#436B95;">({pct_l3m:+.1f}%)</span>'
+        f'</div>'
+        f'<div class="bh-hl3m-section">'
+        f'<span class="bh-hl3m-tag">3개월 등락폭</span>'
+        f'<span class="bh-hl3m-val">{((h3m - l3m) / l3m * 100):.1f}%</span>'
+        f'</div>'
+        f'<div class="bh-hl3m-section" style="border-right:none;">'
+        f'<span class="bh-hl3m-tag">현재가 위치</span>'
+        f'<span class="bh-hl3m-val">'
+        f'{"%.0f" % ((cur_price - l3m) / (h3m - l3m) * 100 if h3m != l3m else 50)}%'
+        f'</span>'
+        f'<span class="bh-hl3m-pct" style="color:var(--muted);">(저점 대비 위치)</span>'
         f'</div>'
         f'</div>',
         unsafe_allow_html=True,
@@ -6245,18 +6490,15 @@ def _render_robo_dashboard(portfolio: dict, use_live: bool) -> None:
 
     replace_count = 0
     for holding in holdings:
-        stk = next((s for s in MARKET_STOCKS["전체"] if s.code == holding["code"]), None)
-        entry_p = holding.get("entry_prism", 50.0)
-
-        if stk:
-            pr = _compute_prism(stk, use_live)
-            cur_p = pr["prism"] if pr else entry_p
-        else:
-            cur_p = entry_p
-
-        delta  = round(cur_p - entry_p, 1)
-        delta_str = f"+{delta}" if delta > 0 else str(delta)
+        stk = next((s for s in all_stocks() if s.code == holding["code"]), None)
+        if stk is None:
+            continue
+        result    = _compute_prism(stk, use_live)
+        cur_p     = round(result["prism"], 1) if result else holding.get("entry_prism", 50)
+        entry_p   = holding.get("entry_prism", 50)
+        delta     = cur_p - entry_p
         delta_cls = "robo-prism-delta-up" if delta >= 0 else "robo-prism-delta-down"
+        delta_str = f"{delta:+.1f}"
 
         if delta >= -5:
             signal_cls, signal_txt = "robo-signal-hold",    "🟢 유지"
