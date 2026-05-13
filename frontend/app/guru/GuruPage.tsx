@@ -5,6 +5,7 @@ import {
   apiGuruList, apiGuruAnalyze, apiListStocks,
   type GuruInfo, type GuruVerdict, type StockItem,
 } from "@/lib/api";
+import { useUIStore } from "@/lib/store";
 
 function RadarBar({ label, value, color }: { label: string; value: number; color: string }) {
   return (
@@ -59,170 +60,149 @@ function VerdictCard({ verdict }: { verdict: GuruVerdict }) {
       </div>
 
       {/* 점수 바 */}
-      <div>
+      <div style={{ marginBottom: "14px" }}>
         {Object.entries(verdict.scores).map(([k, v]) => (
           <RadarBar key={k} label={scoreLabels[k] ?? k} value={v} color={verdict.color} />
         ))}
       </div>
+
+      {/* 분석 근거 */}
+      {verdict.reasons && verdict.reasons.length > 0 && (
+        <div style={{ borderTop: `1px solid ${verdict.color}33`, paddingTop: "12px" }}>
+          <div style={{ fontSize: "0.68rem", fontWeight: 700, letterSpacing: "0.08em", color: "var(--muted)", marginBottom: "6px", textTransform: "uppercase" }}>
+            분석 근거
+          </div>
+          <ul style={{ margin: 0, paddingLeft: "16px" }}>
+            {verdict.reasons.map((r, i) => (
+              <li key={i} style={{ fontSize: "0.78rem", color: "var(--fg)", marginBottom: "4px", lineHeight: 1.5 }}>{r}</li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }
 
-export default function GuruPage() {
-  const [gurus, setGurus]         = useState<GuruInfo[]>([]);
-  const [stocks, setStocks]       = useState<StockItem[]>([]);
-  const [selectedGurus, setSelGurus] = useState<Set<string>>(new Set(["버핏", "린치"]));
-  const [code, setCode]           = useState("");
-  const [query, setQuery]         = useState("");
-  const [verdicts, setVerdicts]   = useState<GuruVerdict[]>([]);
-  const [loading, setLoading]     = useState(false);
+export default function GuruPage({ initialCode }: { initialCode?: string } = {}) {
+  const { selectedCode } = useUIStore();
+  const [gurus, setGurus]     = useState<GuruInfo[]>([]);
+  const [stocks, setStocks]   = useState<StockItem[]>([]);
+  const [code, setCode]       = useState(initialCode ?? "");
+  const [query, setQuery]     = useState("");
+  const [verdicts, setVerdicts] = useState<GuruVerdict[]>([]);
+  const [loading, setLoading] = useState(false);
 
+  // 대가 목록 + 종목 목록 로드
   useEffect(() => {
     apiGuruList().then(setGurus);
     apiListStocks({ market: "전체" }).then(setStocks);
   }, []);
 
+  // 차트 페이지에서 선택된 종목 자동 반영
+  useEffect(() => {
+    if (initialCode) return;
+    if (selectedCode) setCode(selectedCode);
+  }, [selectedCode, initialCode]);
+
+  // 종목 코드가 바뀌면 전체 대가 자동 분석
+  useEffect(() => {
+    if (!code || gurus.length === 0) return;
+    setLoading(true);
+    setVerdicts([]);
+    Promise.all(gurus.map(g => apiGuruAnalyze(code, g.key)))
+      .then(setVerdicts)
+      .finally(() => setLoading(false));
+  }, [code, gurus]);
+
   const filtered = query
     ? stocks.filter(s => s.name.includes(query) || s.code.includes(query)).slice(0, 8)
     : [];
 
-  const toggleGuru = (key: string) => {
-    setSelGurus(prev => {
-      const next = new Set(prev);
-      next.has(key) ? next.delete(key) : next.add(key);
-      return next;
-    });
-  };
-
-  const handleAnalyze = async () => {
-    if (!code || selectedGurus.size === 0) return;
-    setLoading(true);
-    setVerdicts([]);
-    try {
-      const results = await Promise.all(
-        [...selectedGurus].map(g => apiGuruAnalyze(code, g))
-      );
-      setVerdicts(results);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const selectedStock = stocks.find(s => s.code === code);
+
+  // 차트 페이지에 임베드된 경우(initialCode 또는 selectedCode) 종목 검색 숨김
+  const showSearch = !initialCode && !selectedCode;
 
   return (
     <div>
-      <h1 style={{ fontFamily: "var(--maru)", color: "var(--blue-deep)", marginBottom: "8px" }}>
-        투자 대가 조언
-      </h1>
-      <p style={{ color: "var(--muted)", fontSize: "0.88rem", marginBottom: "24px" }}>
-        워런 버핏, 피터 린치 등 투자 대가의 시각으로 종목을 분석합니다.
-      </p>
+      <div style={{
+        fontFamily: "var(--maru)", fontSize: "0.92rem", fontWeight: 800,
+        borderLeft: "5px solid var(--blue-deep)", padding: "2px 0 4px 12px",
+        marginBottom: "16px", color: "var(--fg)",
+      }}>
+        🎩 투자 대가 조언
+      </div>
 
-      {/* 종목 선택 */}
-      <div className="bh-card" style={{ marginBottom: "16px" }}>
-        <div style={{ fontWeight: 700, marginBottom: "10px", color: "var(--fg)" }}>
-          1. 종목 선택
-        </div>
-        <div style={{ position: "relative" }}>
-          <input
-            placeholder="종목명 또는 코드 검색 (예: 삼성전자, 005930)"
-            value={query}
-            onChange={e => { setQuery(e.target.value); setCode(""); setVerdicts([]); }}
-            style={{
-              width: "100%", padding: "8px 12px",
-              background: "var(--surf2)", border: "1px solid var(--border)",
-              color: "var(--fg)", fontSize: "0.88rem", outline: "none",
-            }}
-          />
-          {filtered.length > 0 && (
-            <div style={{
-              position: "absolute", top: "100%", left: 0, right: 0,
-              background: "var(--surf)", border: "1px solid var(--border)",
-              zIndex: 10, maxHeight: "240px", overflowY: "auto",
-            }}>
-              {filtered.map(s => (
-                <div
-                  key={s.code}
-                  onClick={() => { setCode(s.code); setQuery(s.name); setVerdicts([]); }}
-                  style={{
-                    padding: "8px 12px", cursor: "pointer", fontSize: "0.88rem",
-                    borderBottom: "1px solid var(--border)",
-                    display: "flex", justifyContent: "space-between",
-                  }}
-                  onMouseEnter={e => (e.currentTarget.style.background = "var(--surf2)")}
-                  onMouseLeave={e => (e.currentTarget.style.background = "")}
-                >
-                  <span>{s.name}</span>
-                  <span style={{ color: "var(--muted)", fontSize: "0.78rem" }}>{s.code} · {s.sector}</span>
-                </div>
-              ))}
+      {/* 종목 검색 — 독립 페이지에서만 표시 */}
+      {showSearch && (
+        <div className="bh-card" style={{ marginBottom: "16px" }}>
+          <div style={{ fontWeight: 700, marginBottom: "10px", color: "var(--fg)" }}>종목 선택</div>
+          <div style={{ position: "relative" }}>
+            <input
+              placeholder="종목명 또는 코드 검색 (예: 삼성전자, 005930)"
+              value={query}
+              onChange={e => { setQuery(e.target.value); setCode(""); setVerdicts([]); }}
+              style={{
+                width: "100%", padding: "8px 12px",
+                background: "var(--surf2)", border: "1px solid var(--border)",
+                color: "var(--fg)", fontSize: "0.88rem", outline: "none",
+              }}
+            />
+            {filtered.length > 0 && (
+              <div style={{
+                position: "absolute", top: "100%", left: 0, right: 0,
+                background: "var(--surf)", border: "1px solid var(--border)",
+                zIndex: 10, maxHeight: "240px", overflowY: "auto",
+              }}>
+                {filtered.map(s => (
+                  <div
+                    key={s.code}
+                    onClick={() => { setCode(s.code); setQuery(s.name); }}
+                    style={{
+                      padding: "8px 12px", cursor: "pointer", fontSize: "0.88rem",
+                      borderBottom: "1px solid var(--border)",
+                      display: "flex", justifyContent: "space-between",
+                    }}
+                    onMouseEnter={e => (e.currentTarget.style.background = "var(--surf2)")}
+                    onMouseLeave={e => (e.currentTarget.style.background = "")}
+                  >
+                    <span>{s.name}</span>
+                    <span style={{ color: "var(--muted)", fontSize: "0.78rem" }}>{s.code} · {s.sector}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          {selectedStock && (
+            <div style={{ marginTop: "8px", fontSize: "0.82rem", color: "var(--blue)" }}>
+              선택됨: {selectedStock.name} ({selectedStock.code}) · {selectedStock.sector}
             </div>
           )}
         </div>
-        {selectedStock && (
-          <div style={{ marginTop: "8px", fontSize: "0.82rem", color: "var(--blue)" }}>
-            선택됨: {selectedStock.name} ({selectedStock.code}) · {selectedStock.sector}
-          </div>
-        )}
-      </div>
+      )}
 
-      {/* 대가 선택 */}
-      <div className="bh-card" style={{ marginBottom: "16px" }}>
-        <div style={{ fontWeight: 700, marginBottom: "10px", color: "var(--fg)" }}>
-          2. 투자 대가 선택 (복수 선택 가능)
+      {/* 로딩 */}
+      {loading && (
+        <div style={{ padding: "32px", textAlign: "center", color: "var(--muted)", fontSize: "0.88rem" }}>
+          대가들의 분석 중...
         </div>
-        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-          {gurus.map(g => {
-            const on = selectedGurus.has(g.key);
-            return (
-              <button
-                key={g.key}
-                onClick={() => toggleGuru(g.key)}
-                style={{
-                  padding: "8px 16px",
-                  background: on ? `${g.color}22` : "var(--surf2)",
-                  color: on ? g.color : "var(--muted)",
-                  border: `2px solid ${on ? g.color : "var(--border)"}`,
-                  cursor: "pointer", fontWeight: on ? 700 : 500,
-                  fontSize: "0.88rem", transition: "all 0.15s",
-                  display: "flex", alignItems: "center", gap: "6px",
-                }}
-              >
-                <span>{g.icon}</span>
-                <span>{g.name}</span>
-              </button>
-            );
-          })}
+      )}
+
+      {/* 종목 미선택 안내 */}
+      {!code && !loading && (
+        <div style={{ padding: "32px", textAlign: "center", color: "var(--muted)", fontSize: "0.88rem" }}>
+          차트 탭에서 종목을 선택하면 투자 대가 분석이 자동으로 표시됩니다.
         </div>
-      </div>
+      )}
 
-      {/* 분석 버튼 */}
-      <button
-        onClick={handleAnalyze}
-        disabled={!code || selectedGurus.size === 0 || loading}
-        style={{
-          width: "100%", padding: "14px",
-          background: code && selectedGurus.size > 0 ? "var(--blue)" : "var(--surf2)",
-          color: code && selectedGurus.size > 0 ? "#fff" : "var(--muted)",
-          border: "none", fontFamily: "var(--maru)", fontSize: "1rem",
-          fontWeight: 700, cursor: code ? "pointer" : "not-allowed",
-          marginBottom: "24px", transition: "all 0.2s",
-        }}
-      >
-        {loading ? "분석 중..." : "대가의 눈으로 분석하기"}
-      </button>
-
-      {/* 결과 */}
-      {verdicts.length > 0 && (
+      {/* 전체 대가 분석 결과 */}
+      {verdicts.length > 0 && !loading && (
         <div>
-          <div style={{
-            fontFamily: "var(--maru)", fontSize: "0.92rem", fontWeight: 800,
-            borderLeft: "5px solid #B82828", padding: "2px 0 4px 12px",
-            marginBottom: "16px", color: "var(--fg)",
-          }}>
-            {verdicts[0].stock_name} 분석 결과
-          </div>
+          {selectedStock && (
+            <div style={{ marginBottom: "12px", fontSize: "0.82rem", color: "var(--muted)" }}>
+              {selectedStock.name} ({selectedStock.code}) · {selectedStock.sector}
+            </div>
+          )}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "16px" }}>
             {verdicts.map(v => <VerdictCard key={v.guru} verdict={v} />)}
           </div>

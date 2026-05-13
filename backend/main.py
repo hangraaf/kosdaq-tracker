@@ -1,7 +1,11 @@
 """KOSDAQ Tracker — FastAPI 백엔드."""
 from __future__ import annotations
 
+import hashlib
+import json
+import os
 import sys
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
@@ -15,13 +19,53 @@ if sys.stderr.encoding and sys.stderr.encoding.lower() not in ("utf-8", "utf8"):
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from config import settings
+from config import DATA_DIR, settings
 from routers import auth, guru, news, payments, portfolio, robo, stocks
+
+
+def _init_admin():
+    """환경변수로 admin plan 자동 부여 — 기존 비밀번호 유지."""
+    username = os.getenv("ADMIN_USERNAME", "").strip().lower()
+    if not username:
+        return
+    users_file = DATA_DIR / "users.json"
+    users: dict = {}
+    if users_file.exists():
+        try:
+            users = json.loads(users_file.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+    if username in users:
+        users[username]["plan"] = "admin"
+        print(f"[STARTUP] {username} → admin 승격 완료")
+    else:
+        password = os.getenv("ADMIN_PASSWORD", "").strip()
+        if not password:
+            return
+        users[username] = {
+            "pwd_hash": hashlib.sha256(password.encode()).hexdigest(),
+            "display": os.getenv("ADMIN_DISPLAY", username),
+            "email": os.getenv("ADMIN_EMAIL", ""),
+            "plan": "admin",
+        }
+        print(f"[STARTUP] {username} 신규 admin 계정 생성 완료")
+    users_file.write_text(json.dumps(users, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    import db as _db
+    _db.init_db()
+    print("[STARTUP] SQLite 캐시 DB 초기화 완료")
+    _init_admin()
+    yield
+
 
 app = FastAPI(
     title="KOSDAQ Tracker API",
     description="Mr. Stock Buddy — PRISM™ 기반 한국 주식 트래커",
     version="2.0.0",
+    lifespan=lifespan,
 )
 
 app.add_middleware(
@@ -39,44 +83,6 @@ app.include_router(robo.router)
 app.include_router(payments.router)
 app.include_router(guru.router)
 app.include_router(news.router)
-
-
-@app.on_event("startup")
-async def startup_event():
-    import db as _db
-    _db.init_db()
-    print("[STARTUP] SQLite 캐시 DB 초기화 완료")
-    """환경변수로 admin plan 자동 부여 — 기존 비밀번호 유지."""
-    import os, json, hashlib
-    from config import DATA_DIR
-    username = os.getenv("ADMIN_USERNAME", "").strip().lower()
-    print(f"[STARTUP] ADMIN_USERNAME={repr(username)}")
-    if not username:
-        print("[STARTUP] ADMIN_USERNAME 미설정 — 건너뜀")
-        return
-    users_file = DATA_DIR / "users.json"
-    users = {}
-    if users_file.exists():
-        try:
-            users = json.loads(users_file.read_text(encoding="utf-8"))
-        except Exception:
-            pass
-    if username in users:
-        users[username]["plan"] = "admin"
-        print(f"[STARTUP] {username} → admin 승격 완료")
-    else:
-        password = os.getenv("ADMIN_PASSWORD", "").strip()
-        if not password:
-            print("[STARTUP] ADMIN_PASSWORD 미설정 — 건너뜀")
-            return
-        users[username] = {
-            "pwd_hash": hashlib.sha256(password.encode()).hexdigest(),
-            "display": os.getenv("ADMIN_DISPLAY", username),
-            "email": os.getenv("ADMIN_EMAIL", ""),
-            "plan": "admin",
-        }
-        print(f"[STARTUP] {username} 신규 admin 계정 생성 완료")
-    users_file.write_text(json.dumps(users, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
 @app.get("/debug/kis")
