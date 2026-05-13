@@ -14,7 +14,7 @@ def seed_for(*args: str) -> int:
 
 
 def generate_demo_ohlcv(code: str, base_price: int, days: int) -> pd.DataFrame:
-    rng = np.random.default_rng(seed_for(code, str(days)))
+    rng = np.random.default_rng(seed_for(code, str(days), str(date.today())))
     dates = pd.bdate_range(end=date.today(), periods=days)
     drift = rng.normal(0.00035, 0.0002)
     volatility = rng.uniform(0.018, 0.035)
