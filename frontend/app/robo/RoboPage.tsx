@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { apiRoboRecommend, apiRoboSurvey, type RoboResult, type RoboSurveyQuestion } from "@/lib/api";
-import { useAuthStore } from "@/lib/store";
+import { useAuthStore, useUIStore } from "@/lib/store";
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
@@ -41,7 +41,7 @@ function WeightBar({ weight }: { weight: number }) {
   );
 }
 
-function ResultView({ result }: { result: RoboResult }) {
+function ResultView({ result, onSelectStock }: { result: RoboResult; onSelectStock: (code: string) => void }) {
   return (
     <div>
       {/* 성향 카드 */}
@@ -79,10 +79,13 @@ function ResultView({ result }: { result: RoboResult }) {
             </tr>
           </thead>
           <tbody>
-            {result.items.map((item, i) => (
+            {result.items.map((item) => (
               <tr key={item.code} style={{ borderBottom: "1px solid var(--border)" }}>
-                <td style={{ padding: "10px 10px" }}>
-                  <span style={{ fontWeight: 600 }}>{item.name}</span>
+                <td
+                  style={{ padding: "10px 10px", cursor: "pointer" }}
+                  onClick={() => onSelectStock(item.code)}
+                >
+                  <span style={{ fontWeight: 600, color: "var(--blue)", textDecoration: "underline" }}>{item.name}</span>
                   <span style={{ color: "var(--muted)", fontSize: "0.75rem", marginLeft: "6px" }}>{item.code}</span>
                 </td>
                 <td style={{ padding: "10px 10px", fontSize: "0.8rem", color: "var(--muted)" }}>{item.sector}</td>
@@ -106,6 +109,11 @@ function ResultView({ result }: { result: RoboResult }) {
 
 export default function RoboPage() {
   const { token, isPremium } = useAuthStore();
+  const { setChart } = useUIStore();
+
+  const handleSelectStock = (code: string) => {
+    setChart(code);
+  };
   const [questions, setQuestions] = useState<RoboSurveyQuestion[]>([]);
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [result, setResult] = useState<RoboResult | null>(null);
@@ -228,7 +236,7 @@ export default function RoboPage() {
         </div>
       ) : (
         <div>
-          <ResultView result={result} />
+          <ResultView result={result} onSelectStock={handleSelectStock} />
           <button
             onClick={() => { setResult(null); setAnswers({}); }}
             style={{

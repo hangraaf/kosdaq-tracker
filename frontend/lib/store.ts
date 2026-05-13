@@ -43,6 +43,7 @@ interface UIState {
   period: string;
   setMenu: (menu: string) => void;
   setSelectedCode: (code: string | null) => void;
+  setChart: (code: string) => void;
   setMarket: (market: string) => void;
   setPeriod: (period: string) => void;
 }
@@ -54,6 +55,7 @@ export const useUIStore = create<UIState>()((set) => ({
   period: "1개월",
   setMenu: (menu) => set({ menu }),
   setSelectedCode: (code) => set({ selectedCode: code }),
+  setChart: (code) => set({ selectedCode: code, menu: "차트" }),
   setMarket: (market) => set({ market }),
   setPeriod: (period) => set({ period }),
 }));
