@@ -222,28 +222,34 @@ def market_summary():
     """상단 티커용 주요 종목 + 글로벌 지수 시세 반환."""
     items = []
     any_live = False
-
-    # 1순위: Naver 한국 종목 실데이터
     codes = [code for code, _ in TICKER_STOCKS]
-    naver_data = _get_domestic_snapshots(codes)
-    if naver_data:
-        any_live = True
-
     kis_live = kis_available()
+
+    # 1순위: KIS API
+    kis_snapshots: dict = {}
+    if kis_live:
+        for code in codes:
+            try:
+                snap = live_snapshot(code)
+                kis_snapshots[code] = snap
+                any_live = True
+            except (KISError, Exception) as e:
+                logger.warning(f"KIS snapshot {code} failed: {e}")
+
+    # 2순위: KIS 실패 종목만 Naver로 보완
+    missing = [c for c in codes if c not in kis_snapshots]
+    naver_data: dict = {}
+    if missing:
+        naver_data = _get_domestic_snapshots(missing)
+        if naver_data:
+            any_live = True
 
     for code, label in TICKER_STOCKS:
         stock = STOCK_MAP.get(code)
         if not stock:
             continue
 
-        snap = naver_data.get(code)
-        # 2순위: KIS 실데이터
-        if snap is None and kis_live:
-            try:
-                snap = live_snapshot(code)
-                any_live = True
-            except (KISError, Exception):
-                snap = None
+        snap = kis_snapshots.get(code) or naver_data.get(code)
         # 3순위: demo fallback
         if snap is None:
             snap = stock_demo_snapshot(code, stock.name, stock.market, stock.sector, stock.base_price)
