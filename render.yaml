@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: kosdaq-tracker-api
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: KIS_APP_KEY
+        sync: false
+      - key: KIS_APP_SECRET
+        sync: false
+      - key: KIS_ENV
+        value: prod
+      - key: SECRET_KEY
+        generateValue: true
+      - key: CORS_ORIGINS_EXTRA
+        sync: false
