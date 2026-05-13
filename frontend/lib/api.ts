@@ -1,4 +1,4 @@
-const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const BASE = process.env.NEXT_PUBLIC_API_URL ?? "https://kosdaq-tracker.onrender.com";
 
 async function req<T>(path: string, options?: RequestInit): Promise<T> {
   const token = typeof localStorage !== "undefined" ? localStorage.getItem("token") : null;
@@ -92,6 +92,14 @@ export async function apiChart(code: string, period = "1개월"): Promise<{ live
 
 export async function apiTodayTopFull(market = "전체", limit = 10): Promise<{ live: boolean; items: StockSnapshot[] }> {
   return req(`/stocks/today/top?market=${encodeURIComponent(market)}&limit=${limit}`);
+}
+
+export interface TickerItem {
+  code: string; name: string; price: number; change: number; change_rate: number;
+}
+
+export async function apiMarketSummary(): Promise<{ live: boolean; items: TickerItem[] }> {
+  return req("/market/summary");
 }
 
 export interface Indicators {
