@@ -51,36 +51,31 @@ def stock_demo_snapshot(code: str, name: str, market: str, sector: str, base_pri
     }
 
 
-def calculate_prism_score(code: str, df: pd.DataFrame) -> float:
-    """PRISM™ — Predictive Resonance Index for Stock Momentum (0~100)."""
-    if df is None or len(df) < 20:
-        return float(seed_for(code, "prism") % 60 + 20)
-
+def prism_components(df) -> dict:
+    """PRISM 5개 서브컴포넌트 반환 (각 0~1). guru 점수 계산에도 재사용됨."""
     close = df["close"].astype(float).values
     volume = df["volume"].astype(float).values
-
-    # 1. 추세 (MA20 대비 현재 위치)
-    ma20 = close[-20:].mean()
+    n = len(close)
+    ma20 = close[-20:].mean() if n >= 20 else close.mean()
     trend = min(max((close[-1] / ma20 - 1) * 5 + 0.5, 0), 1)
-
-    # 2. 모멘텀 (최근 5일 수익률)
-    mom = min(max((close[-1] / close[-6] - 1) * 10 + 0.5, 0), 1) if len(close) >= 6 else 0.5
-
-    # 3. 거래량 (최근 5일 vs 이전 20일)
-    vol_recent = volume[-5:].mean() if len(volume) >= 5 else volume.mean()
-    vol_base = volume[-25:-5].mean() if len(volume) >= 25 else volume.mean()
-    vol_score = min(vol_recent / (vol_base + 1e-9), 3) / 3
-
-    # 4. RSI
+    mom = min(max((close[-1] / close[-6] - 1) * 10 + 0.5, 0), 1) if n >= 6 else 0.5
+    vol_r = volume[-5:].mean() if n >= 5 else volume.mean()
+    vol_b = volume[-25:-5].mean() if n >= 25 else volume.mean()
+    vol_score = min(vol_r / (vol_b + 1e-9), 3) / 3
     delta = np.diff(close)
     gain = np.where(delta > 0, delta, 0)[-14:].mean()
     loss = np.where(delta < 0, -delta, 0)[-14:].mean()
     rsi = 100 - (100 / (1 + gain / (loss + 1e-9))) if loss > 0 else 50
     rsi_score = 1 - abs(rsi - 55) / 55
+    cv = close[-20:].std() / (close[-20:].mean() + 1e-9) if n >= 20 else 0.05
+    stab = max(1 - cv * 10, 0)
+    return {"trend": trend, "mom": mom, "vol": vol_score, "rsi": rsi_score, "stab": stab}
 
-    # 5. 변동성 (낮을수록 높은 점수 — 안정적 상승 선호)
-    vol_std = close[-20:].std() / (close[-20:].mean() + 1e-9)
-    stab = max(1 - vol_std * 10, 0)
 
-    raw = (trend * 0.3 + mom * 0.25 + vol_score * 0.2 + rsi_score * 0.15 + stab * 0.1)
+def calculate_prism_score(code: str, df: pd.DataFrame) -> float:
+    """PRISM™ — Predictive Resonance Index for Stock Momentum (0~100)."""
+    if df is None or len(df) < 20:
+        return float(seed_for(code, "prism") % 60 + 20)
+    c = prism_components(df)
+    raw = c["trend"] * 0.3 + c["mom"] * 0.25 + c["vol"] * 0.2 + c["rsi"] * 0.15 + c["stab"] * 0.1
     return round(raw * 100, 1)

@@ -167,9 +167,7 @@ class KISClient:
         )
         return self._parse_response(response).get("output") or {}
 
-    def daily_chart(self, code: str, days: int) -> pd.DataFrame:
-        end = date.today()
-        start = end - pd.Timedelta(days=max(days * 2, 60))
+    def _fetch_chart_page(self, code: str, start: date, end: date) -> list[dict]:
         response = requests.get(
             f"{self.config.base_url}/uapi/domestic-stock/v1/quotations/inquire-daily-itemchartprice",
             headers=self._headers("FHKST03010100"),
@@ -183,24 +181,54 @@ class KISClient:
             },
             timeout=10,
         )
-        rows = self._parse_response(response).get("output2") or []
-        if not rows:
+        return self._parse_response(response).get("output2") or []
+
+    def daily_chart(self, code: str, days: int) -> pd.DataFrame:
+        # KIS API returns at most ~100 rows per call — paginate backwards to collect enough data.
+        target_start = date.today() - pd.Timedelta(days=max(days * 2, 60))
+        page_end = date.today()
+        all_rows: list[dict] = []
+        max_pages = 10
+
+        for _ in range(max_pages):
+            rows = self._fetch_chart_page(code, target_start, page_end)
+            if not rows:
+                break
+            all_rows.extend(rows)
+            # Find the earliest date in this page to set next page's end
+            dates_in_page = [
+                pd.to_datetime(r.get("stck_bsop_date"), format="%Y%m%d", errors="coerce")
+                for r in rows
+            ]
+            earliest = min((d for d in dates_in_page if not pd.isnull(d)), default=None)
+            if earliest is None or earliest.date() <= target_start:
+                break
+            # Move the window one day before the earliest fetched date
+            page_end = earliest.date() - pd.Timedelta(days=1)
+            if page_end <= target_start:
+                break
+
+        if not all_rows:
             raise KISError("KIS daily chart response did not include output2 rows.")
 
-        frame = pd.DataFrame(
-            [
-                {
-                    "date": pd.to_datetime(row.get("stck_bsop_date"), format="%Y%m%d", errors="coerce"),
-                    "open": self._to_int(row.get("stck_oprc")),
-                    "high": self._to_int(row.get("stck_hgpr")),
-                    "low": self._to_int(row.get("stck_lwpr")),
-                    "close": self._to_int(row.get("stck_clpr")),
-                    "volume": self._to_int(row.get("acml_vol")),
-                }
-                for row in rows
-            ]
+        def _parse_row(row: dict) -> dict:
+            return {
+                "date": pd.to_datetime(row.get("stck_bsop_date"), format="%Y%m%d", errors="coerce"),
+                "open": self._to_int(row.get("stck_oprc")),
+                "high": self._to_int(row.get("stck_hgpr")),
+                "low": self._to_int(row.get("stck_lwpr")),
+                "close": self._to_int(row.get("stck_clpr")),
+                "volume": self._to_int(row.get("acml_vol")),
+            }
+
+        frame = pd.DataFrame([_parse_row(r) for r in all_rows])
+        frame = (
+            frame.dropna(subset=["date"])
+            .drop_duplicates(subset=["date"])
+            .sort_values("date")
+            .tail(days)
+            .reset_index(drop=True)
         )
-        frame = frame.dropna(subset=["date"]).sort_values("date").tail(days).reset_index(drop=True)
         if frame.empty:
             raise KISError("KIS daily chart rows could not be parsed.")
         return frame

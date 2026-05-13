@@ -1,7 +1,6 @@
 """KOSDAQ Tracker — FastAPI 백엔드."""
 from __future__ import annotations
 
-import hashlib
 import json
 import os
 import sys
@@ -20,7 +19,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from config import DATA_DIR, settings
-from routers import auth, guru, news, payments, portfolio, robo, stocks
+from routers import auth, guru, market, news, payments, portfolio, robo, stocks
 
 
 def _init_admin():
@@ -42,8 +41,9 @@ def _init_admin():
         password = os.getenv("ADMIN_PASSWORD", "").strip()
         if not password:
             return
+        from routers.auth import _hash_pw
         users[username] = {
-            "pwd_hash": hashlib.sha256(password.encode()).hexdigest(),
+            "pwd_hash": _hash_pw(password),
             "display": os.getenv("ADMIN_DISPLAY", username),
             "email": os.getenv("ADMIN_EMAIL", ""),
             "plan": "admin",
@@ -78,6 +78,7 @@ app.add_middleware(
 
 app.include_router(auth.router)
 app.include_router(stocks.router)
+app.include_router(market.router)
 app.include_router(portfolio.router)
 app.include_router(robo.router)
 app.include_router(payments.router)

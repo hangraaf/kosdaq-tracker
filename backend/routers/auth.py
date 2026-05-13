@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Annotated
@@ -10,6 +11,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
+from passlib.context import CryptContext
 
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
@@ -20,6 +22,9 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
 
 USERS_FILE = DATA_DIR / "users.json"
+
+_pwd_ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
+_SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 
 
 def _load_users() -> dict:
@@ -36,7 +41,22 @@ def _save_users(users: dict) -> None:
 
 
 def _hash_pw(password: str) -> str:
-    return hashlib.sha256(password.encode("utf-8")).hexdigest()
+    return _pwd_ctx.hash(password)
+
+
+def _verify_pw(plain: str, hashed: str) -> bool:
+    """bcrypt 검증. 레거시 SHA-256(64자리 hex)도 허용."""
+    if _SHA256_RE.match(hashed):
+        return hashlib.sha256(plain.encode("utf-8")).hexdigest() == hashed
+    return _pwd_ctx.verify(plain, hashed)
+
+
+def _upgrade_hash_if_needed(users: dict, uname: str, plain: str) -> None:
+    """로그인 성공 시 레거시 SHA-256 해시를 bcrypt로 자동 업그레이드."""
+    stored = users[uname].get("pwd_hash", "")
+    if _SHA256_RE.match(stored):
+        users[uname]["pwd_hash"] = _hash_pw(plain)
+        _save_users(users)
 
 
 def _create_token(data: dict) -> str:
@@ -91,8 +111,9 @@ def login(form: Annotated[OAuth2PasswordRequestForm, Depends()]):
     users = _load_users()
     uname = form.username.strip().lower()
     user = users.get(uname)
-    if not user or user.get("pwd_hash") != _hash_pw(form.password):
+    if not user or not _verify_pw(form.password, user.get("pwd_hash", "")):
         raise HTTPException(status_code=401, detail="아이디 또는 비밀번호가 올바르지 않습니다.")
+    _upgrade_hash_if_needed(users, uname, form.password)
     token = _create_token({"sub": uname})
     return TokenResponse(access_token=token, username=uname,
                          display=user.get("display", uname), plan=user.get("plan", "free"))

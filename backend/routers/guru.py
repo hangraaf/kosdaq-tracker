@@ -4,7 +4,6 @@ from __future__ import annotations
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-import numpy as np
 from fastapi import APIRouter, HTTPException, Query
 
 from kis_client import KISError
@@ -69,15 +68,6 @@ GURUS = {
         "desc": "강한 이익 성장 + 신고가 돌파 패턴을 추구합니다.",
         "weights": {"momentum": 0.4, "growth": 0.3, "value": 0.1, "stability": 0.2},
     },
-    "템플턴": {
-        "name": "존 템플턴",
-        "eng": "John Templeton",
-        "style": "역발상 · 글로벌",
-        "icon": "🌏",
-        "color": "#7C5C9A",
-        "desc": "극도의 비관론이 팽배할 때 저평가 우량주를 매수합니다.",
-        "weights": {"value": 0.35, "stability": 0.25, "moat": 0.25, "momentum": 0.15},
-    },
     "코테가와": {
         "name": "코테가와 다카시",
         "eng": "Takashi Kotegawa (BNF)",
@@ -99,35 +89,50 @@ GURUS = {
 }
 
 
+# 대가별 PRISM 렌즈 — [trend, mom, vol, rsi, stab] 가중치
+# 각 대가가 동일한 시장 데이터를 자신의 철학으로 해석하는 방식
+_LENSES: dict[str, dict[str, list]] = {
+    "달리오":   {"momentum": [0.2, 0.3, 0.3, 0.1, 0.1], "stability": [0.0, 0.0, 0.0, 0.4, 0.6], "growth": [0.3, 0.3, 0.3, 0.1, 0.0]},
+    "버핏":     {"momentum": [0.5, 0.2, 0.1, 0.1, 0.1], "stability": [0.2, 0.0, 0.0, 0.3, 0.5], "growth": [0.5, 0.2, 0.1, 0.2, 0.0]},
+    "린치":     {"momentum": [0.3, 0.4, 0.2, 0.1, 0.0], "stability": [0.1, 0.0, 0.0, 0.4, 0.5], "growth": [0.3, 0.3, 0.4, 0.0, 0.0]},
+    "그레이엄": {"momentum": [0.4, 0.2, 0.1, 0.2, 0.1], "stability": [0.0, 0.0, 0.0, 0.2, 0.8], "growth": [0.5, 0.1, 0.0, 0.2, 0.2]},
+    "스미스":   {"momentum": [0.4, 0.3, 0.1, 0.1, 0.1], "stability": [0.2, 0.0, 0.0, 0.3, 0.5], "growth": [0.4, 0.2, 0.3, 0.1, 0.0]},
+    "오닐":     {"momentum": [0.3, 0.5, 0.2, 0.0, 0.0], "stability": [0.6, 0.3, 0.1, 0.0, 0.0], "growth": [0.2, 0.4, 0.4, 0.0, 0.0]},
+    "코테가와": {"momentum": [0.2, 0.4, 0.4, 0.0, 0.0], "stability": [0.7, 0.2, 0.1, 0.0, 0.0], "growth": [0.1, 0.4, 0.5, 0.0, 0.0]},
+    "카타야마": {"momentum": [0.2, 0.4, 0.3, 0.1, 0.0], "stability": [0.1, 0.0, 0.1, 0.4, 0.4], "growth": [0.3, 0.3, 0.4, 0.0, 0.0]},
+}
+
+
 def _compute_scores(code: str, df, guru_key: str) -> dict[str, float]:
-    closes = df["close"].astype(float).values
-    volumes = df["volume"].astype(float).values
-    seed = seed_for(code, "guru")
+    from utils import prism_components
+    c = prism_components(df)
+    comps = [c["trend"], c["mom"], c["vol"], c["rsi"], c["stab"]]
+    lens = _LENSES[guru_key]
 
-    mom = float((closes[-1] / closes[-20] - 1) * 100) if len(closes) >= 20 else 0.0
-    momentum = min(max((mom + 20) / 40, 0), 1)
+    # PRISM 렌즈 (0~1)
+    mom_lens  = sum(w * v for w, v in zip(lens["momentum"],  comps))
+    stab_lens = sum(w * v for w, v in zip(lens["stability"], comps))
+    grow_lens = sum(w * v for w, v in zip(lens["growth"],    comps))
 
-    std = float(np.std(closes[-20:]) / np.mean(closes[-20:])) if len(closes) >= 20 else 0.1
-    stability = max(1 - std * 5, 0)
+    # guru_key 기반 seed 오프셋 (20~79 범위) — 컴포넌트가 평탄해도 대가별 차이 보장
+    sm_s = (seed_for(code, guru_key, "mom_s")  % 60 + 20) / 100
+    ss_s = (seed_for(code, guru_key, "stab_s") % 60 + 20) / 100
+    sg_s = (seed_for(code, guru_key, "grow_s") % 60 + 20) / 100
 
-    # 낮은 PER/PBR = 높은 가치 점수 (역산)
-    per = 1 - (seed % 30 + 5) / 35
-    pbr = 1 - ((seed >> 4) % 20 + 2) / 22
-    value = (per + pbr) / 2
+    # 렌즈 70% + seed 30% 혼합
+    momentum  = round((mom_lens  * 0.7 + sm_s * 0.3) * 100, 1)
+    stability = round((stab_lens * 0.7 + ss_s * 0.3) * 100, 1)
+    growth    = round((grow_lens * 0.7 + sg_s * 0.3) * 100, 1)
 
-    vol_growth = float(np.mean(volumes[-5:]) / (np.mean(volumes[-20:]) + 1e-9)) if len(volumes) >= 20 else 1.0
-    growth = min(max((vol_growth - 0.5) / 2, 0), 1) * 0.5 + momentum * 0.5
+    # 가치·해자: 가격 데이터로 산출 불가 → guru_key 포함 seed
+    sv = seed_for(code, guru_key, "value")
+    sm = seed_for(code, guru_key, "moat")
+    per   = 1 - (sv % 30 + 5) / 35
+    pbr   = 1 - ((sv >> 4) % 20 + 2) / 22
+    value = round(((per + pbr) / 2) * 100, 1)
+    moat  = round(min((sm % 80 + 20) / 100, 1) * 100, 1)
 
-    cap_score = min((seed % 80 + 20) / 100, 1)
-    moat = cap_score
-
-    return {
-        "momentum": round(momentum * 100, 1),
-        "stability": round(stability * 100, 1),
-        "value": round(value * 100, 1),
-        "growth": round(growth * 100, 1),
-        "moat": round(moat * 100, 1),
-    }
+    return {"momentum": momentum, "stability": stability, "value": value, "growth": growth, "moat": moat}
 
 
 def _build_reasons(code: str, stock_name: str, sector: str, market: str,
@@ -272,18 +277,6 @@ def _build_reasons(code: str, stock_name: str, sector: str, market: str,
         if market == "KOSDAQ":
             reasons.append("KOSDAQ — 모멘텀 효과 강한 시장, 오닐 방식에 적합")
 
-    elif guru_key == "템플턴":
-        value_s = scores.get("value", 50)
-        stability_s = scores.get("stability", 50)
-        if value_s >= 65:
-            reasons.append(f"가치 점수 {value_s:.0f} — 시장 비관론 속 저평가 우량주 조건 부합")
-        else:
-            reasons.append(f"가치 점수 {value_s:.0f} — 아직 충분한 공포와 저평가가 형성되지 않음")
-        if stability_s >= 60:
-            reasons.append("안정성 양호 — 템플턴 역발상 매수의 핵심 조건: 펀더멘털은 건전")
-        if sector in {"금융", "에너지", "소재"}:
-            reasons.append(f"{sector} — 템플턴이 선호한 글로벌 역발상 섹터")
-
     elif guru_key == "코테가와":
         vol_spike = round((seed_for(code, "vol_spike") % 30) / 10 + 0.5, 1)
         mom_s = scores.get("momentum", 50)
@@ -391,13 +384,6 @@ def _guru_verdict(guru_key: str, scores: dict, stock_name: str,
             "관망": f"{stock_name}의 모멘텀이 약합니다. 명확한 돌파 신호를 기다리겠습니다.",
             "주의": f"{stock_name}은 하락 추세입니다. 절대 하락하는 칼날을 잡지 마세요.",
             "회피": f"{stock_name}은 모든 기술적 기준에서 실패했습니다. 다음 기회를 노리겠습니다.",
-        },
-        "템플턴": {
-            "강력 매수": f"극도의 비관론 속에서 {stock_name}은 역발상 매수의 최적 후보입니다.",
-            "매수": f"{stock_name}은 시장이 과도하게 저평가한 우량 종목으로 보입니다.",
-            "관망": f"{stock_name}에 아직 충분한 공포가 형성되지 않았습니다. 더 기다리겠습니다.",
-            "주의": f"{stock_name}의 하락이 일시적인지 구조적인지 판단이 어렵습니다.",
-            "회피": f"비관론이 있더라도 {stock_name}의 펀더멘털이 너무 취약합니다.",
         },
         "코테가와": {
             "강력 매수": f"{stock_name}! 강한 수급과 모멘텀이 확인됩니다. BNF 방식으로 즉시 진입, 트레일링 스톱 필수.",

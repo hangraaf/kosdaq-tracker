@@ -1,3 +1,3 @@
-from . import auth, guru, news, payments, portfolio, robo, stocks
+from . import auth, guru, market, news, payments, portfolio, robo, stocks
 
-__all__ = ["auth", "guru", "news", "payments", "portfolio", "robo", "stocks"]
+__all__ = ["auth", "guru", "market", "news", "payments", "portfolio", "robo", "stocks"]

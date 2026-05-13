@@ -26,6 +26,14 @@ class Settings(BaseSettings):
     toss_client_key: str = ""
     toss_secret_key: str = ""
 
+    # PostgreSQL (선택 — 설정 시 JSON+SQLite 대신 PG 사용)
+    database_url: str = ""   # postgresql+asyncpg://user:pass@host/db
+    use_postgres: bool = False
+
+    def model_post_init(self, __context) -> None:
+        if self.database_url:
+            object.__setattr__(self, "use_postgres", True)
+
     # CORS — 개발 + 배포 주소
     cors_origins: list[str] = [
         "http://localhost:3000",
