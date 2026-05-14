@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>투자대가 카드 미리보기</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #0A1628;
+      color: #D4D0C8;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      padding: 20px;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-size: 1.2rem;
+      margin-bottom: 30px;
+      color: #fff;
+      font-weight: 800;
+      border-left: 5px solid #1A6FD4;
+      padding-left: 12px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      gap: 20px;
+    }
+
+    .card {
+      border: 2px solid #436B95;
+      background: #1A2540;
+      overflow: hidden;
+      border-radius: 8px;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(26, 111, 212, 0.15);
+    }
+
+    /* 사진 헤더 */
+    .photo-header {
+      position: relative;
+      height: 140px;
+      background-size: cover;
+      background-position: center top;
+      overflow: hidden;
+    }
+
+    /* 색상 그라디에이션 오버레이 */
+    .photo-header::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(160deg, #436B9544 0%, #436B95AA 60%, #0A162888 100%);
+      z-index: 1;
+    }
+
+    /* 하단 페이드 */
+    .photo-header::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, #0A1628 0%, transparent 55%);
+      z-index: 2;
+    }
+
+    .header-content {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 12px 16px;
+      z-index: 3;
+    }
+
+    .header-top {
+      text-align: right;
+      color: #fff;
+    }
+
+    .action {
+      color: #FFD700;
+      font-weight: 700;
+      font-size: 0.9rem;
+      margin-bottom: 2px;
+    }
+
+    .rating {
+      color: #B0883A;
+      font-size: 1rem;
+      letter-spacing: 1px;
+      font-weight: 500;
+    }
+
+    .header-bottom {
+      color: #fff;
+    }
+
+    .name {
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin-bottom: 2px;
+    }
+
+    .eng-name {
+      font-size: 0.72rem;
+      color: #B0A898;
+      font-weight: 500;
+      margin-left: 4px;
+    }
+
+    /* 카드 바디 */
+    .body {
+      padding: 20px;
+    }
+
+    .meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      font-size: 0.75rem;
+      color: #8A8680;
+    }
+
+    .comment {
+      background: #436B9511;
+      border: 1px solid #436B9533;
+      padding: 12px 14px;
+      margin-bottom: 16px;
+      font-size: 0.9rem;
+      line-height: 1.7;
+      font-style: italic;
+      color: #D4D0C8;
+      border-radius: 4px;
+    }
+
+    .scores {
+      margin-bottom: 14px;
+    }
+
+    .score-item {
+      margin-bottom: 8px;
+    }
+
+    .score-label {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 3px;
+      font-size: 0.75rem;
+      color: #8A8680;
+    }
+
+    .score-bar {
+      height: 6px;
+      background: #2A3D5C;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .score-fill {
+      height: 100%;
+      background: #436B95;
+      border-radius: 3px;
+      transition: width 0.6s ease;
+    }
+
+    .reasons {
+      border-top: 1px solid #436B9533;
+      padding-top: 12px;
+    }
+
+    .reasons-title {
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: #8A8680;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+    }
+
+    .reasons-list {
+      margin: 0;
+      padding-left: 16px;
+      list-style: none;
+    }
+
+    .reasons-list li {
+      font-size: 0.78rem;
+      color: #D4D0C8;
+      margin-bottom: 4px;
+      line-height: 1.5;
+    }
+
+    .reasons-list li::before {
+      content: '• ';
+      margin-right: 4px;
+    }
+
+    /* 워런 버핏 카드 */
+    .buffett .photo-header {
+      background-image: url('https://upload.wikimedia.org/wikipedia/commons/5/51/Warren_Buffett_KU_Visit.jpg');
+    }
+
+    .buffett { border-color: #436B95; }
+    .buffett .score-fill { background: #436B95; }
+    .buffett::before { border-left-color: #436B95; }
+
+    /* 피터 린치 카드 */
+    .lynch .photo-header {
+      background-image: url('https://upload.wikimedia.org/wikipedia/commons/9/97/Peter_Lynch_2019.jpg');
+    }
+
+    .lynch { border-color: #B0883A; }
+    .lynch .score-fill { background: #B0883A; }
+    .lynch .action { color: #FFD700; }
+    .lynch .rating { color: #B0883A; }
+
+    /* 벤저민 그레이엄 카드 */
+    .graham .photo-header {
+      background-image: url('https://upload.wikimedia.org/wikipedia/commons/7/7e/Benjamin_Graham_%281894-1976%29_portrait_on_23_March_1950.jpg');
+    }
+
+    .graham { border-color: #5C7FA8; }
+    .graham .score-fill { background: #5C7FA8; }
+
+    /* 레이 달리오 카드 */
+    .dalio .photo-header {
+      background-image: url('https://upload.wikimedia.org/wikipedia/commons/5/56/Ray_Dalio_%282%29.jpg');
+    }
+
+    .dalio { border-color: #2C6E49; }
+    .dalio .score-fill { background: #2C6E49; }
+    .dalio::before {
+      background: linear-gradient(160deg, #2C6E4944 0%, #2C6E49AA 60%, #0A162888 100%);
+    }
+
+    /* 그라디에이션 업데이트 */
+    .buffett .photo-header::before {
+      background: linear-gradient(160deg, #436B9544 0%, #436B95AA 60%, #0A162888 100%);
+    }
+
+    .lynch .photo-header::before {
+      background: linear-gradient(160deg, #B0883A44 0%, #B0883AAA 60%, #0A162888 100%);
+    }
+
+    .graham .photo-header::before {
+      background: linear-gradient(160deg, #5C7FA844 0%, #5C7FA8AA 60%, #0A162888 100%);
+    }
+
+    .dalio .photo-header::before {
+      background: linear-gradient(160deg, #2C6E4944 0%, #2C6E49AA 60%, #0A162888 100%);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎩 투자 대가 조언 (새 디자인)</h1>
+
+    <div class="grid">
+      <!-- 워런 버핏 카드 -->
+      <div class="card buffett">
+        <div class="photo-header">
+          <div class="header-content">
+            <div class="header-top">
+              <div class="action">강력 매수</div>
+              <div class="rating">★★★★★</div>
+            </div>
+            <div class="header-bottom">
+              <div class="name">워런 버핏 <span class="eng-name">Warren Buffett</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="body">
+          <div class="meta">
+            <span>가치투자 · 장기보유</span>
+            <span>종합점수 95</span>
+          </div>
+
+          <div class="comment">
+            "이 회사는 뛰어난 경영진과 강력한 경쟁 우위를 갖추고 있습니다. 장기 투자자에게 탁월한 선택입니다."
+          </div>
+
+          <div class="scores">
+            <div class="score-item">
+              <div class="score-label">
+                <span>가치</span>
+                <span>92</span>
+              </div>
+              <div class="score-bar">
+                <div class="score-fill" style="width: 92%;"></div>
+              </div>
+            </div>
+            <div class="score-item">
+              <div class="score-label">
+                <span>해자</span>
+                <span>88</span>
+              </div>
+              <div class="score-bar">
+                <div class="score-fill" style="width: 88%;"></div>
+              </div>
+            </div>
+            <div class="score-item">
+              <div class="score-label">
+                <span>안정성</span>
+                <span>85</span>
+              </div>
+              <div class="score-bar">
+                <div class="score-fill" style="width: 85%;"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="reasons">
+            <div class="reasons-title">분석 근거</div>
+            <ul class="reasons-list">
+              <li>PER 12배, PBR 1.8배로 저평가 상태</li>
+              <li>ROE 22%, ROIC 18% 이상 유지</li>
+              <li>산업 내 강력한 시장 점유율</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- 피터 린치 카드 -->
+      <div class="card lynch">
+        <div class="photo-header">
+          <div class="header-content">
+            <div class="header-top">
+              <div class="action">매수</div>
+              <div class="rating">★★★★☆</div>
+            </div>
+            <div class="header-bottom">
+              <div class="name">피터 린치 <span class="eng-name">Peter Lynch</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="body">
+          <div class="meta">
+            <span>성장주 발굴 · GARP</span>
+            <span>종합점수 82</span>
+          </div>
+
+          <div class="comment">
+            "적절한 가격에 미래 성장성을 갖춘 회사입니다. 향후 3년 성장 가능성이 우수합니다."
+          </div>
+
+          <div class="scores">
+            <div class="score-item">
+              <div class="score-label">
+                <span>성장</span>
+                <span>89</span>
+              </div>
+              <div class="score-bar">
+                <div class="score-fill" style="width: 89%;"></div>
+              </div>
+            </div>
+            <div class="score-item">
+              <div class="score-label">
+                <span>모멘텀</span>
+                <span>78</span>
+              </div>
+              <div class="score-bar">
+                <div class="score-fill" style="width: 78%;"></div>
+              </div>
+            </div>
+            <div class="score-item">
+              <div class="score-label">
+                <span>가치</span>
+                <span>72</span>
+              </div>
+              <div class="score-bar">
+                <div class="score-fill" style="width: 72%;"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="reasons">
+            <div class="reasons-title">분석 근거</div>
+            <ul class="reasons-list">
+              <li>PEG 비율 0.8배 수준으로 매력적</li>
+              <li>연 25% 이상 성장 전망</li>
+              <li>산업 평균 대비 우수한 마진율</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- 벤저민 그레이엄 카드 -->
+      <div class="card graham">
+        <div class="photo-header">
+          <div class="header-content">
+            <div class="header-top">
+              <div class="action">관망</div>
+              <div class="rating">★★★☆☆</div>
+            </div>
+            <div class="header-bottom">
+              <div class="name">벤저민 그레이엄 <span class="eng-name">Benjamin Graham</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="body">
+          <div class="meta">
+            <span>안전마진 · 깊은 가치</span>
+            <span>종합점수 68</span>
+          </div>
+
+          <div class="comment">
+            "합리적인 가격이지만, 충분한 안전마진이 있을 때까지 대기를 추천합니다."
+          </div>
+
+          <div class="scores">
+            <div class="score-item">
+              <div class="score-label">
+                <span>안정성</span>
+                <span>92</span>
+              </div>
+              <div class="score-bar">
+                <div class="score-fill" style="width: 92%;"></div>
+              </div>
+            </div>
+            <div class="score-item">
+              <div class="score-label">
+                <span>가치</span>
+                <span>65</span>
+              </div>
+              <div class="score-bar">
+                <div class="score-fill" style="width: 65%;"></div>
+              </div>
+            </div>
+            <div class="score-item">
+              <div class="score-label">
+                <span>모멘텀</span>
+                <span>45</span>
+              </div>
+              <div class="score-bar">
+                <div class="score-fill" style="width: 45%;"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="reasons">
+            <div class="reasons-title">분석 근거</div>
+            <ul class="reasons-list">
+              <li>부채 비율 35%로 양호한 재무 건전성</li>
+              <li>최근 3년 배당금 지속 증가</li>
+              <li>내재 가치 대비 15% 할인 필요</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- 레이 달리오 카드 -->
+      <div class="card dalio">
+        <div class="photo-header">
+          <div class="header-content">
+            <div class="header-top">
+              <div class="action">주의</div>
+              <div class="rating">★★☆☆☆</div>
+            </div>
+            <div class="header-bottom">
+              <div class="name">레이 달리오 <span class="eng-name">Ray Dalio</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="body">
+          <div class="meta">
+            <span>리스크 패리티 · 부채 사이클</span>
+            <span>종합점수 52</span>
+          </div>
+
+          <div class="comment">
+            "부채 수준이 높은 가운데 경기 민감도가 커 현 시점에서는 신중한 접근이 필요합니다."
+          </div>
+
+          <div class="scores">
+            <div class="score-item">
+              <div class="score-label">
+                <span>안정성</span>
+                <span>42</span>
+              </div>
+              <div class="score-bar">
+                <div class="score-fill" style="width: 42%;"></div>
+              </div>
+            </div>
+            <div class="score-item">
+              <div class="score-label">
+                <span>모멘텀</span>
+                <span>55</span>
+              </div>
+              <div class="score-bar">
+                <div class="score-fill" style="width: 55%;"></div>
+              </div>
+            </div>
+            <div class="score-item">
+              <div class="score-label">
+                <span>가치</span>
+                <span>60</span>
+              </div>
+              <div class="score-bar">
+                <div class="score-fill" style="width: 60%;"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="reasons">
+            <div class="reasons-title">분석 근거</div>
+            <ul class="reasons-list">
+              <li>부채비율 2.5배로 업계 평균 대비 높음</li>
+              <li>경기 민감도 1.3배 이상</li>
+              <li>금리 인상 시 주가 하락 가능성</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top: 40px; padding: 20px; background: #1A2540; border-left: 4px solid #1A6FD4; border-radius: 4px; color: #B0A898;">
+      <p style="margin-bottom: 8px; font-weight: 600; color: #fff;">✨ 새로운 디자인 특징:</p>
+      <ul style="margin-left: 20px; line-height: 1.8;">
+        <li>인물 사진을 배경으로 사용하여 시각적 매력 향상</li>
+        <li>대가별 고유 색상 그라디에이션 오버레이로 세련된 분위기</li>
+        <li>하단 페이드로 텍스트 가독성 확보</li>
+        <li>카드 상단에 주요 정보(액션, 등급) 배치</li>
+        <li>사진 로드 실패 시 이모지 헤더로 자동 폴백</li>
+      </ul>
+    </div>
+  </div>
+</body>
+</html>

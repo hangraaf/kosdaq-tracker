@@ -12,14 +12,10 @@ function timeAgo(iso: string): string {
   return `${Math.floor(diff / 86400)}일 전`;
 }
 
-function ScoreDot({ score }: { score: number }) {
-  const color = score >= 4 ? "#B5453F" : score >= 2 ? "#B0883A" : "var(--muted)";
-  return (
-    <span title={`관련도 ${score}`} style={{
-      display: "inline-block", width: "8px", height: "8px",
-      borderRadius: "50%", background: color, marginRight: "5px", flexShrink: 0,
-    }} />
-  );
+function scoreColor(score: number): string {
+  if (score >= 4) return "#B5453F";
+  if (score >= 2) return "#C4923E";
+  return "transparent";
 }
 
 function NewsCard({ item }: { item: NewsItem }) {
@@ -33,13 +29,14 @@ function NewsCard({ item }: { item: NewsItem }) {
       <div style={{
         padding: "12px 14px",
         borderBottom: "1px solid var(--border)",
+        borderLeft: `4px solid ${scoreColor(item.score)}`,
         transition: "background 0.1s",
       }}
         onMouseEnter={e => (e.currentTarget.style.background = "var(--surf2)")}
         onMouseLeave={e => (e.currentTarget.style.background = "")}
+        title={`중요도 ${item.score}`}
       >
         <div style={{ display: "flex", alignItems: "flex-start", gap: "8px" }}>
-          <ScoreDot score={item.score} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <div
               title={item.title_orig}
@@ -158,21 +155,24 @@ export default function NewsPage() {
         ))}
       </div>
 
-      {/* 관련도 범례 */}
+      {/* 중요도 범례 */}
       <div style={{
         display: "flex", gap: "14px", alignItems: "center",
         padding: "6px 10px", background: "#F5F0E6",
         border: "1px solid var(--border)", marginBottom: "8px",
         fontSize: "0.68rem", color: "var(--muted)",
       }}>
-        <span style={{ fontWeight: 700 }}>관련도</span>
+        <span style={{ fontWeight: 700 }}>중요도</span>
         {[
           { color: "#B5453F", label: "높음" },
-          { color: "#B0883A", label: "중간" },
-          { color: "var(--muted)", label: "보통" },
+          { color: "#C4923E", label: "중간" },
+          { color: undefined, label: "보통" },
         ].map(({ color, label }) => (
           <span key={label} style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-            <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: color, display: "inline-block" }} />
+            <span style={{
+              width: "4px", height: "16px", display: "inline-block",
+              ...(color ? { background: color } : { border: "1px solid var(--muted)" }),
+            }} />
             {label}
           </span>
         ))}

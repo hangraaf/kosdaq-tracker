@@ -7,6 +7,18 @@ import {
 } from "@/lib/api";
 import { useUIStore } from "@/lib/store";
 
+// 각 대가의 인물 사진 URL (위키미디어 공개 이미지)
+const GURU_PHOTOS: Record<string, string> = {
+  달리오: "https://upload.wikimedia.org/wikipedia/commons/5/56/Ray_Dalio_%282%29.jpg",
+  버핏: "https://upload.wikimedia.org/wikipedia/commons/5/51/Warren_Buffett_KU_Visit.jpg",
+  린치: "https://upload.wikimedia.org/wikipedia/commons/9/97/Peter_Lynch_2019.jpg",
+  그레이엄: "https://upload.wikimedia.org/wikipedia/commons/7/7e/Benjamin_Graham_%281894-1976%29_portrait_on_23_March_1950.jpg",
+  스미스: "/images/gurus/terry-smith.jpg",
+  오닐: "/images/gurus/william-oneil.jpg",
+  코테가와: "/images/gurus/bnf.jpg",
+  카타야마: "/images/gurus/katayama.jpg",
+};
+
 function RadarBar({ label, value, color }: { label: string; value: number; color: string }) {
   return (
     <div style={{ marginBottom: "8px" }}>
@@ -22,63 +34,139 @@ function RadarBar({ label, value, color }: { label: string; value: number; color
 }
 
 function VerdictCard({ verdict }: { verdict: GuruVerdict }) {
+  const [photoFailed, setPhotoFailed] = useState(false);
   const scoreLabels: Record<string, string> = {
     momentum: "모멘텀", stability: "안정성", value: "가치", growth: "성장", moat: "해자",
   };
+
+  const photoUrl = GURU_PHOTOS[verdict.guru_name] || "";
+  const usePhotoHeader = photoUrl && !photoFailed;
+
+  useEffect(() => {
+    if (!photoUrl) return;
+    const img = new Image();
+    img.onload = () => setPhotoFailed(false);
+    img.onerror = () => setPhotoFailed(true);
+    img.src = photoUrl;
+  }, [photoUrl]);
+
   return (
-    <div style={{ border: `2px solid ${verdict.color}`, background: "var(--surf)", padding: "20px" }}>
-      {/* 헤더 */}
-      <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px" }}>
-        <span style={{ fontSize: "2rem" }}>{verdict.icon}</span>
-        <div>
-          <div style={{ fontFamily: "var(--maru)", fontSize: "1rem", fontWeight: 700, color: verdict.color }}>
-            {verdict.guru_name} <span style={{ fontSize: "0.78rem", opacity: 0.7 }}>{verdict.guru_eng}</span>
+    <div style={{ border: `2px solid ${verdict.color}`, background: "var(--surf)", overflow: "hidden" }}>
+      {/* 사진 헤더 */}
+      {usePhotoHeader ? (
+        <div
+          style={{
+            position: "relative",
+            height: 140,
+            backgroundImage: `url(${photoUrl})`,
+            backgroundSize: "cover",
+            backgroundPosition: "center top",
+          }}
+        >
+          {/* 색상 그라디에이션 오버레이 */}
+          <div style={{
+            position: "absolute",
+            inset: 0,
+            background: `linear-gradient(160deg, ${verdict.color}44 0%, ${verdict.color}AA 60%, #0A162888 100%)`,
+          }} />
+          {/* 하단 페이드 */}
+          <div style={{
+            position: "absolute",
+            inset: 0,
+            background: "linear-gradient(to top, #0A1628 0%, transparent 55%)",
+          }} />
+          {/* 텍스트 오버레이 */}
+          <div style={{ position: "absolute", bottom: 12, left: 16, right: 12 }}>
+            <div style={{ fontSize: "1.15rem", fontWeight: 700, color: "#fff", fontFamily: "var(--maru)" }}>
+              {verdict.guru_name}
+              <span style={{ fontSize: "0.72rem", color: "#B0A898", marginLeft: 8, fontWeight: 500 }}>
+                {verdict.guru_eng}
+              </span>
+            </div>
           </div>
-          <div style={{ fontSize: "0.75rem", color: "var(--muted)" }}>{verdict.style}</div>
+          {/* 등급 뱃지 (우상단) */}
+          <div style={{ position: "absolute", top: 12, right: 16, textAlign: "right" }}>
+            <div style={{ color: verdict.action_color, fontWeight: 700, fontSize: "0.9rem", marginBottom: 2 }}>
+              {verdict.action}
+            </div>
+            <div style={{ color: "#B0883A", fontSize: "1rem", letterSpacing: "1px" }}>
+              {verdict.rating}
+            </div>
+          </div>
         </div>
-        <div style={{ marginLeft: "auto", textAlign: "right" }}>
-          <div style={{ color: verdict.action_color, fontWeight: 700, fontSize: "1rem" }}>{verdict.action}</div>
-          <div style={{ color: "#B0883A", fontSize: "1.1rem", letterSpacing: "1px" }}>{verdict.rating}</div>
-          <div style={{ fontFamily: "var(--mono)", fontSize: "0.75rem", color: "var(--muted)" }}>
-            종합점수 {verdict.score}
+      ) : (
+        /* Fallback: 이모지 헤더 */
+        <div style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "12px",
+          padding: "16px",
+          background: `linear-gradient(135deg, ${verdict.color}11 0%, ${verdict.color}06 100%)`,
+          borderBottom: `1px solid ${verdict.color}33`,
+        }}>
+          <span style={{ fontSize: "2.5rem" }}>{verdict.icon}</span>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontFamily: "var(--maru)", fontSize: "1rem", fontWeight: 700, color: verdict.color }}>
+              {verdict.guru_name} <span style={{ fontSize: "0.78rem", opacity: 0.7 }}>{verdict.guru_eng}</span>
+            </div>
+            <div style={{ fontSize: "0.75rem", color: "var(--muted)" }}>{verdict.style}</div>
           </div>
-        </div>
-      </div>
-
-      {/* 코멘트 */}
-      <div style={{
-        background: `${verdict.color}11`,
-        border: `1px solid ${verdict.color}33`,
-        padding: "12px 14px",
-        marginBottom: "16px",
-        fontSize: "0.9rem",
-        lineHeight: 1.7,
-        fontStyle: "italic",
-        color: "var(--fg)",
-      }}>
-        "{verdict.comment}"
-      </div>
-
-      {/* 점수 바 */}
-      <div style={{ marginBottom: "14px" }}>
-        {Object.entries(verdict.scores).map(([k, v]) => (
-          <RadarBar key={k} label={scoreLabels[k] ?? k} value={v} color={verdict.color} />
-        ))}
-      </div>
-
-      {/* 분석 근거 */}
-      {verdict.reasons && verdict.reasons.length > 0 && (
-        <div style={{ borderTop: `1px solid ${verdict.color}33`, paddingTop: "12px" }}>
-          <div style={{ fontSize: "0.68rem", fontWeight: 700, letterSpacing: "0.08em", color: "var(--muted)", marginBottom: "6px", textTransform: "uppercase" }}>
-            분석 근거
+          <div style={{ textAlign: "right" }}>
+            <div style={{ color: verdict.action_color, fontWeight: 700, fontSize: "1rem" }}>
+              {verdict.action}
+            </div>
+            <div style={{ color: "#B0883A", fontSize: "1.1rem", letterSpacing: "1px" }}>
+              {verdict.rating}
+            </div>
           </div>
-          <ul style={{ margin: 0, paddingLeft: "16px" }}>
-            {verdict.reasons.map((r, i) => (
-              <li key={i} style={{ fontSize: "0.78rem", color: "var(--fg)", marginBottom: "4px", lineHeight: 1.5 }}>{r}</li>
-            ))}
-          </ul>
         </div>
       )}
+
+      {/* 바디 */}
+      <div style={{ padding: "20px" }}>
+        {/* 스타일 태그 + 종합점수 */}
+        {usePhotoHeader && (
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", fontSize: "0.75rem" }}>
+            <span style={{ color: "var(--muted)" }}>{verdict.style}</span>
+            <span style={{ fontFamily: "var(--mono)", color: "var(--muted)" }}>종합점수 {verdict.score}</span>
+          </div>
+        )}
+
+        {/* 코멘트 */}
+        <div style={{
+          background: `${verdict.color}11`,
+          border: `1px solid ${verdict.color}33`,
+          padding: "12px 14px",
+          marginBottom: "16px",
+          fontSize: "0.9rem",
+          lineHeight: 1.7,
+          fontStyle: "italic",
+          color: "var(--fg)",
+        }}>
+          "{verdict.comment}"
+        </div>
+
+        {/* 점수 바 */}
+        <div style={{ marginBottom: "14px" }}>
+          {Object.entries(verdict.scores).map(([k, v]) => (
+            <RadarBar key={k} label={scoreLabels[k] ?? k} value={v} color={verdict.color} />
+          ))}
+        </div>
+
+        {/* 분석 근거 */}
+        {verdict.reasons && verdict.reasons.length > 0 && (
+          <div style={{ borderTop: `1px solid ${verdict.color}33`, paddingTop: "12px" }}>
+            <div style={{ fontSize: "0.68rem", fontWeight: 700, letterSpacing: "0.08em", color: "var(--muted)", marginBottom: "6px", textTransform: "uppercase" }}>
+              분석 근거
+            </div>
+            <ul style={{ margin: 0, paddingLeft: "16px" }}>
+              {verdict.reasons.map((r, i) => (
+                <li key={i} style={{ fontSize: "0.78rem", color: "var(--fg)", marginBottom: "4px", lineHeight: 1.5 }}>{r}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
