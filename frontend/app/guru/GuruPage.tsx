@@ -7,19 +7,16 @@ import {
 } from "@/lib/api";
 import { useUIStore } from "@/lib/store";
 
-// 각 대가 AI 캐리커처 (Pollinations.ai turbo 모델)
-const P = (prompt: string, seed: number) =>
-  `https://image.pollinations.ai/prompt/${prompt.replace(/\s+/g, "+")}?width=480&height=320&seed=${seed}&nologo=true&model=turbo`;
-
+// 각 대가 AI 캐리커처 — verdict.guru(짧은 키)로 조회
 const GURU_PHOTOS: Record<string, string> = {
-  "레이 달리오":            P("caricature portrait Ray Dalio hedge fund manager silver white hair confident smile dark suit illustrated style", 101),
-  "워런 버핏":              P("caricature portrait Warren Buffett elderly investor kind smile round glasses classic americana illustrated style", 202),
-  "피터 린치":              P("caricature portrait Peter Lynch mutual fund manager 1980s friendly energetic face casual blazer Wall Street", 303),
-  "벤저민 그레이엠":         P("caricature portrait Benjamin Graham 1950s value investor distinguished intellectual face formal suit bookshelf vintage", 404),
-  "테리 스미스":            P("caricature portrait Terry Smith British fund manager serious confident expression London City illustrated style", 505),
-  "윌리엄 오닐":            P("caricature portrait William ONeil stock chart analyst enthusiastic expression charts backdrop technical illustrated", 606),
-  "코테가와 다카시":         P("caricature portrait BNF Japanese day trader young intense focused face monitor screens glow anime influenced style", 707),
-  "카타야마 아키라":         P("caricature portrait Katayama Shigeharu Japanese investor calm analytical expression thoughtful pose illustrated", 808),
+  달리오:   "/images/gurus/dalio.jpg",
+  버핏:     "/images/gurus/buffett.jpg",
+  린치:     "/images/gurus/lynch.jpg",
+  그레이엄: "/images/gurus/graham.jpg",
+  스미스:   "/images/gurus/smith.jpg",
+  오닐:     "/images/gurus/oneil.jpg",
+  코테가와: "/images/gurus/bnf.jpg",
+  카타야마: "/images/gurus/katayama.jpg",
 };
 
 function RadarBar({ label, value, color }: { label: string; value: number; color: string }) {
@@ -42,7 +39,7 @@ function VerdictCard({ verdict }: { verdict: GuruVerdict }) {
     momentum: "모멘텀", stability: "안정성", value: "가치", growth: "성장", moat: "해자",
   };
 
-  const photoUrl = GURU_PHOTOS[verdict.guru_name] || "";
+  const photoUrl = GURU_PHOTOS[verdict.guru] || "";
   const usePhotoHeader = !!photoUrl && !photoFailed;
 
   return (
