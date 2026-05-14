@@ -400,19 +400,21 @@ export default function TradingChart({ data }: Props) {
       </div>
 
       {/* ── Plotly 차트 ───────────────────────────── */}
-      <Plot
-        data={traces}
-        layout={layout}
-        config={{
-          responsive: true,
-          displayModeBar: true,
-          modeBarButtonsToRemove: ["autoScale2d", "lasso2d", "select2d", "toImage"],
-          displaylogo: false,
-          locale: "ko",
-        }}
-        style={{ width: "100%" }}
-        useResizeHandler
-      />
+      <div style={{ minHeight: "780px" }}>
+        <Plot
+          data={traces}
+          layout={layout}
+          config={{
+            responsive: true,
+            displayModeBar: true,
+            modeBarButtonsToRemove: ["autoScale2d", "lasso2d", "select2d", "toImage"],
+            displaylogo: false,
+            locale: "ko",
+          }}
+          style={{ width: "100%", height: "780px" }}
+          useResizeHandler
+        />
+      </div>
 
       {/* ── Bauhaus 범례 ──────────────────────────── */}
       <div style={{

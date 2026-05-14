@@ -40,15 +40,7 @@ function VerdictCard({ verdict }: { verdict: GuruVerdict }) {
   };
 
   const photoUrl = GURU_PHOTOS[verdict.guru_name] || "";
-  const usePhotoHeader = photoUrl && !photoFailed;
-
-  useEffect(() => {
-    if (!photoUrl) return;
-    const img = new Image();
-    img.onload = () => setPhotoFailed(false);
-    img.onerror = () => setPhotoFailed(true);
-    img.src = photoUrl;
-  }, [photoUrl]);
+  const usePhotoHeader = !!photoUrl && !photoFailed;
 
   return (
     <div style={{ border: `2px solid ${verdict.color}`, background: "var(--surf)", overflow: "hidden" }}>
@@ -58,11 +50,16 @@ function VerdictCard({ verdict }: { verdict: GuruVerdict }) {
           style={{
             position: "relative",
             height: 140,
-            backgroundImage: `url(${photoUrl})`,
-            backgroundSize: "cover",
-            backgroundPosition: "center top",
+            overflow: "hidden",
+            background: "#0A1628",
           }}
         >
+          <img
+            src={photoUrl}
+            alt=""
+            onError={() => setPhotoFailed(true)}
+            style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top" }}
+          />
           {/* 색상 그라디에이션 오버레이 */}
           <div style={{
             position: "absolute",
