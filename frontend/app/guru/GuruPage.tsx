@@ -81,15 +81,6 @@ function VerdictCard({ verdict }: { verdict: GuruVerdict }) {
               </span>
             </div>
           </div>
-          {/* 등급 뱃지 (우상단) */}
-          <div style={{ position: "absolute", top: 12, right: 16, textAlign: "right" }}>
-            <div style={{ color: verdict.action_color, fontWeight: 700, fontSize: "0.9rem", marginBottom: 2 }}>
-              {verdict.action}
-            </div>
-            <div style={{ color: "#B0883A", fontSize: "1rem", letterSpacing: "1px" }}>
-              {verdict.rating}
-            </div>
-          </div>
         </div>
       ) : (
         /* Fallback: 이모지 헤더 */
@@ -119,6 +110,25 @@ function VerdictCard({ verdict }: { verdict: GuruVerdict }) {
         </div>
       )}
 
+      {/* 액션·별점 바 (사진 헤더 사용 시에만 표시) */}
+      {usePhotoHeader && (
+        <div style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          padding: "9px 16px",
+          background: `${verdict.color}1A`,
+          borderBottom: `1px solid ${verdict.color}44`,
+        }}>
+          <div style={{ color: "#B0883A", fontSize: "1.1rem", letterSpacing: "3px" }}>
+            {verdict.rating}
+          </div>
+          <div style={{ color: verdict.action_color, fontWeight: 800, fontSize: "0.92rem" }}>
+            {verdict.action}
+          </div>
+        </div>
+      )}
+
       {/* 바디 */}
       <div style={{ padding: "20px" }}>
         {/* 스타일 태그 + 종합점수 */}
@@ -132,7 +142,8 @@ function VerdictCard({ verdict }: { verdict: GuruVerdict }) {
         {/* 코멘트 */}
         <div style={{
           background: `${verdict.color}11`,
-          border: `1px solid ${verdict.color}33`,
+          border: `1px solid ${verdict.color}55`,
+          borderLeft: `3px solid ${verdict.color}`,
           padding: "12px 14px",
           marginBottom: "16px",
           fontSize: "0.9rem",
