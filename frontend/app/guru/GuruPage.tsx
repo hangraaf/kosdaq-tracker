@@ -7,19 +7,19 @@ import {
 } from "@/lib/api";
 import { useUIStore } from "@/lib/store";
 
-// 각 대가 AI 캐리커처 (Pollinations.ai 생성)
+// 각 대가 AI 캐리커처 (Pollinations.ai turbo 모델)
 const P = (prompt: string, seed: number) =>
-  `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=480&height=320&seed=${seed}&nologo=true&model=flux`;
+  `https://image.pollinations.ai/prompt/${prompt.replace(/\s+/g, "+")}?width=480&height=320&seed=${seed}&nologo=true&model=turbo`;
 
 const GURU_PHOTOS: Record<string, string> = {
-  달리오: P("caricature portrait Ray Dalio hedge fund manager, silver white hair, sharp intelligent eyes, dark suit, confident smile, dramatic lighting, illustrated style, warm sepia tones", 101),
-  버핏: P("caricature portrait Warren Buffett elderly investor, kind warm smile, round glasses, simple suit, Omaha Nebraska backdrop, illustrated portrait style, golden warm tones", 202),
-  린치: P("caricature portrait Peter Lynch mutual fund manager 1980s, friendly energetic face, casual blazer, Wall Street backdrop, illustrated caricature style, classic warm colors", 303),
-  그레이엄: P("caricature portrait Benjamin Graham 1950s value investor, distinguished intellectual face, formal suit tie, bookshelf backdrop, vintage illustrated portrait, sepia brown tones", 404),
-  스미스: P("caricature portrait Terry Smith British fund manager, serious confident expression, London City backdrop, illustrated portrait style, cool blue professional tones", 505),
-  오닐: P("caricature portrait William O'Neil stock trader 1990s, enthusiastic expression, charts graphs backdrop, technical analyst, illustrated style, sharp blue tones", 606),
-  코테가와: P("caricature portrait BNF Japanese day trader, young intense focused face, multiple monitor screens glow, hoodie casual, illustrated anime-influenced style, cool neon tones", 707),
-  카타야마: P("caricature portrait Katayama Shigeharu Japanese investor, calm analytical expression, thoughtful pose, Japanese market backdrop, illustrated portrait style, warm earth tones", 808),
+  달리오: P("caricature portrait Ray Dalio hedge fund manager silver white hair confident smile dark suit illustrated style", 101),
+  버핏: P("caricature portrait Warren Buffett elderly investor kind smile round glasses classic americana illustrated style", 202),
+  린치: P("caricature portrait Peter Lynch mutual fund manager 1980s friendly energetic face casual blazer Wall Street", 303),
+  그레이엄: P("caricature portrait Benjamin Graham 1950s value investor distinguished intellectual face formal suit bookshelf vintage", 404),
+  스미스: P("caricature portrait Terry Smith British fund manager serious confident expression London City illustrated style", 505),
+  오닐: P("caricature portrait William ONeil stock chart analyst enthusiastic expression charts backdrop technical illustrated", 606),
+  코테가와: P("caricature portrait BNF Japanese day trader young intense focused face monitor screens glow anime influenced style", 707),
+  카타야마: P("caricature portrait Katayama Shigeharu Japanese investor calm analytical expression thoughtful pose illustrated", 808),
 };
 
 function RadarBar({ label, value, color }: { label: string; value: number; color: string }) {
