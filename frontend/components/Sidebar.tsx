@@ -44,7 +44,7 @@ function AuthPanel() {
             <div style={{ color: "#F0EBE0", fontWeight: 600, fontSize: "0.88rem" }}>{userDisplay}</div>
             <div style={{
               fontSize: "0.68rem", fontWeight: 700, letterSpacing: "0.08em",
-              color: (plan === "premium" || plan === "admin") ? "#D4A030" : "#7C9BBE",
+              color: (plan === "premium" || plan === "admin") ? "#D4A030" : "#7CA090",
               textTransform: "uppercase",
             }}>
               {plan === "admin" ? "⚙ ADMIN" : plan === "premium" ? "★ PREMIUM" : "FREE"}
@@ -54,7 +54,7 @@ function AuthPanel() {
             onClick={clearAuth}
             style={{
               marginLeft: "auto", background: "none", border: "1px solid rgba(255,255,255,0.2)",
-              color: "#A0B0C8", fontSize: "0.72rem", padding: "4px 8px",
+              color: "#8AB0A0", fontSize: "0.72rem", padding: "4px 8px",
               borderRadius: "2px", cursor: "pointer",
             }}
           >
@@ -71,7 +71,7 @@ function AuthPanel() {
         <button
           onClick={() => setMode("login")}
           style={{
-            flex: 1, background: "#436B95", color: "#fff", border: "none",
+            flex: 1, background: "#4A7A62", color: "#fff", border: "none",
             padding: "8px", fontWeight: 700, fontSize: "0.82rem", cursor: "pointer",
           }}
         >
@@ -80,8 +80,8 @@ function AuthPanel() {
         <button
           onClick={() => setMode("register")}
           style={{
-            flex: 1, background: "transparent", color: "#A0B8D0",
-            border: "1px solid #3A5A80", padding: "8px",
+            flex: 1, background: "transparent", color: "#8AB8A0",
+            border: "1px solid #3A6A52", padding: "8px",
             fontWeight: 700, fontSize: "0.82rem", cursor: "pointer",
           }}
         >
@@ -140,14 +140,14 @@ function AuthPanel() {
       <div style={{ display: "flex", gap: "6px" }}>
         <button
           type="submit"
-          style={{ flex: 1, background: "#436B95", color: "#fff", border: "none", padding: "8px", fontWeight: 700, fontSize: "0.82rem", cursor: "pointer" }}
+          style={{ flex: 1, background: "#4A7A62", color: "#fff", border: "none", padding: "8px", fontWeight: 700, fontSize: "0.82rem", cursor: "pointer" }}
         >
           확인
         </button>
         <button
           type="button"
           onClick={() => setMode("guest")}
-          style={{ background: "transparent", color: "#7C9BBE", border: "1px solid #3A5A80", padding: "8px 12px", cursor: "pointer", fontSize: "0.82rem" }}
+          style={{ background: "transparent", color: "#7CA090", border: "1px solid #3A6A52", padding: "8px 12px", cursor: "pointer", fontSize: "0.82rem" }}
         >
           취소
         </button>
@@ -160,7 +160,7 @@ const inputStyle: React.CSSProperties = {
   display: "block",
   width: "100%",
   background: "rgba(0,0,0,0.3)",
-  border: "1px solid #3A5A80",
+  border: "1px solid #3A6A52",
   color: "#E5DECD",
   padding: "6px 8px",
   fontSize: "0.82rem",
@@ -175,8 +175,8 @@ export default function Sidebar() {
     <aside style={{
       width: "220px",
       minWidth: "220px",
-      background: "#2C4A6E",
-      borderRight: "1px solid #1F3552",
+      background: "#2A4438",
+      borderRight: "1px solid #1A3028",
       display: "flex",
       flexDirection: "column",
       height: "100vh",
@@ -196,7 +196,8 @@ export default function Sidebar() {
       <nav style={{ padding: "8px 0", flex: 1 }}>
         <div style={{
           fontSize: "0.68rem", fontWeight: 700, letterSpacing: "0.1em",
-          color: "#6B8AAE", padding: "8px 16px 4px", textTransform: "uppercase",
+          color: "#6BAE8C", padding: "8px 8px 4px", textTransform: "uppercase",
+          textAlign: "center",
         }}>
           화면
         </div>
@@ -209,18 +210,19 @@ export default function Sidebar() {
               style={{
                 display: "flex",
                 alignItems: "center",
+                justifyContent: "center",
                 gap: "10px",
                 width: "100%",
-                padding: "10px 16px",
-                background: active ? "rgba(67,107,149,0.4)" : "transparent",
-                color: active ? "#E0D8C8" : "#A0B8D0",
+                padding: "10px 8px",
+                background: active ? "rgba(74,122,98,0.4)" : "transparent",
+                color: active ? "#E0D8C8" : "#8AB8A0",
                 border: "none",
-                borderLeft: active ? "3px solid #6B8AAE" : "3px solid transparent",
+                borderBottom: active ? "2px solid #6BAE8C" : "2px solid transparent",
                 cursor: "pointer",
                 fontFamily: "var(--font)",
                 fontSize: "0.88rem",
                 fontWeight: active ? 700 : 500,
-                textAlign: "left",
+                textAlign: "center",
                 transition: "all 0.15s",
               }}
             >
@@ -235,8 +237,8 @@ export default function Sidebar() {
       <div style={{
         padding: "12px 16px",
         fontSize: "0.7rem",
-        color: "#4A6A8A",
-        borderTop: "1px solid #1F3552",
+        color: "#4A7A62",
+        borderTop: "1px solid #1A3028",
         fontFamily: "var(--maru)",
         textAlign: "center",
       }}>

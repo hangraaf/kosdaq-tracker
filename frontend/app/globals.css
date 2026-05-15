@@ -31,6 +31,10 @@
   --blue-deep:   #2C4A6E;
   --blue-soft:   #6B8AAE;
   --blue-pale:   #C8D4E2;
+  --green:       #4A7A62;
+  --green-deep:  #2A4438;
+  --green-soft:  #6BAE8C;
+  --green-pale:  #C4DDD0;
   --red:         #B5453F;
   --yellow:      #B0883A;
   --fg:          #3D362A;
@@ -88,7 +92,7 @@ body {
 .bh-card {
   background: var(--surf);
   border: 1px solid var(--border);
-  border-top: 2px solid var(--blue);
+  border-top: 2px solid var(--green);
   border-radius: 4px;
   padding: 16px;
 }
@@ -101,4 +105,4 @@ body {
 /* ── 스크롤바 ─────────────────────────────────── */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: var(--surf); }
-::-webkit-scrollbar-thumb { background: var(--blue-soft); border-radius: 3px; }
+::-webkit-scrollbar-thumb { background: var(--green-soft); border-radius: 3px; }
