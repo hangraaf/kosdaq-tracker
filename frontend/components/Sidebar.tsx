@@ -179,10 +179,12 @@ export default function Sidebar() {
       borderRight: "1px solid #1A3028",
       display: "flex",
       flexDirection: "column",
-      height: "100vh",
+      height: "100%",
+      alignSelf: "stretch",
       position: "sticky",
       top: 0,
       overflowY: "auto",
+      flexShrink: 0,
     }}>
       {/* 로고 */}
       <div style={{ padding: "20px 12px 12px", display: "flex", justifyContent: "center" }}>
