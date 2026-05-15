@@ -143,6 +143,55 @@ export async function apiIndicators(code: string, period = "3개월"): Promise<I
   return req(`/stocks/${code}/indicators?period=${encodeURIComponent(period)}`);
 }
 
+// ── Company Profile ──────────────────────────────────────────────────────
+
+export interface CompanyOverview {
+  name: string;
+  ceo: string;
+  established: string;
+  industry: string;
+  homepage: string;
+  summary: string;
+  source: "DART" | "MOCK";
+}
+
+export interface DividendInfo {
+  yield_pct: number;
+  per_share: number;
+  fiscal_year: string;
+  payout_ratio: number;
+  source: "DART" | "MOCK";
+}
+
+export interface InvestorFlowDay {
+  date: string;
+  foreign: number;
+  institution: number;
+  individual: number;
+}
+
+export interface InvestorFlow {
+  days: number;
+  foreign_sum: number;
+  institution_sum: number;
+  individual_sum: number;
+  foreign_ratio: number;
+  series: InvestorFlowDay[];
+  source: "KIS" | "DEMO";
+}
+
+export interface StockProfile {
+  code: string;
+  name: string;
+  overview: CompanyOverview;
+  dividend: DividendInfo;
+  investor_flow: InvestorFlow;
+}
+
+export async function apiProfile(code: string): Promise<StockProfile> {
+  return req(`/stocks/${code}/profile`);
+}
+
 export async function apiTodayTop(market = "전체", limit = 10): Promise<StockSnapshot[]> {
   return req(`/stocks/today/top?market=${encodeURIComponent(market)}&limit=${limit}`);
 }

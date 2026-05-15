@@ -154,8 +154,26 @@ class KISClient:
             "change_rate": change_rate,
             "volume": self._to_int(output.get("acml_vol")),
             "market_cap": self._to_int(output.get("hts_avls")) * 100_000_000,
+            "foreign_ratio": self._to_float(output.get("hts_frgn_ehrt")),  # 외국인 지분율 %
             "raw": output,
         }
+
+    def inquire_investor(self, code: str) -> list[dict[str, Any]]:
+        """투자자별 매매동향 (개인·외국인·기관) — 최근 30 영업일.
+
+        TR FHKST01010900 — 개인·외국인·기관별 일별 순매수 거래대금/수량.
+        반환: 일별 dict 리스트 (최신순). 금액 단위는 원이므로 이후 억원으로 환산.
+        """
+        response = requests.get(
+            f"{self.config.base_url}/uapi/domestic-stock/v1/quotations/inquire-investor",
+            headers=self._headers("FHKST01010900"),
+            params={
+                "FID_COND_MRKT_DIV_CODE": "J",
+                "FID_INPUT_ISCD": code,
+            },
+            timeout=10,
+        )
+        return self._parse_response(response).get("output") or []
 
     def get_stock_info(self, code: str) -> dict[str, Any]:
         """종목 기본정보 조회 (이름·시장·업종)."""

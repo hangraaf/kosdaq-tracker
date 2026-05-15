@@ -143,3 +143,51 @@ class StockSnapshot(BaseModel):
     change_rate: float
     volume: int
     market_cap: int
+
+
+# ── Company Profile ───────────────────────────────────────────────────────
+
+class CompanyOverview(BaseModel):
+    """회사 개요 — DART 기업개황 기반 (현재는 MockDart)."""
+    name: str
+    ceo: str = ""
+    established: str = ""       # YYYY.MM.DD
+    industry: str = ""          # 업종 상세
+    homepage: str = ""
+    summary: str = ""           # 사업 요약 (3~5문장)
+    source: str = "MOCK"        # "DART" | "MOCK"
+
+
+class DividendInfo(BaseModel):
+    """배당 정보 — DART 배당사항 기반 (현재는 MockDart)."""
+    yield_pct: float = 0.0      # 시가배당률 %
+    per_share: int = 0          # 주당 배당금 (원)
+    fiscal_year: str = ""       # 기준 사업연도
+    payout_ratio: float = 0.0   # 배당성향 %
+    source: str = "MOCK"
+
+
+class InvestorFlowDay(BaseModel):
+    date: str
+    foreign: int = 0            # 외국인 순매수 거래대금 (억원)
+    institution: int = 0        # 기관
+    individual: int = 0         # 개인
+
+
+class InvestorFlow(BaseModel):
+    """투자자별 수급 — 최근 N일 누적 + 일별 시계열."""
+    days: int = 20
+    foreign_sum: int = 0        # 누적 (억원)
+    institution_sum: int = 0
+    individual_sum: int = 0
+    foreign_ratio: float = 0.0  # 외국인 지분율 % (KIS inquire-price.hts_frgn_ehrt)
+    series: list[InvestorFlowDay] = []
+    source: str = "DEMO"        # "KIS" | "DEMO"
+
+
+class StockProfile(BaseModel):
+    code: str
+    name: str
+    overview: CompanyOverview
+    dividend: DividendInfo
+    investor_flow: InvestorFlow

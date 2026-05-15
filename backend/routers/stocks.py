@@ -8,10 +8,12 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 import numpy as np
 from fastapi import APIRouter, HTTPException, Query, WebSocket, WebSocketDisconnect
 
+import db
+from dart_client import get_dart_client
 from kis_client import KISError
 from kis_realtime import get_realtime_manager
-from kis_service import get_kis_client, kis_available, live_chart, live_snapshot
-from models import StockSnapshot
+from kis_service import get_kis_client, kis_available, live_chart, live_investor_flow, live_snapshot
+from models import StockProfile, StockSnapshot
 from stock_data import MARKET_STOCKS, PERIODS, STOCK_MAP
 from utils import generate_demo_ohlcv, stock_demo_snapshot
 
@@ -136,6 +138,73 @@ async def stock_ws(websocket: WebSocket, code: str):
 @router.get("/{code}/snapshot", response_model=StockSnapshot)
 def snapshot(code: str):
     return _snapshot(code)
+
+
+def _demo_investor_flow(code: str, days: int = 20) -> dict:
+    """KIS 미연결 또는 호출 실패 시 사용하는 데모 수급."""
+    import random
+    rng = random.Random(hash(code) & 0xFFFFFFFF)
+    series = []
+    from datetime import date, timedelta
+    today = date.today()
+    f_sum = i_sum = p_sum = 0
+    for offset in range(days, 0, -1):
+        d = today - timedelta(days=offset)
+        if d.weekday() >= 5:
+            continue
+        f = rng.randint(-80, 100)
+        ins = rng.randint(-60, 60)
+        ind = -(f + ins) + rng.randint(-20, 20)
+        series.append({"date": d.strftime("%Y-%m-%d"), "foreign": f, "institution": ins, "individual": ind})
+        f_sum += f; i_sum += ins; p_sum += ind
+    return {
+        "days": len(series),
+        "foreign_sum": f_sum,
+        "institution_sum": i_sum,
+        "individual_sum": p_sum,
+        "foreign_ratio": round(rng.uniform(5.0, 45.0), 2),
+        "series": series,
+        "source": "DEMO",
+    }
+
+
+@router.get("/{code}/profile", response_model=StockProfile)
+def profile(code: str):
+    """회사 개요(DART) + 배당(DART) + 수급(KIS) 통합 프로필.
+
+    DART 부분은 현재 MockDartClient — 키 발급 후 LiveDartClient로 교체.
+    수급은 KIS 연결 시 실데이터, 아니면 데모 시드 데이터.
+    """
+    stock = STOCK_MAP.get(code)
+    if not stock:
+        raise HTTPException(404, detail=f"종목 코드 {code}를 찾을 수 없습니다.")
+
+    cached = db.get_profile(code)
+    if cached:
+        return cached
+
+    dart = get_dart_client()
+    overview = dart.company_overview(code, stock.name).model_dump()
+    dividend = dart.dividend(code).model_dump()
+
+    flow_data: dict | None = None
+    if kis_available():
+        try:
+            flow_data = live_investor_flow(code, days=20)
+        except KISError:
+            flow_data = None
+    if flow_data is None:
+        flow_data = _demo_investor_flow(code, days=20)
+
+    payload = {
+        "code": code,
+        "name": stock.name,
+        "overview": overview,
+        "dividend": dividend,
+        "investor_flow": flow_data,
+    }
+    db.set_profile(code, payload)
+    return payload
 
 
 @router.get("/{code}/chart")

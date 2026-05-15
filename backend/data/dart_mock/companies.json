@@ -1,0 +1,131 @@
+{
+  "_comment": "DART 기업개황·배당 Mock 데이터. DART API 키 발급 후 LiveDartClient로 교체 예정. 미수록 종목은 fallback summary로 자동 채움.",
+  "005930": {
+    "overview": {
+      "name": "삼성전자",
+      "ceo": "한종희, 경계현",
+      "established": "1969.01.13",
+      "industry": "반도체·디스플레이·가전",
+      "homepage": "https://www.samsung.com",
+      "summary": "메모리 반도체(DRAM·NAND) 글로벌 1위 기업. 스마트폰(갤럭시), 가전, 디스플레이, 파운드리(시스템반도체 위탁생산)까지 수직계열화된 글로벌 종합 전자기업. 코스피 시가총액 1위로 한국 증시의 핵심 종목."
+    },
+    "dividend": {
+      "yield_pct": 1.84,
+      "per_share": 1444,
+      "fiscal_year": "2024",
+      "payout_ratio": 24.2
+    }
+  },
+  "000660": {
+    "overview": {
+      "name": "SK하이닉스",
+      "ceo": "곽노정",
+      "established": "1983.10.15",
+      "industry": "반도체 메모리",
+      "homepage": "https://www.skhynix.com",
+      "summary": "DRAM·NAND 메모리 반도체 제조 전문 기업. HBM(고대역폭메모리) 분야에서 엔비디아 AI GPU 공급망의 핵심 위치를 차지하며 AI 사이클 최대 수혜주로 부상. SK그룹 핵심 계열사."
+    },
+    "dividend": {
+      "yield_pct": 0.91,
+      "per_share": 1500,
+      "fiscal_year": "2024",
+      "payout_ratio": 12.5
+    }
+  },
+  "035420": {
+    "overview": {
+      "name": "NAVER",
+      "ceo": "최수연",
+      "established": "1999.06.02",
+      "industry": "인터넷 플랫폼·검색·커머스",
+      "homepage": "https://www.navercorp.com",
+      "summary": "국내 1위 검색 포털 운영. 검색·디스플레이 광고, 커머스(스마트스토어), 핀테크(네이버페이), 클라우드, 콘텐츠(웹툰), AI(하이퍼클로바X) 등 다각화된 인터넷 플랫폼 기업."
+    },
+    "dividend": {
+      "yield_pct": 0.41,
+      "per_share": 905,
+      "fiscal_year": "2024",
+      "payout_ratio": 8.3
+    }
+  },
+  "035720": {
+    "overview": {
+      "name": "카카오",
+      "ceo": "정신아",
+      "established": "1995.02.16",
+      "industry": "인터넷 플랫폼·메신저",
+      "homepage": "https://www.kakaocorp.com",
+      "summary": "국민 메신저 카카오톡 운영사. 광고·커머스(선물하기), 페이(카카오페이), 모빌리티(카카오T), 게임(카카오게임즈), 엔터테인먼트(카카오엔터·SM) 등 메신저 기반 플랫폼 비즈니스를 운영."
+    },
+    "dividend": {
+      "yield_pct": 0.15,
+      "per_share": 60,
+      "fiscal_year": "2024",
+      "payout_ratio": 5.0
+    }
+  },
+  "207940": {
+    "overview": {
+      "name": "삼성바이오로직스",
+      "ceo": "존림",
+      "established": "2011.04.22",
+      "industry": "바이오의약품 위탁생산(CMO)",
+      "homepage": "https://samsungbiologics.com",
+      "summary": "글로벌 1위 바이오의약품 위탁개발생산(CDMO) 기업. 인천 송도에 세계 최대 규모 바이오 생산시설을 보유하고 화이자·MSD 등 글로벌 빅파마 다수와 장기 공급계약 체결."
+    },
+    "dividend": {
+      "yield_pct": 0.0,
+      "per_share": 0,
+      "fiscal_year": "2024",
+      "payout_ratio": 0.0
+    }
+  },
+  "005380": {
+    "overview": {
+      "name": "현대차",
+      "ceo": "장재훈, 호세 무뇨스",
+      "established": "1967.12.29",
+      "industry": "완성차 제조",
+      "homepage": "https://www.hyundai.com",
+      "summary": "국내 1위 완성차 제조사. 내연기관·하이브리드·전기차(아이오닉 시리즈) 풀라인업 생산. 기아·현대모비스와 함께 현대차그룹 핵심을 형성하며 미국·유럽·인도 등 글로벌 시장 점유율 확대 중."
+    },
+    "dividend": {
+      "yield_pct": 5.12,
+      "per_share": 12000,
+      "fiscal_year": "2024",
+      "payout_ratio": 27.0
+    }
+  },
+  "247540": {
+    "overview": {
+      "name": "에코프로비엠",
+      "ceo": "최문호, 주재환",
+      "established": "2016.05.02",
+      "industry": "이차전지 양극재",
+      "homepage": "https://www.ecoprobm.co.kr",
+      "summary": "이차전지 핵심 소재인 하이니켈 NCA·NCM 양극재 제조 전문기업. 삼성SDI·SK온 등 국내외 배터리 셀 제조사에 공급. 코스닥 시가총액 상위권으로 전기차 배터리 밸류체인 대표주."
+    },
+    "dividend": {
+      "yield_pct": 0.10,
+      "per_share": 300,
+      "fiscal_year": "2024",
+      "payout_ratio": 4.5
+    }
+  },
+  "091990": {
+    "overview": {
+      "name": "셀트리온헬스케어",
+      "ceo": "김형기",
+      "established": "1999.05.20",
+      "industry": "바이오의약품 유통",
+      "homepage": "https://www.celltrionhealthcare.com",
+      "summary": "셀트리온이 개발·생산한 바이오시밀러(램시마·트룩시마·허쥬마 등)의 글로벌 마케팅·유통을 전담. 2023년 셀트리온과 합병 추진 — 현재는 합병으로 셀트리온(068270)에 통합."
+    },
+    "dividend": {
+      "yield_pct": 0.0,
+      "per_share": 0,
+      "fiscal_year": "2024",
+      "payout_ratio": 0.0
+    }
+  }
+}

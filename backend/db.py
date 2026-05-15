@@ -14,6 +14,7 @@ DB_PATH = DATA_DIR / "cache.db"
 PRICE_TTL_MARKET  = 60       # 1분
 PRICE_TTL_OFFHOUR = 14_400   # 4시간
 CHART_TTL         = 3_600    # 1시간
+PROFILE_TTL       = 86_400   # 24시간 (회사개요·배당·수급)
 
 
 def _is_market_hour() -> bool:
@@ -57,6 +58,13 @@ def init_db() -> None:
         con.execute("""
             CREATE TABLE IF NOT EXISTS chart_cache (
                 cache_key  TEXT PRIMARY KEY,
+                data_json  TEXT,
+                updated_at REAL DEFAULT 0
+            )
+        """)
+        con.execute("""
+            CREATE TABLE IF NOT EXISTS profile_cache (
+                code       TEXT PRIMARY KEY,
                 data_json  TEXT,
                 updated_at REAL DEFAULT 0
             )
@@ -136,3 +144,27 @@ def set_chart(cache_key: str, data: list) -> None:
             ON CONFLICT(cache_key) DO UPDATE SET
                 data_json=excluded.data_json, updated_at=excluded.updated_at
         """, (cache_key, json.dumps(data, default=str), time.time()))
+
+
+# ── 프로필 캐시 (회사개요·배당·수급) ─────────────────────────────────────
+
+def get_profile(code: str) -> dict | None:
+    with _conn() as con:
+        row = con.execute(
+            "SELECT * FROM profile_cache WHERE code = ?", (code,)
+        ).fetchone()
+    if not row:
+        return None
+    if time.time() - row["updated_at"] > PROFILE_TTL:
+        return None
+    return json.loads(row["data_json"])
+
+
+def set_profile(code: str, data: dict) -> None:
+    with _conn() as con:
+        con.execute("""
+            INSERT INTO profile_cache (code, data_json, updated_at)
+            VALUES (?, ?, ?)
+            ON CONFLICT(code) DO UPDATE SET
+                data_json=excluded.data_json, updated_at=excluded.updated_at
+        """, (code, json.dumps(data, default=str), time.time()))

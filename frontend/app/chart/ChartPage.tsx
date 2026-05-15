@@ -7,6 +7,7 @@ import {
 } from "@/lib/api";
 import LiveBadge from "@/components/LiveBadge";
 import TradingChart from "@/components/Chart/TradingChart";
+import CompanyProfile from "@/components/Chart/CompanyProfile";
 import GuruPage from "@/app/guru/GuruPage";
 import { useUIStore } from "@/lib/store";
 
@@ -300,6 +301,9 @@ export default function ChartPage() {
           </div>
         </div>
       )}
+
+      {/* ── 회사 프로필 (개요 + 배당 + 수급 + 외국인 지분율) ── */}
+      <CompanyProfile code={selectedCode} />
 
       {/* ── 3개월 최고/최저 배너 ─────────────────────── */}
       {ohlcv3m.length > 0 && curPrice > 0 && (

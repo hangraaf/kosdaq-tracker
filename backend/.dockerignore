@@ -4,4 +4,6 @@ __pycache__
 .env
 data/*
 !data/stocks_fallback.json
+!data/dart_mock/
+!data/dart_mock/**
 .git
