@@ -145,6 +145,218 @@ body {
   border-color: var(--green-deep);
 }
 
+/* ── PRISM 사이드바 (커서와 동일한 분광 컨셉) ─── */
+.prism-sidebar {
+  width: 220px;
+  min-width: 220px;
+  height: 100%;
+  align-self: stretch;
+  position: sticky;
+  top: 0;
+  overflow-y: auto;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  background:
+    radial-gradient(120% 60% at 0% 0%, rgba(67,107,149,0.10) 0%, transparent 55%),
+    radial-gradient(80% 40% at 100% 100%, rgba(181,69,63,0.07) 0%, transparent 60%),
+    linear-gradient(180deg, #25503a 0%, #1d4230 100%);
+  border-right: 1px solid transparent;
+  border-image: linear-gradient(180deg,
+    transparent 0%,
+    rgba(171,225,183,0.25) 20%,
+    rgba(67,107,149,0.30) 50%,
+    rgba(181,69,63,0.20) 80%,
+    transparent 100%) 1;
+}
+.prism-divider {
+  height: 1px;
+  margin: 0 10px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(171,225,183,0.18) 20%,
+    rgba(67,107,149,0.28) 50%,
+    rgba(181,69,63,0.18) 80%,
+    transparent 100%);
+}
+.prism-section-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: rgba(171,225,183,0.65);
+  padding: 14px 14px 8px;
+  text-transform: uppercase;
+}
+.prism-section-label::before,
+.prism-section-label::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(171,225,183,0.30), transparent);
+}
+
+.prism-menu-item {
+  position: relative;
+  display: grid;
+  grid-template-columns: 18px 1fr;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 11px 14px 11px 22px;
+  background: transparent;
+  color: rgba(220,232,222,0.72);
+  border: none;
+  cursor: pointer;
+  font-family: var(--font);
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-align: left;
+  letter-spacing: 0.01em;
+  transition: color 180ms ease, padding-left 200ms ease, background 220ms ease;
+}
+.prism-menu-item .pm-glyph {
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  color: rgba(171,225,183,0.55);
+  text-align: center;
+  transition: color 200ms ease, text-shadow 220ms ease, transform 220ms ease;
+}
+/* 활성/hover 표시점 — 커서 dot과 동형 */
+.prism-menu-item::before {
+  content: "";
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--green-deep);
+  transform: translateY(-50%) scale(0);
+  opacity: 0;
+  box-shadow:
+    0 0 6px rgba(56,105,72,0.7),
+    0 0 14px rgba(67,107,149,0.45),
+    0 0 26px rgba(181,69,63,0.25);
+  transition: transform 220ms ease, opacity 220ms ease, background 220ms ease;
+}
+/* 활성/hover underline — 분광 그라데이션 */
+.prism-menu-item::after {
+  content: "";
+  position: absolute;
+  left: 22px;
+  right: 14px;
+  bottom: 6px;
+  height: 1px;
+  background: linear-gradient(90deg,
+    rgba(171,225,183,0.0) 0%,
+    rgba(171,225,183,0.55) 30%,
+    rgba(67,107,149,0.55) 65%,
+    rgba(181,69,63,0.35) 100%);
+  transform: scaleX(0);
+  transform-origin: left center;
+  opacity: 0;
+  transition: transform 280ms ease, opacity 220ms ease;
+}
+
+.prism-menu-item:hover {
+  color: #EAF3E8;
+  background: linear-gradient(90deg, rgba(67,107,149,0.10), transparent 70%);
+}
+.prism-menu-item:hover .pm-glyph {
+  color: var(--blue-soft);
+  text-shadow: 0 0 8px rgba(67,107,149,0.55);
+  transform: scale(1.08);
+}
+.prism-menu-item:hover::before {
+  transform: translateY(-50%) scale(1);
+  opacity: 0.85;
+  background: var(--red);
+}
+.prism-menu-item:hover::after {
+  transform: scaleX(0.6);
+  opacity: 0.55;
+}
+
+.prism-menu-item.is-active {
+  color: #F4FAEF;
+  font-weight: 700;
+  background: linear-gradient(90deg, rgba(171,225,183,0.10), transparent 75%);
+}
+.prism-menu-item.is-active .pm-glyph {
+  color: var(--green-soft);
+  text-shadow:
+    0 0 8px rgba(171,225,183,0.65),
+    0 0 18px rgba(67,107,149,0.4);
+}
+.prism-menu-item.is-active::before {
+  transform: translateY(-50%) scale(1);
+  opacity: 1;
+  background: var(--green-soft);
+  box-shadow:
+    0 0 8px rgba(171,225,183,0.85),
+    0 0 18px rgba(67,107,149,0.55),
+    0 0 32px rgba(181,69,63,0.30);
+}
+.prism-menu-item.is-active::after {
+  transform: scaleX(1);
+  opacity: 1;
+}
+
+/* 호흡하는 푸터 닷 */
+@keyframes prism-pulse {
+  0%, 100% { opacity: 0.45; box-shadow: 0 0 4px rgba(171,225,183,0.4); }
+  50%      { opacity: 1;    box-shadow: 0 0 10px rgba(171,225,183,0.9), 0 0 20px rgba(67,107,149,0.45); }
+}
+.prism-footer-dot {
+  display: inline-block;
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--green-soft);
+  margin-right: 7px;
+  vertical-align: middle;
+  animation: prism-pulse 3.6s ease-in-out infinite;
+}
+
+/* 인증 패널 — 톤 통일 */
+.prism-auth-btn-primary {
+  flex: 1;
+  background: linear-gradient(180deg, rgba(56,105,72,0.95), rgba(43,93,60,0.95));
+  color: #F0F7EE;
+  border: 1px solid rgba(171,225,183,0.30);
+  padding: 9px;
+  font-weight: 700;
+  font-size: 0.82rem;
+  cursor: pointer;
+  border-radius: 3px;
+  letter-spacing: 0.02em;
+  transition: box-shadow 220ms ease, border-color 220ms ease, transform 160ms ease;
+}
+.prism-auth-btn-primary:hover {
+  border-color: rgba(171,225,183,0.65);
+  box-shadow: 0 0 0 1px rgba(171,225,183,0.15), 0 0 14px rgba(67,107,149,0.35);
+}
+.prism-auth-btn-ghost {
+  flex: 1;
+  background: transparent;
+  color: rgba(171,225,183,0.85);
+  border: 1px solid rgba(171,225,183,0.30);
+  padding: 9px;
+  font-weight: 700;
+  font-size: 0.82rem;
+  cursor: pointer;
+  border-radius: 3px;
+  letter-spacing: 0.02em;
+  transition: box-shadow 220ms ease, border-color 220ms ease, color 220ms ease;
+}
+.prism-auth-btn-ghost:hover {
+  color: #F0F7EE;
+  border-color: rgba(67,107,149,0.65);
+  box-shadow: 0 0 0 1px rgba(67,107,149,0.20), 0 0 14px rgba(181,69,63,0.25);
+}
+
 /* ── 스크롤바 ─────────────────────────────────── */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: var(--surf); }
