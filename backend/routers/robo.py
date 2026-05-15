@@ -140,23 +140,47 @@ def _normalize_df_dates(df: "pd.DataFrame") -> "pd.DataFrame":
 
 def _run_backtest(items: list[RoboPortfolioItem]) -> BacktestResult:
     import pandas as pd
-    DAYS = 90
+    DAYS = 60  # _build_portfolio와 동일하게 맞춰 SQLite 캐시 재사용
+    if not items:
+        print("[backtest] items 비어있음 → ok=False", flush=True)
+        return BacktestResult(ok=False, total_return=0.0, series=[], days=0)
+
     total_w = sum(i.weight for i in items)
+    if total_w <= 0:
+        return BacktestResult(ok=False, total_return=0.0, series=[], days=0)
     weights = [i.weight / total_w for i in items]
 
     use_live = kis_available()
     frames: list[pd.DataFrame] = []
-    for item in items:
-        base = STOCK_MAP.get(item.code)
-        base_price = base.base_price if base else 50000
-        try:
-            df = live_chart(item.code, DAYS) if use_live else generate_demo_ohlcv(item.code, base_price, DAYS)
-        except Exception:
+
+    # Phase 1: KIS 시도. 한 종목이라도 실패하면 전체 demo로 전환 (날짜 일관성 보장)
+    if use_live:
+        for item in items:
+            try:
+                df = live_chart(item.code, DAYS)
+                frames.append(_normalize_df_dates(df))
+            except Exception as exc:
+                print(f"[backtest] KIS 실패 ({item.code}): {exc} — demo 전체 전환", flush=True)
+                frames = []
+                use_live = False
+                break
+
+    # Phase 2: demo fallback (KIS 불가능 또는 일부 실패 시)
+    if not use_live:
+        for item in items:
+            base = STOCK_MAP.get(item.code)
+            base_price = base.base_price if base else 50000
             df = generate_demo_ohlcv(item.code, base_price, DAYS)
-        frames.append(_normalize_df_dates(df))
+            frames.append(_normalize_df_dates(df))
+
+    print(f"[backtest] items={len(items)}, use_live={use_live}, frames={len(frames)}", flush=True)
+
+    if not frames:
+        return BacktestResult(ok=False, total_return=0.0, series=[], days=0)
 
     date_sets = [set(df["date"]) for df in frames]
     common_dates = sorted(date_sets[0].intersection(*date_sets[1:]))
+    print(f"[backtest] common_dates={len(common_dates)}", flush=True)
 
     if len(common_dates) < 5:
         return BacktestResult(ok=False, total_return=0.0, series=[], days=0)
@@ -176,8 +200,10 @@ def _run_backtest(items: list[RoboPortfolioItem]) -> BacktestResult:
         value *= (1 + ret)
         series.append(BacktestPoint(date=common_dates[day], value=round(value, 4)))
 
+    total_return = round(value - 100.0, 2)
+    print(f"[backtest] ok=True, days={len(common_dates)}, return={total_return}", flush=True)
     return BacktestResult(
-        total_return=round(value - 100.0, 2),
+        total_return=total_return,
         series=series,
         days=len(common_dates),
         ok=True,
