@@ -130,23 +130,32 @@ def _build_portfolio(profile_id: int) -> list[dict]:
     return items
 
 
+def _normalize_df_dates(df: "pd.DataFrame") -> "pd.DataFrame":
+    """date 컬럼을 'YYYY-MM-DD' 문자열로 통일 (Timestamp·문자열 모두 처리)."""
+    import pandas as pd
+    df = df.copy()
+    df["date"] = pd.to_datetime(df["date"], errors="coerce").dt.strftime("%Y-%m-%d")
+    return df.dropna(subset=["date"])
+
+
 def _run_backtest(items: list[RoboPortfolioItem]) -> BacktestResult:
+    import pandas as pd
     DAYS = 90
     total_w = sum(i.weight for i in items)
     weights = [i.weight / total_w for i in items]
 
-    import pandas as pd
+    use_live = kis_available()
     frames: list[pd.DataFrame] = []
     for item in items:
         base = STOCK_MAP.get(item.code)
         base_price = base.base_price if base else 50000
         try:
-            df = live_chart(item.code, DAYS) if kis_available() else generate_demo_ohlcv(item.code, base_price, DAYS)
-        except KISError:
+            df = live_chart(item.code, DAYS) if use_live else generate_demo_ohlcv(item.code, base_price, DAYS)
+        except Exception:
             df = generate_demo_ohlcv(item.code, base_price, DAYS)
-        frames.append(df)
+        frames.append(_normalize_df_dates(df))
 
-    date_sets = [set(df["date"].astype(str)) for df in frames]
+    date_sets = [set(df["date"]) for df in frames]
     common_dates = sorted(date_sets[0].intersection(*date_sets[1:]))
 
     if len(common_dates) < 5:
@@ -154,7 +163,7 @@ def _run_backtest(items: list[RoboPortfolioItem]) -> BacktestResult:
 
     returns_matrix: list[list[float]] = []
     for df in frames:
-        df_f = df[df["date"].astype(str).isin(common_dates)].sort_values("date").reset_index(drop=True)
+        df_f = df[df["date"].isin(common_dates)].sort_values("date").reset_index(drop=True)
         closes = df_f["close"].astype(float).tolist()
         daily = [0.0] + [(closes[i] / closes[i - 1]) - 1 for i in range(1, len(closes))]
         returns_matrix.append(daily)
