@@ -1,4 +1,12 @@
-const BASE = process.env.NEXT_PUBLIC_API_URL ?? "https://kosdaq-tracker.onrender.com";
+export const BASE = process.env.NEXT_PUBLIC_API_URL as string;
+
+if (!BASE) {
+  throw new Error("NEXT_PUBLIC_API_URL is not set at build time");
+}
+
+if (typeof window !== "undefined" && BASE.includes("localhost")) {
+  console.error("[FATAL] Frontend is calling localhost API in browser:", BASE);
+}
 
 function getToken(): string | null {
   if (typeof localStorage === "undefined") return null;

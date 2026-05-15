@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
-import { apiRoboRecommend, apiRoboSurvey, type RoboResult, type RoboSurveyQuestion, type BacktestResult } from "@/lib/api";
+import { apiRoboRecommend, apiRoboSurvey, BASE as API_BASE, type RoboResult, type RoboSurveyQuestion, type BacktestResult } from "@/lib/api";
 import { useAuthStore, useUIStore } from "@/lib/store";
 
 const Plot = dynamic(() => import("react-plotly.js"), { ssr: false });
@@ -220,7 +220,8 @@ export default function RoboPage() {
       console.log("[backtest]", res.backtest);
       setResult(res);
     } catch (e: unknown) {
-      setError((e as Error).message);
+      console.error("[robo] recommend failed", e, "API_BASE=", API_BASE);
+      setError(`${(e as Error).message} (API: ${API_BASE})`);
     } finally {
       setLoading(false);
     }
@@ -269,7 +270,21 @@ export default function RoboPage() {
             </div>
           ))}
 
-          {error && <div style={{ color: "var(--red)", marginBottom: "12px", fontSize: "0.88rem" }}>{error}</div>}
+          {error && (
+            <div style={{
+              border: "2px solid #B82828",
+              background: "#FFF0F0",
+              color: "#8B1A1A",
+              padding: "12px 16px",
+              marginBottom: "16px",
+              fontSize: "0.9rem",
+              fontWeight: 600,
+              lineHeight: 1.5,
+            }}>
+              <div style={{ fontFamily: "var(--maru)", marginBottom: "4px" }}>⚠ 분석 실패</div>
+              <div style={{ fontWeight: 400, fontSize: "0.82rem", wordBreak: "break-all" }}>{error}</div>
+            </div>
+          )}
 
           <button
             onClick={handleSubmit}
