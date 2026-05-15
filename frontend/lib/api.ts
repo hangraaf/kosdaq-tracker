@@ -251,6 +251,18 @@ export interface RoboSurveyQuestion {
   id: string; q: string; opts: string[]; w: number[];
 }
 
+export interface BacktestPoint {
+  date: string;
+  value: number;
+}
+
+export interface BacktestResult {
+  total_return: number;
+  series: BacktestPoint[];
+  days: number;
+  ok: boolean;
+}
+
 export interface RoboResult {
   profile_id: number; profile_name: string; profile_eng: string;
   profile_desc: string; tag: string; color: string; bg: string; fg: string;
@@ -259,6 +271,7 @@ export interface RoboResult {
     prism_score: number; weight: number; reason: string;
   }>;
   score_total: number;
+  backtest?: BacktestResult | null;
 }
 
 export async function apiRoboSurvey(): Promise<RoboSurveyQuestion[]> {

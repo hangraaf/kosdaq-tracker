@@ -1,8 +1,55 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { apiRoboRecommend, apiRoboSurvey, type RoboResult, type RoboSurveyQuestion } from "@/lib/api";
+import dynamic from "next/dynamic";
+import { apiRoboRecommend, apiRoboSurvey, type RoboResult, type RoboSurveyQuestion, type BacktestResult } from "@/lib/api";
 import { useAuthStore, useUIStore } from "@/lib/store";
+
+const Plot = dynamic(() => import("react-plotly.js"), { ssr: false });
+
+function BacktestPanel({ backtest, color }: { backtest: BacktestResult; color: string }) {
+  const pos = backtest.total_return >= 0;
+  const retColor = pos ? "#B5453F" : "#436B95";
+  const sign = pos ? "+" : "";
+  const dates = backtest.series.map(p => p.date);
+  const values = backtest.series.map(p => p.value);
+
+  return (
+    <div style={{ border: "1px solid var(--border)", background: "var(--surf)", padding: "20px", marginBottom: "24px" }}>
+      <div style={{ display: "flex", alignItems: "baseline", gap: "16px", marginBottom: "12px", flexWrap: "wrap" }}>
+        <div style={{ fontFamily: "var(--maru)", fontSize: "0.82rem", color: "var(--muted)", fontWeight: 700 }}>
+          만약 {backtest.days}영업일 전 이 포트폴리오에 투자했다면?
+        </div>
+        <div style={{ background: retColor, color: "#fff", fontFamily: "var(--mono)", fontWeight: 700, fontSize: "1.6rem", padding: "4px 16px" }}>
+          {sign}{backtest.total_return.toFixed(1)}%
+        </div>
+        <div style={{ fontSize: "0.72rem", color: "var(--muted)" }}>모의 시뮬레이션 · 투자 참고용</div>
+      </div>
+      <Plot
+        data={[{
+          x: dates, y: values, type: "scatter", mode: "lines",
+          line: { color, width: 2 },
+          fill: "none",
+          hovertemplate: "<b>%{x}</b><br>%{y:.2f}<extra></extra>",
+        }]}
+        layout={{
+          height: 180,
+          margin: { l: 10, r: 50, t: 4, b: 28 },
+          paper_bgcolor: "rgba(253,250,244,1)",
+          plot_bgcolor: "rgba(253,250,244,1)",
+          showlegend: false,
+          xaxis: { type: "date", showgrid: false, tickfont: { size: 10 }, rangeslider: { visible: false } },
+          yaxis: { side: "right", tickfont: { size: 10 }, gridcolor: "#E8E1D0", zeroline: false },
+          shapes: [{ type: "line", x0: dates[0], x1: dates[dates.length - 1], y0: 100, y1: 100,
+            xref: "x", yref: "y", line: { color: "#B0883A", width: 1, dash: "dash" } }],
+        }}
+        config={{ responsive: true, displayModeBar: false }}
+        style={{ width: "100%", height: "180px" }}
+        useResizeHandler
+      />
+    </div>
+  );
+}
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
@@ -66,6 +113,11 @@ function ResultView({ result, onSelectStock }: { result: RoboResult; onSelectSto
         </div>
         <div style={{ fontSize: "0.88rem", color: result.fg, lineHeight: 1.6 }}>{result.profile_desc}</div>
       </div>
+
+      {/* 백테스팅 시뮬레이션 */}
+      {result.backtest && result.backtest.ok && result.backtest.series.length > 0 && (
+        <BacktestPanel backtest={result.backtest} color={result.color} />
+      )}
 
       {/* 추천 종목 */}
       <SectionLabel>PRISM™ 추천 포트폴리오 ({result.items.length}종목)</SectionLabel>

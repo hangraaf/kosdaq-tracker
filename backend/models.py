@@ -80,6 +80,18 @@ class RoboPortfolioItem(BaseModel):
     reason: str
 
 
+class BacktestPoint(BaseModel):
+    date: str
+    value: float
+
+
+class BacktestResult(BaseModel):
+    total_return: float
+    series: list[BacktestPoint]
+    days: int = 90
+    ok: bool = True
+
+
 class RoboResult(BaseModel):
     profile_id: int
     profile_name: str
@@ -91,6 +103,7 @@ class RoboResult(BaseModel):
     fg: str
     items: list[RoboPortfolioItem]
     score_total: float
+    backtest: BacktestResult | None = None
 
 
 # ── Chart / Snapshot ──────────────────────────────────────────────────────

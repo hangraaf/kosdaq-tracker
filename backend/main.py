@@ -1,10 +1,12 @@
 """KOSDAQ Tracker — FastAPI 백엔드."""
 from __future__ import annotations
 
+import asyncio
 import json
 import os
 import sys
 from contextlib import asynccontextmanager
+from datetime import datetime
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
@@ -52,11 +54,61 @@ def _init_admin():
     users_file.write_text(json.dumps(users, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
+_REFRESH_SCRIPT = Path(__file__).parent / "scripts" / "refresh_stocks.py"
+_CACHE_FILE = DATA_DIR / "stocks_cache.json"
+_CACHE_MAX_AGE_SECONDS = 86400  # 24시간
+
+
+def _cache_age_seconds() -> float:
+    """캐시 파일이 몇 초 전에 갱신됐는지 반환. 파일 없으면 무한대."""
+    if not _CACHE_FILE.exists():
+        return float("inf")
+    try:
+        payload = json.loads(_CACHE_FILE.read_text(encoding="utf-8"))
+        updated_at = datetime.fromisoformat(payload.get("updated_at", "2000-01-01"))
+        return (datetime.now() - updated_at).total_seconds()
+    except Exception:
+        return float("inf")
+
+
+async def _run_refresh() -> bool:
+    """refresh_stocks.py를 실행하고 성공 여부를 반환."""
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            sys.executable, str(_REFRESH_SCRIPT),
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+        _, stderr = await proc.communicate()
+        if proc.returncode == 0:
+            print("[STOCKS] 종목 캐시 갱신 완료")
+            return True
+        print(f"[STOCKS] 갱신 실패: {stderr.decode(errors='replace')[:200]}")
+    except Exception as exc:
+        print(f"[STOCKS] 갱신 오류: {exc}")
+    return False
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     import db as _db
     _db.init_db()
     print("[STARTUP] SQLite 캐시 DB 초기화 완료")
+
+    age = _cache_age_seconds()
+    if age == float("inf"):
+        # 캐시 없음 → 기동 전 동기 갱신 (첫 실행 시에만)
+        print("[STOCKS] stocks_cache.json 없음 — 전체 종목 조회 중 (30초 내외)...")
+        await _run_refresh()
+    elif age > _CACHE_MAX_AGE_SECONDS:
+        # 캐시 오래됨 → 백그라운드 갱신 (앱 기동 지연 없음)
+        print(f"[STOCKS] 캐시 {age/3600:.1f}h 경과 — 백그라운드 갱신 시작")
+        asyncio.ensure_future(_run_refresh())
+
+    from stock_data import KOSPI_STOCKS, KOSDAQ_STOCKS
+    total = len(KOSPI_STOCKS) + len(KOSDAQ_STOCKS)
+    print(f"[STARTUP] 종목: 코스피 {len(KOSPI_STOCKS)} + 코스닥 {len(KOSDAQ_STOCKS)} = {total}개")
+
     _init_admin()
     yield
 

@@ -9,9 +9,9 @@ from fastapi import APIRouter, Depends
 
 from kis_client import KISError
 from kis_service import kis_available, live_chart
-from models import RoboPortfolioItem, RoboResult, RoboSurveyAnswer
+from models import RoboPortfolioItem, RoboResult, RoboSurveyAnswer, BacktestResult, BacktestPoint
 from routers.auth import get_premium_user
-from stock_data import MARKET_STOCKS
+from stock_data import MARKET_STOCKS, STOCK_MAP
 from utils import calculate_prism_score, generate_demo_ohlcv, seed_for
 
 router = APIRouter(prefix="/robo", tags=["robo"])
@@ -130,6 +130,51 @@ def _build_portfolio(profile_id: int) -> list[dict]:
     return items
 
 
+def _run_backtest(items: list[RoboPortfolioItem]) -> BacktestResult:
+    DAYS = 90
+    total_w = sum(i.weight for i in items)
+    weights = [i.weight / total_w for i in items]
+
+    import pandas as pd
+    frames: list[pd.DataFrame] = []
+    for item in items:
+        base = STOCK_MAP.get(item.code)
+        base_price = base.base_price if base else 50000
+        try:
+            df = live_chart(item.code, DAYS) if kis_available() else generate_demo_ohlcv(item.code, base_price, DAYS)
+        except KISError:
+            df = generate_demo_ohlcv(item.code, base_price, DAYS)
+        frames.append(df)
+
+    date_sets = [set(df["date"].astype(str)) for df in frames]
+    common_dates = sorted(date_sets[0].intersection(*date_sets[1:]))
+
+    if len(common_dates) < 5:
+        return BacktestResult(ok=False, total_return=0.0, series=[], days=0)
+
+    returns_matrix: list[list[float]] = []
+    for df in frames:
+        df_f = df[df["date"].astype(str).isin(common_dates)].sort_values("date").reset_index(drop=True)
+        closes = df_f["close"].astype(float).tolist()
+        daily = [0.0] + [(closes[i] / closes[i - 1]) - 1 for i in range(1, len(closes))]
+        returns_matrix.append(daily)
+
+    n = len(common_dates)
+    value = 100.0
+    series = [BacktestPoint(date=common_dates[0], value=100.0)]
+    for day in range(1, n):
+        ret = sum(weights[i] * returns_matrix[i][day] for i in range(len(items)))
+        value *= (1 + ret)
+        series.append(BacktestPoint(date=common_dates[day], value=round(value, 4)))
+
+    return BacktestResult(
+        total_return=round(value - 100.0, 2),
+        series=series,
+        days=len(common_dates),
+        ok=True,
+    )
+
+
 @router.get("/survey")
 def get_survey():
     return ROBO_SURVEY
@@ -150,6 +195,15 @@ def recommend(
     items_raw = _build_portfolio(pid)
     items = [RoboPortfolioItem(**i) for i in items_raw]
     avg_prism = sum(i.prism_score for i in items) / len(items) if items else 0
+
+    backtest: BacktestResult | None = None
+    try:
+        backtest = _run_backtest(items)
+        if not backtest.ok:
+            backtest = None
+    except Exception:
+        backtest = None
+
     return RoboResult(
         profile_id=pid,
         profile_name=profile["name"],
@@ -161,4 +215,5 @@ def recommend(
         fg=profile["fg"],
         items=items,
         score_total=round(avg_prism, 1),
+        backtest=backtest,
     )
