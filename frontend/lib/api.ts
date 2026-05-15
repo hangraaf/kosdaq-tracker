@@ -4,8 +4,13 @@ if (!BASE) {
   throw new Error("NEXT_PUBLIC_API_URL is not set at build time");
 }
 
-if (typeof window !== "undefined" && BASE.includes("localhost")) {
-  console.error("[FATAL] Frontend is calling localhost API in browser:", BASE);
+if (
+  typeof window !== "undefined" &&
+  BASE.includes("localhost") &&
+  window.location.hostname !== "localhost" &&
+  window.location.hostname !== "127.0.0.1"
+) {
+  console.error("[FATAL] Production page is calling localhost API:", BASE);
 }
 
 function getToken(): string | null {
