@@ -5,8 +5,9 @@ backend/.env
 frontend/.env.local
 
 # ── 런타임 생성 데이터 ────────────────────────────────────────────────────
-data/
-backend/data/
+/data/
+/backend/data/*
+!/backend/data/stocks_fallback.json
 
 # ── Python ────────────────────────────────────────────────────────────────
 __pycache__/
