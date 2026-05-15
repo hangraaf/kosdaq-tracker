@@ -34,8 +34,14 @@ def _load_stocks() -> tuple[list[Stock], list[Stock]]:
                     kospi.append(s)
                 else:
                     kosdaq.append(s)
+            # 캐시가 비어있으면(예: 이전 갱신 실패로 빈 파일이 남은 경우) fallback 시도
+            if not kospi and not kosdaq:
+                print(f"[STOCKS] {path.name} 비어있음 — 다음 소스 시도", flush=True)
+                continue
+            print(f"[STOCKS] {path.name} 로드: 코스피 {len(kospi)} + 코스닥 {len(kosdaq)}", flush=True)
             return kospi, kosdaq
-        except Exception:
+        except Exception as exc:
+            print(f"[STOCKS] {path.name} 파싱 실패: {exc}", flush=True)
             continue
     return [], []
 

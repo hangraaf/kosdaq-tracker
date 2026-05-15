@@ -95,19 +95,33 @@ async def lifespan(app: FastAPI):
     _db.init_db()
     print("[STARTUP] SQLite 캐시 DB 초기화 완료")
 
+    # stock_data는 module import 시점에 fallback/cache를 로드한다.
+    # 여기서는 우선 현재 로드 상태를 확인하고, 비어있을 때만 동기 refresh를 시도한다.
+    import stock_data as _sd
+    initial_total = len(_sd.KOSPI_STOCKS) + len(_sd.KOSDAQ_STOCKS)
     age = _cache_age_seconds()
-    if age == float("inf"):
-        # 캐시 없음 → 기동 전 동기 갱신 (첫 실행 시에만)
-        print("[STOCKS] stocks_cache.json 없음 — 전체 종목 조회 중 (30초 내외)...")
-        await _run_refresh()
+
+    if initial_total == 0:
+        # fallback도 캐시도 없음 → 동기 갱신
+        print("[STOCKS] 종목 데이터 없음 — 전체 종목 조회 중 (30초 내외)...")
+        if await _run_refresh():
+            # refresh 성공 → stock_data 재로드 (module-level 변수 갱신)
+            kospi, kosdaq = _sd._load_stocks()
+            _sd.KOSPI_STOCKS = kospi
+            _sd.KOSDAQ_STOCKS = kosdaq
+            _sd.MARKET_STOCKS = {"코스피": kospi, "코스닥": kosdaq, "전체": kospi + kosdaq}
+            _sd.STOCK_MAP = {s.code: s for s in kospi + kosdaq}
+    elif age == float("inf"):
+        # fallback으로는 가동 중이지만 캐시가 없음 → 백그라운드 갱신
+        print(f"[STOCKS] fallback {initial_total}개로 가동 중 — 백그라운드에서 최신 캐시 생성")
+        asyncio.ensure_future(_run_refresh())
     elif age > _CACHE_MAX_AGE_SECONDS:
-        # 캐시 오래됨 → 백그라운드 갱신 (앱 기동 지연 없음)
+        # 캐시 오래됨 → 백그라운드 갱신
         print(f"[STOCKS] 캐시 {age/3600:.1f}h 경과 — 백그라운드 갱신 시작")
         asyncio.ensure_future(_run_refresh())
 
-    from stock_data import KOSPI_STOCKS, KOSDAQ_STOCKS
-    total = len(KOSPI_STOCKS) + len(KOSDAQ_STOCKS)
-    print(f"[STARTUP] 종목: 코스피 {len(KOSPI_STOCKS)} + 코스닥 {len(KOSDAQ_STOCKS)} = {total}개")
+    total = len(_sd.KOSPI_STOCKS) + len(_sd.KOSDAQ_STOCKS)
+    print(f"[STARTUP] 종목: 코스피 {len(_sd.KOSPI_STOCKS)} + 코스닥 {len(_sd.KOSDAQ_STOCKS)} = {total}개")
 
     _init_admin()
     yield
