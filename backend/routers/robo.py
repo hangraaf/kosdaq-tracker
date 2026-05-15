@@ -138,7 +138,12 @@ def _normalize_df_dates(df: "pd.DataFrame") -> "pd.DataFrame":
     return df.dropna(subset=["date"])
 
 
+FEE_RATE = 0.0015   # 매수+매도 수수료 합산 가정 (0.15%)
+TAX_RATE = 0.0023   # 매도 거래세 (0.23%)
+
+
 def _run_backtest(items: list[RoboPortfolioItem]) -> BacktestResult:
+    import math
     import pandas as pd
     DAYS = 60  # _build_portfolio와 동일하게 맞춰 SQLite 캐시 재사용
     if not items:
@@ -198,20 +203,72 @@ def _run_backtest(items: list[RoboPortfolioItem]) -> BacktestResult:
         returns_matrix.append(daily)
 
     n = len(common_dates)
-    value = 100.0
-    series = [BacktestPoint(date=common_dates[0], value=100.0)]
-    for day in range(1, n):
-        ret = sum(weights[i] * returns_matrix[i][day] for i in range(len(items)))
-        value *= (1 + ret)
-        series.append(BacktestPoint(date=common_dates[day], value=round(value, 4)))
 
-    total_return = round(value - 100.0, 2)
-    print(f"[backtest] ok=True, days={len(common_dates)}, return={total_return}", flush=True)
+    # 1) 포트폴리오 일일 수익률 (수수료/세금 반영)
+    entry_cost = FEE_RATE          # 매수 수수료 — day 0에 차감
+    exit_cost = FEE_RATE + TAX_RATE  # 매도 수수료+세금 — 마지막 날 차감
+    port_returns = [0.0] * n
+    for day in range(1, n):
+        port_returns[day] = sum(weights[i] * returns_matrix[i][day] for i in range(len(items)))
+
+    # 2) 일별 변동성(σ) — 평균 분산 추정용
+    mean_r = sum(port_returns[1:]) / max(1, n - 1)
+    var_r = sum((r - mean_r) ** 2 for r in port_returns[1:]) / max(1, n - 2)
+    sigma = math.sqrt(max(var_r, 0.0))
+
+    # 3) 누적 가치 + ±1σ 밴드 + drawdown
+    value = 100.0 * (1.0 - entry_cost)  # 매수 시점 수수료 반영
+    peak = value
+    series: list[BacktestPoint] = [
+        BacktestPoint(date=common_dates[0], value=round(value, 4),
+                      upper=round(value, 4), lower=round(value, 4), drawdown=0.0)
+    ]
+    max_dd = 0.0
+    for day in range(1, n):
+        value *= (1 + port_returns[day])
+        # 누적 ±1σ 밴드 (시간 √t 스케일링)
+        band = sigma * math.sqrt(day)
+        upper = value * (1 + band)
+        lower = value * (1 - band)
+        peak = max(peak, value)
+        dd = (value / peak - 1.0) * 100.0 if peak > 0 else 0.0
+        max_dd = min(max_dd, dd)
+        series.append(BacktestPoint(
+            date=common_dates[day],
+            value=round(value, 4),
+            upper=round(upper, 4),
+            lower=round(lower, 4),
+            drawdown=round(dd, 3),
+        ))
+
+    # 4) 매도 비용을 마지막 가치에 적용
+    final_value = value * (1.0 - exit_cost)
+    series[-1].value = round(final_value, 4)
+    total_return = round(final_value - 100.0, 2)
+
+    # 5) 연환산 지표 (252영업일 기준)
+    ann_vol = round(sigma * math.sqrt(252) * 100.0, 2)
+    ann_ret = ((final_value / 100.0) ** (252.0 / max(1, n - 1)) - 1.0) * 100.0 if final_value > 0 else 0.0
+    sharpe = round((ann_ret / 100.0) / (sigma * math.sqrt(252)), 3) if sigma > 0 else None
+    band_pct = round(sigma * math.sqrt(n) * 100.0, 2)
+
+    print(f"[backtest] ok=True, days={n}, return={total_return}, MDD={max_dd:.2f}, σ={ann_vol}", flush=True)
     return BacktestResult(
         total_return=total_return,
         series=series,
-        days=len(common_dates),
+        days=n,
         ok=True,
+        data_source="KIS" if use_live else "DEMO",
+        realtime=use_live,
+        fee_rate=FEE_RATE,
+        tax_rate=TAX_RATE,
+        rebalance="기간 내 보유(rebalance 없음)",
+        max_drawdown=round(max_dd, 2),
+        annualized_volatility=ann_vol,
+        sharpe=sharpe,
+        period_start=common_dates[0],
+        period_end=common_dates[-1],
+        band_pct=band_pct,
     )
 
 

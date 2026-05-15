@@ -267,6 +267,9 @@ export interface RoboSurveyQuestion {
 export interface BacktestPoint {
   date: string;
   value: number;
+  upper?: number | null;
+  lower?: number | null;
+  drawdown?: number | null;
 }
 
 export interface BacktestResult {
@@ -275,6 +278,17 @@ export interface BacktestResult {
   days: number;
   ok: boolean;
   error?: string | null;
+  data_source?: string;          // "KIS" | "DEMO"
+  realtime?: boolean;
+  fee_rate?: number;
+  tax_rate?: number;
+  rebalance?: string;
+  max_drawdown?: number;
+  annualized_volatility?: number;
+  sharpe?: number | null;
+  period_start?: string | null;
+  period_end?: string | null;
+  band_pct?: number;
 }
 
 export interface RoboResult {

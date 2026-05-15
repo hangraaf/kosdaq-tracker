@@ -83,6 +83,9 @@ class RoboPortfolioItem(BaseModel):
 class BacktestPoint(BaseModel):
     date: str
     value: float
+    upper: float | None = None
+    lower: float | None = None
+    drawdown: float | None = None
 
 
 class BacktestResult(BaseModel):
@@ -91,6 +94,18 @@ class BacktestResult(BaseModel):
     days: int = 90
     ok: bool = True
     error: str | None = None
+    # 신뢰성 메타데이터
+    data_source: str = "DEMO"           # "KIS" | "DEMO"
+    realtime: bool = False              # KIS=실시간, DEMO=모의
+    fee_rate: float = 0.0015            # 0.15% 매수+매도 합산 가정
+    tax_rate: float = 0.0023            # 매도 시 거래세 0.23%
+    rebalance: str = "기간 내 보유(rebalance 없음)"
+    max_drawdown: float = 0.0           # MDD (음수, %)
+    annualized_volatility: float = 0.0  # 연환산 변동성 %
+    sharpe: float | None = None
+    period_start: str | None = None
+    period_end: str | None = None
+    band_pct: float = 0.0               # ±1σ 밴드 폭 %
 
 
 class RoboResult(BaseModel):

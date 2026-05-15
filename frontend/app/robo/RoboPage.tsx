@@ -7,15 +7,80 @@ import { useAuthStore, useUIStore } from "@/lib/store";
 
 const Plot = dynamic(() => import("react-plotly.js"), { ssr: false });
 
+function DataSourceBadge({ source, realtime }: { source: string; realtime: boolean }) {
+  const isKIS = source === "KIS";
+  const bg = isKIS ? "#0D2A4A" : "#7A6A4A";
+  const label = isKIS ? "KIS 실시간 시세" : "DEMO 모의 시세";
+  const sub = isKIS ? "한국투자증권 API" : "백테스트용 합성 데이터";
+  return (
+    <span title={sub} style={{
+      display: "inline-flex", alignItems: "center", gap: "6px",
+      background: bg, color: "#fff", fontFamily: "var(--mono)", fontSize: "0.7rem",
+      fontWeight: 700, padding: "3px 10px", borderRadius: "2px", letterSpacing: "0.02em",
+    }}>
+      <span style={{
+        width: "6px", height: "6px", borderRadius: "50%",
+        background: realtime ? "#7CCB7A" : "#E8C46A",
+        boxShadow: realtime ? "0 0 6px #7CCB7A" : "none",
+      }} />
+      {label}
+    </span>
+  );
+}
+
+function ConditionsTable({ backtest }: { backtest: BacktestResult }) {
+  const rows: Array<[string, string]> = [
+    ["데이터 출처", backtest.data_source === "KIS" ? "한국투자증권(KIS) Open API" : "DEMO 합성 시세 (백테스트 검증용)"],
+    ["시세 모드", backtest.realtime ? "실시간 (장중 KIS 시세)" : "지연/모의 (실제 거래 데이터 아님)"],
+    ["분석 기간", `${backtest.period_start ?? "-"} ~ ${backtest.period_end ?? "-"} (${backtest.days}영업일)`],
+    ["매매 수수료", `${((backtest.fee_rate ?? 0) * 100).toFixed(2)}% (매수+매도 합산 가정)`],
+    ["거래세", `${((backtest.tax_rate ?? 0) * 100).toFixed(2)}% (매도 시)`],
+    ["리밸런싱", backtest.rebalance ?? "기간 내 보유"],
+    ["연환산 변동성(σ)", `${(backtest.annualized_volatility ?? 0).toFixed(2)}%`],
+    ["샤프 비율", backtest.sharpe == null ? "—" : backtest.sharpe.toFixed(2)],
+    ["최대 낙폭(MDD)", `${(backtest.max_drawdown ?? 0).toFixed(2)}%`],
+  ];
+  return (
+    <div style={{ marginTop: "16px" }}>
+      <div style={{ fontFamily: "var(--maru)", fontSize: "0.78rem", fontWeight: 700, color: "var(--muted)", marginBottom: "6px" }}>
+        ▣ 계산 조건 · 가정
+      </div>
+      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.78rem" }}>
+        <tbody>
+          {rows.map(([k, v]) => (
+            <tr key={k} style={{ borderBottom: "1px solid var(--border)" }}>
+              <td style={{ padding: "6px 10px", color: "var(--muted)", width: "38%", background: "var(--surf2)", fontWeight: 600 }}>{k}</td>
+              <td style={{ padding: "6px 10px", fontFamily: "var(--mono)", color: "var(--fg)" }}>{v}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 function BacktestPanel({ backtest, color }: { backtest: BacktestResult; color: string }) {
   const pos = backtest.total_return >= 0;
   const retColor = pos ? "#B5453F" : "#436B95";
   const sign = pos ? "+" : "";
   const dates = backtest.series.map(p => p.date);
   const values = backtest.series.map(p => p.value);
+  const uppers = backtest.series.map(p => p.upper ?? p.value);
+  const lowers = backtest.series.map(p => p.lower ?? p.value);
+  const drawdowns = backtest.series.map(p => p.drawdown ?? 0);
+  const mdd = backtest.max_drawdown ?? 0;
+  const source = backtest.data_source ?? "DEMO";
+  const realtime = !!backtest.realtime;
 
   return (
     <div style={{ border: "1px solid var(--border)", background: "var(--surf)", padding: "20px", marginBottom: "24px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px", flexWrap: "wrap" }}>
+        <DataSourceBadge source={source} realtime={realtime} />
+        <span style={{ fontSize: "0.7rem", color: "var(--muted)" }}>
+          기간: <b style={{ color: "var(--fg)" }}>{backtest.period_start}</b> ~ <b style={{ color: "var(--fg)" }}>{backtest.period_end}</b> · {backtest.days}영업일
+        </span>
+      </div>
+
       <div style={{ display: "flex", alignItems: "baseline", gap: "16px", marginBottom: "12px", flexWrap: "wrap" }}>
         <div style={{ fontFamily: "var(--maru)", fontSize: "0.82rem", color: "var(--muted)", fontWeight: 700 }}>
           만약 {backtest.days}영업일 전 이 포트폴리오에 투자했다면?
@@ -23,30 +88,84 @@ function BacktestPanel({ backtest, color }: { backtest: BacktestResult; color: s
         <div style={{ background: retColor, color: "#fff", fontFamily: "var(--mono)", fontWeight: 700, fontSize: "1.6rem", padding: "4px 16px" }}>
           {sign}{backtest.total_return.toFixed(1)}%
         </div>
-        <div style={{ fontSize: "0.72rem", color: "var(--muted)" }}>모의 시뮬레이션 · 투자 참고용</div>
+        <div style={{
+          background: "#3A1208", color: "#F0C8B0",
+          fontFamily: "var(--mono)", fontSize: "0.78rem", fontWeight: 700,
+          padding: "4px 10px",
+        }}>
+          MDD {mdd.toFixed(2)}%
+        </div>
+        <div style={{ fontSize: "0.72rem", color: "var(--muted)" }}>
+          ±1σ 밴드 · 수수료·세금 반영 · 투자 권유 아님
+        </div>
       </div>
+
+      {/* 누적 수익률 + 신뢰구간 밴드 */}
       <Plot
-        data={[{
-          x: dates, y: values, type: "scatter", mode: "lines",
-          line: { color, width: 2 },
-          fill: "none",
-          hovertemplate: "<b>%{x}</b><br>%{y:.2f}<extra></extra>",
-        }]}
+        data={[
+          // upper (invisible upper bound)
+          {
+            x: dates, y: uppers, type: "scatter", mode: "lines",
+            line: { color: "rgba(0,0,0,0)", width: 0 },
+            hoverinfo: "skip", showlegend: false,
+          },
+          // lower with fill to upper → band
+          {
+            x: dates, y: lowers, type: "scatter", mode: "lines",
+            line: { color: "rgba(0,0,0,0)", width: 0 },
+            fill: "tonexty", fillcolor: `${color}22`,
+            name: "±1σ 신뢰구간", hoverinfo: "skip",
+          },
+          // mid path
+          {
+            x: dates, y: values, type: "scatter", mode: "lines",
+            line: { color, width: 2.2 },
+            name: "포트폴리오 가치",
+            hovertemplate: "<b>%{x}</b><br>가치: %{y:.2f}<extra></extra>",
+          },
+        ]}
         layout={{
-          height: 180,
-          margin: { l: 10, r: 50, t: 4, b: 28 },
+          height: 220,
+          margin: { l: 10, r: 56, t: 6, b: 28 },
           paper_bgcolor: "rgba(253,250,244,1)",
           plot_bgcolor: "rgba(253,250,244,1)",
           showlegend: false,
           xaxis: { type: "date", showgrid: false, tickfont: { size: 10 }, rangeslider: { visible: false } },
-          yaxis: { side: "right", tickfont: { size: 10 }, gridcolor: "#E8E1D0", zeroline: false },
+          yaxis: { side: "right", tickfont: { size: 10 }, gridcolor: "#E8E1D0", zeroline: false, title: { text: "가치 (시작=100)", font: { size: 9 } } },
           shapes: [{ type: "line", x0: dates[0], x1: dates[dates.length - 1], y0: 100, y1: 100,
             xref: "x", yref: "y", line: { color: "#B0883A", width: 1, dash: "dash" } }],
         }}
         config={{ responsive: true, displayModeBar: false }}
-        style={{ width: "100%", height: "180px" }}
+        style={{ width: "100%", height: "220px" }}
         useResizeHandler
       />
+
+      {/* Drawdown bar — 손실 구간 시각화 */}
+      <div style={{ marginTop: "6px", fontSize: "0.7rem", color: "var(--muted)", fontFamily: "var(--maru)", fontWeight: 700 }}>
+        ▼ Drawdown (고점 대비 낙폭 %)
+      </div>
+      <Plot
+        data={[{
+          x: dates, y: drawdowns, type: "bar",
+          marker: { color: drawdowns.map(d => (d < -5 ? "#8B1A1A" : d < 0 ? "#B5453F" : "#7CCB7A")) },
+          hovertemplate: "<b>%{x}</b><br>낙폭: %{y:.2f}%<extra></extra>",
+        }]}
+        layout={{
+          height: 90,
+          margin: { l: 10, r: 56, t: 2, b: 22 },
+          paper_bgcolor: "rgba(253,250,244,1)",
+          plot_bgcolor: "rgba(253,250,244,1)",
+          showlegend: false,
+          xaxis: { type: "date", showgrid: false, tickfont: { size: 9 } },
+          yaxis: { side: "right", tickfont: { size: 9 }, gridcolor: "#E8E1D0",
+            zeroline: true, zerolinecolor: "#B0883A", rangemode: "tozero" },
+        }}
+        config={{ responsive: true, displayModeBar: false }}
+        style={{ width: "100%", height: "90px" }}
+        useResizeHandler
+      />
+
+      <ConditionsTable backtest={backtest} />
     </div>
   );
 }
@@ -150,10 +269,50 @@ function ResultView({ result, onSelectStock }: { result: RoboResult; onSelectSto
         </table>
       </div>
 
-      <div style={{ marginTop: "16px", padding: "12px", background: "var(--surf2)", fontSize: "0.75rem", color: "var(--muted)", lineHeight: 1.7 }}>
-        ※ PRISM™(Predictive Resonance Index for Stock Momentum)은 기술적 분석 기반의 자체 스코어링 시스템입니다.
-        본 추천은 투자 참고용이며 실제 투자 결과를 보장하지 않습니다.
-        모든 투자 결정과 책임은 투자자 본인에게 있습니다.
+      <ComplianceFooter />
+    </div>
+  );
+}
+
+function ComplianceFooter() {
+  return (
+    <div style={{
+      marginTop: "20px",
+      border: "1px solid #B0883A",
+      background: "#FBF6E8",
+      padding: "14px 16px",
+      fontSize: "0.74rem",
+      color: "#4A2E00",
+      lineHeight: 1.75,
+    }}>
+      <div style={{ fontFamily: "var(--maru)", fontWeight: 800, fontSize: "0.82rem", marginBottom: "6px", color: "#3A1208" }}>
+        ⚠ 투자 위험 고지 · 법적 면책 (필독)
+      </div>
+      <ol style={{ paddingLeft: "18px", margin: 0 }}>
+        <li>
+          본 콘텐츠는 <b>KOSDAQ Tracker</b>가 제공하는 자체 기술적 분석(PRISM™) 기반의
+          <b> 정보 제공 서비스</b>로, 「자본시장과 금융투자업에 관한 법률」상 투자자문업·투자일임업에
+          해당하지 않으며 <b>투자 권유를 목적으로 하지 않습니다</b>.
+        </li>
+        <li>
+          PRISM™ 점수, 추천 종목, 백테스트 수익률은 모두 <b>과거 데이터에 기반한 모의 결과</b>이며,
+          <b> 과거의 수익률은 미래의 수익을 보장하지 않습니다</b>.
+        </li>
+        <li>
+          백테스트는 실제 매매가 아닌 <b>시뮬레이션</b>입니다. 매매 수수료·세금·슬리피지·유동성 제약을
+          단순화한 가정이며, <b>실제 투자 결과와 일치하지 않을 수 있습니다</b>.
+        </li>
+        <li>
+          KIS 모드는 한국투자증권 Open API의 실시간 시세를, DEMO 모드는 검증용 합성 시세를 사용합니다.
+          DEMO 결과는 <b>실제 종목의 손익과 무관</b>합니다.
+        </li>
+        <li>
+          모든 투자 판단과 그에 따른 <b>이익·손실의 책임은 전적으로 투자자 본인</b>에게 있으며,
+          KOSDAQ Tracker는 본 서비스 이용으로 발생한 손실에 대해 책임지지 않습니다.
+        </li>
+      </ol>
+      <div style={{ marginTop: "8px", fontSize: "0.7rem", color: "#7A4E1A", borderTop: "1px dashed #B0883A", paddingTop: "6px" }}>
+        © KOSDAQ Tracker · PRISM™은 자체 기술적 스코어링 지표입니다. 문의: hangraaf@gmail.com
       </div>
     </div>
   );
