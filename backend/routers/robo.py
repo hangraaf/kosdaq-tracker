@@ -143,15 +143,16 @@ def _run_backtest(items: list[RoboPortfolioItem]) -> BacktestResult:
     DAYS = 60  # _build_portfolio와 동일하게 맞춰 SQLite 캐시 재사용
     if not items:
         print("[backtest] items 비어있음 → ok=False", flush=True)
-        return BacktestResult(ok=False, total_return=0.0, series=[], days=0)
+        return BacktestResult(ok=False, total_return=0.0, series=[], days=0, error="items 비어있음")
 
     total_w = sum(i.weight for i in items)
     if total_w <= 0:
-        return BacktestResult(ok=False, total_return=0.0, series=[], days=0)
+        return BacktestResult(ok=False, total_return=0.0, series=[], days=0, error=f"total_weight={total_w}")
     weights = [i.weight / total_w for i in items]
 
     use_live = kis_available()
     frames: list[pd.DataFrame] = []
+    last_kis_error: str | None = None
 
     # Phase 1: KIS 시도. 한 종목이라도 실패하면 전체 demo로 전환 (날짜 일관성 보장)
     if use_live:
@@ -160,7 +161,8 @@ def _run_backtest(items: list[RoboPortfolioItem]) -> BacktestResult:
                 df = live_chart(item.code, DAYS)
                 frames.append(_normalize_df_dates(df))
             except Exception as exc:
-                print(f"[backtest] KIS 실패 ({item.code}): {exc} — demo 전체 전환", flush=True)
+                last_kis_error = f"{item.code}: {type(exc).__name__}: {exc}"
+                print(f"[backtest] KIS 실패 ({last_kis_error}) — demo 전체 전환", flush=True)
                 frames = []
                 use_live = False
                 break
@@ -176,14 +178,17 @@ def _run_backtest(items: list[RoboPortfolioItem]) -> BacktestResult:
     print(f"[backtest] items={len(items)}, use_live={use_live}, frames={len(frames)}", flush=True)
 
     if not frames:
-        return BacktestResult(ok=False, total_return=0.0, series=[], days=0)
+        return BacktestResult(ok=False, total_return=0.0, series=[], days=0, error="frames 비어있음")
 
     date_sets = [set(df["date"]) for df in frames]
     common_dates = sorted(date_sets[0].intersection(*date_sets[1:]))
     print(f"[backtest] common_dates={len(common_dates)}", flush=True)
 
     if len(common_dates) < 5:
-        return BacktestResult(ok=False, total_return=0.0, series=[], days=0)
+        return BacktestResult(
+            ok=False, total_return=0.0, series=[], days=0,
+            error=f"common_dates={len(common_dates)} (frames={len(frames)}, use_live={use_live}, last_kis_error={last_kis_error})"
+        )
 
     returns_matrix: list[list[float]] = []
     for df in frames:
@@ -233,11 +238,13 @@ def recommend(
 
     backtest: BacktestResult | None = None
     try:
-        backtest = _run_backtest(items)
-        if not backtest.ok:
-            backtest = None
-    except Exception:
-        backtest = None
+        backtest = _run_backtest(items)  # ok=False여도 진단용으로 그대로 반환
+    except Exception as exc:
+        print(f"[backtest] unhandled: {type(exc).__name__}: {exc}", flush=True)
+        backtest = BacktestResult(
+            ok=False, total_return=0.0, series=[], days=0,
+            error=f"unhandled: {type(exc).__name__}: {exc}",
+        )
 
     return RoboResult(
         profile_id=pid,

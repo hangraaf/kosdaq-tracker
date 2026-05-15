@@ -217,6 +217,7 @@ export default function RoboPage() {
         q_exp:     answers["q_exp"]     ?? 2,
         q_panic:   answers["q_panic"]   ?? 2,
       });
+      console.log("[backtest]", res.backtest);
       setResult(res);
     } catch (e: unknown) {
       setError((e as Error).message);

@@ -90,6 +90,7 @@ class BacktestResult(BaseModel):
     series: list[BacktestPoint]
     days: int = 90
     ok: bool = True
+    error: str | None = None
 
 
 class RoboResult(BaseModel):

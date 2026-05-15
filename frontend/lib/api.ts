@@ -261,6 +261,7 @@ export interface BacktestResult {
   series: BacktestPoint[];
   days: number;
   ok: boolean;
+  error?: string | null;
 }
 
 export interface RoboResult {
