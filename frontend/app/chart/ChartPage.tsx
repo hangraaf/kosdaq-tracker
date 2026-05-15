@@ -79,7 +79,7 @@ function buildSignals(ohlcv: OHLCVRow[]) {
     const p5 = ma5[i - 1], p20 = ma20[i - 1], c5 = ma5[i], c20 = ma20[i];
     if (p5 === null || p20 === null || c5 === null || c20 === null) continue;
     if (p5 < p20 && c5 >= c20) {
-      crossSignal = "골든크로스 ▲"; crossColor = "#B0883A";
+      crossSignal = "골든크로스 ▲"; crossColor = "var(--yellow)";
       crossDesc = "MA5가 MA20 위로 돌파 — 단기 상승 전환 신호입니다.";
       break;
     }
@@ -139,7 +139,7 @@ function SigCard({ title, value, valueColor, desc, badge }: SigCardProps) {
     <div style={{
       flex: "1 1 180px",
       padding: "10px 14px",
-      background: "#F3EEE3",
+      background: "var(--surf)",
       border: "1px solid var(--border)",
       borderTop: `3px solid ${valueColor}`,
     }}>
@@ -308,7 +308,7 @@ export default function ChartPage() {
           gap: 0,
           border: "1px solid var(--border)",
           borderBottom: "none",
-          background: "#EDE8DC",
+          background: "var(--surf2)",
           flexWrap: "wrap",
           marginBottom: 0,
         }}>
@@ -344,14 +344,14 @@ export default function ChartPage() {
             <div style={{ fontSize: "0.58rem", letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--muted)", fontWeight: 700, marginBottom: "4px" }}>
               현재가 위치 (저점→고점)
             </div>
-            <div style={{ position: "relative", height: "8px", background: "linear-gradient(to right, #436B95, #BCB09A, #B5453F)", borderRadius: "4px" }}>
+            <div style={{ position: "relative", height: "8px", background: "linear-gradient(to right, var(--blue), var(--border), var(--red))", borderRadius: "4px" }}>
               <div style={{
                 position: "absolute",
                 left: hl3mWidth,
                 top: "-3px",
                 width: "14px",
                 height: "14px",
-                background: "#B0883A",
+                background: "var(--yellow)",
                 border: "2px solid #FFF",
                 borderRadius: "50%",
                 transform: "translateX(-50%)",
@@ -360,7 +360,7 @@ export default function ChartPage() {
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.6rem", color: "var(--muted)", marginTop: "3px" }}>
               <span>저점</span>
-              <span style={{ color: "#B0883A", fontWeight: 700 }}>{hl3mRange.toFixed(0)}%</span>
+              <span style={{ color: "var(--yellow)", fontWeight: 700 }}>{hl3mRange.toFixed(0)}%</span>
               <span>고점</span>
             </div>
           </div>
@@ -371,7 +371,7 @@ export default function ChartPage() {
       <div style={{
         display: "flex", gap: "4px", marginBottom: "8px", flexWrap: "wrap",
         padding: "6px 8px",
-        background: "#F5F0E6",
+        background: "var(--surf)",
         border: "1px solid var(--border)",
         borderTop: ohlcv3m.length > 0 ? "none" : undefined,
       }}>
@@ -456,7 +456,7 @@ export default function ChartPage() {
           fontWeight: 700,
           letterSpacing: "0.06em",
           padding: "8px 10px",
-          background: "#EDE8DC",
+          background: "var(--surf2)",
           border: "1px solid var(--border)",
           userSelect: "none",
         }}>
@@ -464,7 +464,7 @@ export default function ChartPage() {
         </summary>
         <div style={{
           padding: "14px 16px",
-          background: "#F5F1EB",
+          background: "var(--surf2)",
           border: "1px solid var(--border)",
           borderTop: "none",
           fontSize: "0.8rem",

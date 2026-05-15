@@ -266,7 +266,7 @@ export default function PremiumPage() {
         style={{
           width: "100%",
           padding: "14px",
-          background: loading ? "var(--surf2)" : "linear-gradient(90deg, #D4A030, #B0883A)",
+          background: loading ? "var(--surf2)" : "linear-gradient(90deg, var(--morinaga-gold), var(--morinaga-inner))",
           color: loading ? "var(--muted)" : "#3A1208",
           border: "none",
           fontFamily: "var(--maru)",

@@ -80,12 +80,12 @@ function detectCrosses(ma5: (number | null)[], ma20: (number | null)[], dates: s
 const C = {
   red:     "#B5453F",
   blue:    "#436B95",
-  gold:    "#B0883A",
+  gold:    "#745c27",
   blueSoft:"#6B8AAE",
   blueDark:"#2C4A6E",
-  bg:      "rgba(253,250,244,1)",
-  paper:   "rgba(248,244,235,1)",
-  grid:    "#E8E1D0",
+  bg:      "rgba(247,250,244,1)",
+  paper:   "rgba(240,245,238,1)",
+  grid:    "#e9f0e8",
 };
 
 type ToggleKey = "ma5" | "ma20" | "ma60" | "bb" | "cross";
@@ -265,7 +265,7 @@ export default function TradingChart({ data }: Props) {
       margin: { l: 10, r: 65, t: 10, b: 30 },
       paper_bgcolor: C.paper,
       plot_bgcolor:  C.bg,
-      font: { color: "#3D3830", family: "Pretendard, sans-serif", size: 11 },
+      font: { color: "#2c342e", family: "'Nanum Gothic', sans-serif", size: 11 },
       showlegend: false,
       xaxis: {
         domain: [0, 1], anchor: "y",
@@ -347,15 +347,15 @@ export default function TradingChart({ data }: Props) {
           bgcolor: "rgba(253,250,244,0.88)", bordercolor: C.blue, borderwidth: 1, borderpad: 3 },
         // 거래량 레이블
         { xref: "paper", yref: "y2 domain", x: 0.01, y: 0.98, xanchor: "left", yanchor: "top",
-          text: "📊 거래량", showarrow: false, font: { size: 10, color: "#7C7264" } },
+          text: "📊 거래량", showarrow: false, font: { size: 10, color: "#59615a" } },
         // MACD 레이블
         { xref: "paper", yref: "y3 domain", x: 0.01, y: 0.98, xanchor: "left", yanchor: "top",
           text: "📉 MACD(12,26,9)  막대 빨강=매수세 / 파랑=매도세", showarrow: false,
-          font: { size: 9, color: "#7C7264" } },
+          font: { size: 9, color: "#59615a" } },
         // RSI 레이블
         { xref: "paper", yref: "y4 domain", x: 0.01, y: 0.98, xanchor: "left", yanchor: "top",
           text: "⚡ RSI(14)  70↑ 과매수 · 30↓ 과매도", showarrow: false,
-          font: { size: 9, color: "#7C7264" } },
+          font: { size: 9, color: "#59615a" } },
         // RSI 70 선 레이블
         { xref: "paper", yref: "y4", x: 1.01, y: 70, xanchor: "left", yanchor: "middle",
           text: "70", showarrow: false, font: { size: 9, color: C.red } },
@@ -420,7 +420,7 @@ export default function TradingChart({ data }: Props) {
       <div style={{
         display: "flex", flexWrap: "wrap", gap: "10px 20px",
         padding: "8px 12px",
-        background: "#EDE8DC",
+        background: "var(--surf)",
         border: "1px solid var(--border)",
         borderTop: "none",
         fontSize: "0.7rem",

@@ -1,48 +1,28 @@
-@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css');
+@import url('https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700;800&family=Nanum+Gothic:wght@400;700;800&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
 @import "tailwindcss";
 
-/* ── 마루부리 폰트 ──────────────────────────── */
-@font-face {
-  font-family: 'MaruBuri';
-  font-weight: 400;
-  font-display: swap;
-  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2107@1.1/MaruBuri-Regular.woff') format('woff');
-}
-@font-face {
-  font-family: 'MaruBuri';
-  font-weight: 600;
-  font-display: swap;
-  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2107@1.1/MaruBuri-SemiBold.woff') format('woff');
-}
-@font-face {
-  font-family: 'MaruBuri';
-  font-weight: 700;
-  font-display: swap;
-  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2107@1.1/MaruBuri-Bold.woff') format('woff');
-}
-
 :root {
-  --bg:          #F8F4EB;
-  --surf:        #F1ECDF;
-  --surf2:       #E9E2D2;
-  --border:      #BCB09A;
+  --bg:          #f7faf4;
+  --surf:        #f0f5ee;
+  --surf2:       #e9f0e8;
+  --border:      #abb4ac;
   --blue:        #436B95;
   --blue-deep:   #2C4A6E;
   --blue-soft:   #6B8AAE;
   --blue-pale:   #C8D4E2;
-  --green:       #4A7A62;
-  --green-deep:  #2A4438;
-  --green-soft:  #6BAE8C;
-  --green-pale:  #C4DDD0;
+  --green:       #386948;
+  --green-deep:  #2b5d3c;
+  --green-soft:  #abe1b7;
+  --green-pale:  #b9efc5;
   --red:         #B5453F;
-  --yellow:      #B0883A;
-  --fg:          #3D362A;
-  --muted:       #7C7264;
-  --font:        'MaruBuri', 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+  --yellow:      #745c27;
+  --fg:          #2c342e;
+  --muted:       #59615a;
+  --font:        'Nanum Gothic', 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
   --mono:        'JetBrains Mono', monospace;
-  --maru:        'MaruBuri', 'Noto Serif KR', Georgia, serif;
-  /* Morinaga 로고 팔레트 */
+  --maru:        'Nanum Myeongjo', 'Noto Serif KR', Georgia, serif;
+  /* Morinaga 로고 팔레트 (로고 정체성 — 유지) */
   --morinaga-gold:   #D4A030;
   --morinaga-wine:   #5A1810;
   --morinaga-brown:  #3A1208;
@@ -97,7 +77,7 @@ body {
   padding: 16px;
 }
 
-/* ── 수익/손실 색상 ───────────────────────────── */
+/* ── 수익/손실 색상 (한국 증시 관행) ─────────── */
 .up   { color: var(--red); }
 .down { color: var(--blue); }
 .flat { color: var(--muted); }
