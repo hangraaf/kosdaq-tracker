@@ -41,7 +41,6 @@ class Settings(BaseSettings):
         "http://localhost:3001",
         "http://127.0.0.1:3001",
         "https://mr-stock-buddy-app.vercel.app",
-        "https://mr-stock-buddy.vercel.app",
     ]
     cors_origins_extra: str = ""
 
