@@ -3,6 +3,7 @@ import "./globals.css";
 import NewsTicker from "@/components/Ticker/NewsTicker";
 import Sidebar from "@/components/Sidebar";
 import PingOnLoad from "@/components/PingOnLoad";
+import PrismCursor from "@/components/PrismCursor";
 
 export const metadata: Metadata = {
   title: "Mr. Stock Buddy — KOSPI · KOSDAQ Tracker",
@@ -14,6 +15,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="ko">
       <body style={{ height: "100vh", overflow: "hidden", display: "flex", flexDirection: "column", background: "var(--bg)" }}>
         <PingOnLoad />
+        <PrismCursor />
         {/* 최상단 뉴스 티커 */}
         <NewsTicker />
 
