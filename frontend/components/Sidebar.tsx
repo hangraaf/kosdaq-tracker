@@ -244,7 +244,7 @@ export default function Sidebar() {
         fontFamily: "var(--maru)",
         textAlign: "center",
       }}>
-        PRISM™ Engine v2.0
+        PRISM 모멘텀 v2.0
       </div>
     </aside>
   );

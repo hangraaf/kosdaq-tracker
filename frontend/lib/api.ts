@@ -192,6 +192,27 @@ export async function apiProfile(code: string): Promise<StockProfile> {
   return req(`/stocks/${code}/profile`);
 }
 
+// ── News Sentiment ───────────────────────────────────────────────────────
+
+export interface SentimentHeadline {
+  title: string;
+  link: string;
+}
+
+export interface NewsSentiment {
+  code: string;
+  score: number;              // -1.0 ~ +1.0
+  label: string;              // "긍정" | "중립" | "부정" | "데이터 없음"
+  summary: string;
+  source: "LLM" | "KEYWORD" | "EMPTY";
+  news_count: number;
+  headlines: SentimentHeadline[];
+}
+
+export async function apiSentiment(code: string): Promise<NewsSentiment> {
+  return req(`/stocks/${code}/sentiment`);
+}
+
 export async function apiTodayTop(market = "전체", limit = 10): Promise<StockSnapshot[]> {
   return req(`/stocks/today/top?market=${encodeURIComponent(market)}&limit=${limit}`);
 }

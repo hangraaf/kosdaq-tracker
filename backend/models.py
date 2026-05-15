@@ -191,3 +191,20 @@ class StockProfile(BaseModel):
     overview: CompanyOverview
     dividend: DividendInfo
     investor_flow: InvestorFlow
+
+
+# ── News Sentiment ────────────────────────────────────────────────────────
+
+class SentimentHeadline(BaseModel):
+    title: str
+    link: str
+
+
+class NewsSentiment(BaseModel):
+    code: str
+    score: float                 # -1.0 ~ +1.0
+    label: str                   # "긍정" | "중립" | "부정" | "데이터 없음"
+    summary: str                 # 초보자 친화 한 줄 요약
+    source: str                  # "LLM" | "KEYWORD" | "EMPTY"
+    news_count: int = 0
+    headlines: list[SentimentHeadline] = []

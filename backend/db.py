@@ -15,6 +15,7 @@ PRICE_TTL_MARKET  = 60       # 1분
 PRICE_TTL_OFFHOUR = 14_400   # 4시간
 CHART_TTL         = 3_600    # 1시간
 PROFILE_TTL       = 86_400   # 24시간 (회사개요·배당·수급)
+SENTIMENT_TTL     = 21_600   # 6시간 (뉴스 센티먼트)
 
 
 def _is_market_hour() -> bool:
@@ -64,6 +65,13 @@ def init_db() -> None:
         """)
         con.execute("""
             CREATE TABLE IF NOT EXISTS profile_cache (
+                code       TEXT PRIMARY KEY,
+                data_json  TEXT,
+                updated_at REAL DEFAULT 0
+            )
+        """)
+        con.execute("""
+            CREATE TABLE IF NOT EXISTS sentiment_cache (
                 code       TEXT PRIMARY KEY,
                 data_json  TEXT,
                 updated_at REAL DEFAULT 0
@@ -164,6 +172,30 @@ def set_profile(code: str, data: dict) -> None:
     with _conn() as con:
         con.execute("""
             INSERT INTO profile_cache (code, data_json, updated_at)
+            VALUES (?, ?, ?)
+            ON CONFLICT(code) DO UPDATE SET
+                data_json=excluded.data_json, updated_at=excluded.updated_at
+        """, (code, json.dumps(data, default=str), time.time()))
+
+
+# ── 센티먼트 캐시 ─────────────────────────────────────────────────────────
+
+def get_sentiment(code: str) -> dict | None:
+    with _conn() as con:
+        row = con.execute(
+            "SELECT * FROM sentiment_cache WHERE code = ?", (code,)
+        ).fetchone()
+    if not row:
+        return None
+    if time.time() - row["updated_at"] > SENTIMENT_TTL:
+        return None
+    return json.loads(row["data_json"])
+
+
+def set_sentiment(code: str, data: dict) -> None:
+    with _conn() as con:
+        con.execute("""
+            INSERT INTO sentiment_cache (code, data_json, updated_at)
             VALUES (?, ?, ?)
             ON CONFLICT(code) DO UPDATE SET
                 data_json=excluded.data_json, updated_at=excluded.updated_at

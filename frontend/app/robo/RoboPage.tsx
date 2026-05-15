@@ -189,7 +189,7 @@ function PrismBadge({ score }: { score: number }) {
       background: color, color: "#fff", fontFamily: "var(--mono)", fontWeight: 700,
       fontSize: "0.75rem", padding: "2px 8px", borderRadius: "2px",
     }}>
-      PRISM™ {score.toFixed(1)}
+      PRISM {score.toFixed(1)}
     </span>
   );
 }
@@ -226,7 +226,7 @@ function ResultView({ result, onSelectStock }: { result: RoboResult; onSelectSto
             </div>
           </div>
           <div style={{ marginLeft: "auto", textAlign: "right" }}>
-            <div style={{ fontSize: "0.72rem", color: result.fg, opacity: 0.7 }}>PRISM™ 평균</div>
+            <div style={{ fontSize: "0.72rem", color: result.fg, opacity: 0.7 }}>PRISM 평균</div>
             <div style={{ fontFamily: "var(--mono)", fontSize: "1.4rem", fontWeight: 700, color: result.color }}>{result.score_total}</div>
           </div>
         </div>
@@ -239,12 +239,12 @@ function ResultView({ result, onSelectStock }: { result: RoboResult; onSelectSto
       )}
 
       {/* 추천 종목 */}
-      <SectionLabel>PRISM™ 추천 포트폴리오 ({result.items.length}종목)</SectionLabel>
+      <SectionLabel>PRISM 모멘텀 포트폴리오 ({result.items.length}종목)</SectionLabel>
       <div style={{ overflowX: "auto" }}>
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.875rem" }}>
           <thead>
             <tr style={{ background: "var(--surf2)", borderBottom: "2px solid var(--border)" }}>
-              {["종목", "업종", "PRISM™ 점수", "비중", "추천 근거"].map(h => (
+              {["종목", "업종", "PRISM 점수", "비중", "추천 근거"].map(h => (
                 <th key={h} style={{ padding: "8px 10px", textAlign: "left", fontSize: "0.75rem", fontWeight: 700, color: "var(--muted)" }}>{h}</th>
               ))}
             </tr>
@@ -290,12 +290,12 @@ function ComplianceFooter() {
       </div>
       <ol style={{ paddingLeft: "18px", margin: 0 }}>
         <li>
-          본 콘텐츠는 <b>KOSDAQ Tracker</b>가 제공하는 자체 기술적 분석(PRISM™) 기반의
+          본 콘텐츠는 <b>KOSDAQ Tracker</b>가 제공하는 자체 기술적 분석(PRISM 모멘텀 스코어) 기반의
           <b> 정보 제공 서비스</b>로, 「자본시장과 금융투자업에 관한 법률」상 투자자문업·투자일임업에
           해당하지 않으며 <b>투자 권유를 목적으로 하지 않습니다</b>.
         </li>
         <li>
-          PRISM™ 점수, 추천 종목, 백테스트 수익률은 모두 <b>과거 데이터에 기반한 모의 결과</b>이며,
+          PRISM 점수, 추천 종목, 백테스트 수익률은 모두 <b>과거 데이터에 기반한 모의 결과</b>이며,
           <b> 과거의 수익률은 미래의 수익을 보장하지 않습니다</b>.
         </li>
         <li>
@@ -312,7 +312,7 @@ function ComplianceFooter() {
         </li>
       </ol>
       <div style={{ marginTop: "8px", fontSize: "0.7rem", color: "#7A4E1A", borderTop: "1px dashed #B0883A", paddingTop: "6px" }}>
-        © KOSDAQ Tracker · PRISM™은 자체 기술적 스코어링 지표입니다. 문의: hangraaf@gmail.com
+        © KOSDAQ Tracker · PRISM은 자체 기술적 스코어링 지표입니다. 문의: hangraaf@gmail.com
       </div>
     </div>
   );
@@ -349,7 +349,7 @@ export default function RoboPage() {
       <div style={{ padding: "60px 0", textAlign: "center" }}>
         <div style={{ fontSize: "2.5rem", marginBottom: "12px" }}>🤖</div>
         <div style={{ fontFamily: "var(--maru)", fontSize: "1.2rem", color: "var(--blue-deep)", marginBottom: "8px" }}>
-          PRISM™ 로보어드바이저
+          PRISM 로보어드바이저
         </div>
         <div style={{ color: "var(--muted)", marginBottom: "20px" }}>프리미엄 구독자 전용 서비스입니다.</div>
         <div style={{
@@ -389,11 +389,53 @@ export default function RoboPage() {
   return (
     <div>
       <h1 style={{ fontFamily: "var(--maru)", color: "var(--blue-deep)", marginBottom: "8px" }}>
-        🤖 PRISM™ 로보어드바이저
+        🤖 PRISM 로보어드바이저
       </h1>
-      <p style={{ color: "var(--muted)", fontSize: "0.88rem", marginBottom: "24px" }}>
-        Predictive Resonance Index for Stock Momentum — 5가지 질문으로 맞춤 포트폴리오를 추천합니다.
+      <p style={{ color: "var(--muted)", fontSize: "0.88rem", marginBottom: "12px" }}>
+        5가지 질문으로 투자 성향을 파악하고, 맞춤 포트폴리오를 추천합니다.
       </p>
+
+      {/* 초보자용: PRISM이 뭐죠? 토글 */}
+      <details style={{ marginBottom: "24px" }}>
+        <summary style={{
+          cursor: "pointer",
+          fontSize: "0.78rem",
+          color: "var(--muted)",
+          fontWeight: 700,
+          letterSpacing: "0.04em",
+          padding: "8px 12px",
+          background: "var(--surf2)",
+          border: "1px solid var(--border)",
+          userSelect: "none",
+        }}>
+          📖 PRISM 모멘텀 스코어가 뭔가요? (클릭해서 펼치기)
+        </summary>
+        <div style={{
+          padding: "14px 16px",
+          background: "var(--surf2)",
+          border: "1px solid var(--border)",
+          borderTop: "none",
+          fontSize: "0.82rem",
+          lineHeight: 1.75,
+          color: "var(--fg)",
+        }}>
+          <p style={{ marginTop: 0 }}>
+            <b>PRISM(Predictive Resonance Index for Stock Momentum)</b>은 한 종목의 최근 60일 가격·거래량
+            데이터를 5가지 기술적 지표로 점수화한 <b>0~100점 모멘텀 스코어</b>입니다.
+          </p>
+          <ul style={{ paddingLeft: "18px", margin: "8px 0" }}>
+            <li><b>추세 (30%)</b> — 20일 평균 대비 현재가 위치</li>
+            <li><b>모멘텀 (25%)</b> — 최근 5일 가격 변화율</li>
+            <li><b>거래량 (20%)</b> — 5일 평균 vs 20일 평균 거래량 비율</li>
+            <li><b>RSI (15%)</b> — 과매수/과매도 균형도</li>
+            <li><b>안정성 (10%)</b> — 20일 변동성의 역</li>
+          </ul>
+          <p style={{ margin: "8px 0 0", color: "var(--muted)", fontSize: "0.78rem" }}>
+            <b>주의:</b> PRISM은 <b>AI나 머신러닝 모델이 아닌 규칙 기반 산식</b>입니다. 회사의 재무 건전성,
+            업계 경쟁력, 뉴스 호재/악재 등은 반영되지 않습니다. 투자 판단의 보조 지표로만 활용하세요.
+          </p>
+        </div>
+      </details>
 
       {!result ? (
         <div>
@@ -458,7 +500,7 @@ export default function RoboPage() {
               transition: "all 0.2s",
             }}
           >
-            {loading ? "분석 중..." : "PRISM™ 분석 시작"}
+            {loading ? "분석 중..." : "PRISM 분석 시작"}
           </button>
         </div>
       ) : (

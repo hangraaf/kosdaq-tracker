@@ -6,7 +6,7 @@ import PingOnLoad from "@/components/PingOnLoad";
 
 export const metadata: Metadata = {
   title: "Mr. Stock Buddy — KOSPI · KOSDAQ Tracker",
-  description: "PRISM™ 기반 한국 주식 트래커",
+  description: "PRISM 모멘텀 스코어 기반 한국 주식 트래커",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

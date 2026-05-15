@@ -13,7 +13,8 @@ from dart_client import get_dart_client
 from kis_client import KISError
 from kis_realtime import get_realtime_manager
 from kis_service import get_kis_client, kis_available, live_chart, live_investor_flow, live_snapshot
-from models import StockProfile, StockSnapshot
+from models import NewsSentiment, StockProfile, StockSnapshot
+from news_sentiment import analyze_sentiment
 from stock_data import MARKET_STOCKS, PERIODS, STOCK_MAP
 from utils import generate_demo_ohlcv, stock_demo_snapshot
 
@@ -166,6 +167,22 @@ def _demo_investor_flow(code: str, days: int = 20) -> dict:
         "series": series,
         "source": "DEMO",
     }
+
+
+@router.get("/{code}/sentiment", response_model=NewsSentiment)
+def sentiment(code: str):
+    """종목별 뉴스 센티먼트 — LLM(Claude Haiku) → 키워드 fallback. 6h 캐시."""
+    stock = STOCK_MAP.get(code)
+    if not stock:
+        raise HTTPException(404, detail=f"종목 코드 {code}를 찾을 수 없습니다.")
+
+    cached = db.get_sentiment(code)
+    if cached:
+        return cached
+
+    payload = analyze_sentiment(code, stock.name)
+    db.set_sentiment(code, payload)
+    return payload
 
 
 @router.get("/{code}/profile", response_model=StockProfile)

@@ -22,6 +22,12 @@ class Settings(BaseSettings):
     kis_app_secret: str = ""
     kis_env: str = "prod"
 
+    # DART OpenAPI (회사개요·배당)
+    dart_api_key: str = ""
+
+    # Anthropic API (뉴스 센티먼트 LLM 분석)
+    anthropic_api_key: str = ""
+
     # 토스페이먼츠
     toss_client_key: str = ""
     toss_secret_key: str = ""

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { apiProfile, type StockProfile } from "@/lib/api";
+import { apiProfile, apiSentiment, type StockProfile, type NewsSentiment } from "@/lib/api";
 
 interface Props {
   code: string;
@@ -16,6 +16,9 @@ interface Props {
 const COLOR_DIVIDEND = "var(--yellow)";     // 배당 — 금색
 const COLOR_FLOW     = "var(--blue-deep)";  // 수급 — 딥블루
 const COLOR_INDIV    = "#B5453F";           // 개인 구성 — 빨강
+const COLOR_SENT_POS = "#B5453F";           // 센티먼트 긍정
+const COLOR_SENT_NEG = "#436B95";           // 센티먼트 부정
+const COLOR_SENT_NEU = "#7A6E5A";           // 센티먼트 중립
 
 // ── 공통: 카드 셸 ───────────────────────────────────────────────────────
 function ProfileCard({
@@ -412,18 +415,165 @@ function HoldingCard({ profile }: { profile: StockProfile }) {
   );
 }
 
+// ── 뉴스 센티먼트 카드 ──────────────────────────────────────────────────
+function SentimentCard({ sentiment }: { sentiment: NewsSentiment | null }) {
+  if (!sentiment) {
+    return (
+      <ProfileCard title="뉴스 분위기" badge="…" accent={COLOR_SENT_NEU}>
+        <div style={{ fontSize: "0.78rem", color: "var(--muted)", margin: "auto 0" }}>
+          뉴스 분석 중…
+        </div>
+      </ProfileCard>
+    );
+  }
+
+  const { score, label, summary, source, news_count, headlines } = sentiment;
+  // 색상: 라벨 우선 (점수 미세 변동 무시)
+  const accent =
+    label === "긍정" ? COLOR_SENT_POS :
+    label === "부정" ? COLOR_SENT_NEG :
+    COLOR_SENT_NEU;
+
+  // -1~+1 → 0~100% 위치 (게이지)
+  const pos = Math.min(100, Math.max(0, (score + 1) * 50));
+
+  const badge =
+    source === "LLM" ? "AI" :
+    source === "KEYWORD" ? "키워드" :
+    "데이터없음";
+
+  return (
+    <ProfileCard title={`뉴스 분위기 (최근 ${news_count}건)`} badge={badge} accent={accent}>
+      <div>
+        <div
+          style={{
+            fontFamily: "var(--mono)",
+            fontWeight: 800,
+            fontSize: "1.4rem",
+            color: accent,
+            lineHeight: 1.1,
+          }}
+        >
+          {label}
+        </div>
+        <div style={{ fontSize: "0.66rem", color: "var(--muted)", marginTop: "2px" }}>
+          종합 센티먼트 ({score >= 0 ? "+" : ""}
+          {score.toFixed(2)})
+        </div>
+      </div>
+
+      {/* -1 ↔ 0 ↔ +1 게이지 */}
+      <div>
+        <div
+          style={{
+            position: "relative",
+            height: "8px",
+            background: "linear-gradient(to right, #436B95, var(--surf2) 50%, #B5453F)",
+            border: "1px solid var(--border)",
+          }}
+        >
+          <div
+            style={{
+              position: "absolute",
+              left: `${pos}%`,
+              top: "-3px",
+              width: "12px",
+              height: "12px",
+              background: accent,
+              border: "2px solid #FFF",
+              borderRadius: "50%",
+              transform: "translateX(-50%)",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
+            }}
+          />
+        </div>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            fontSize: "0.58rem",
+            color: "var(--muted)",
+            marginTop: "3px",
+          }}
+        >
+          <span>부정</span>
+          <span>중립</span>
+          <span>긍정</span>
+        </div>
+      </div>
+
+      <div style={{ fontSize: "0.72rem", color: "var(--fg)", lineHeight: 1.55 }}>
+        {summary}
+      </div>
+
+      {headlines.length > 0 && (
+        <div
+          style={{
+            paddingTop: "6px",
+            borderTop: "1px dashed var(--border)",
+            display: "flex",
+            flexDirection: "column",
+            gap: "3px",
+          }}
+        >
+          {headlines.slice(0, 2).map((h, i) => (
+            <a
+              key={i}
+              href={h.link}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                fontSize: "0.68rem",
+                color: "var(--blue-deep)",
+                textDecoration: "none",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+              title={h.title}
+            >
+              · {h.title}
+            </a>
+          ))}
+        </div>
+      )}
+
+      {source !== "LLM" && (
+        <div
+          style={{
+            fontSize: "0.62rem",
+            color: "var(--muted)",
+            fontStyle: "italic",
+            lineHeight: 1.4,
+          }}
+        >
+          {source === "EMPTY"
+            ? "관련 뉴스가 수집되지 않아 분석할 수 없습니다."
+            : "AI 분석 미연결 — 키워드 빈도 기반 단순 점수입니다."}
+        </div>
+      )}
+    </ProfileCard>
+  );
+}
+
 // ── 메인 컴포넌트 ───────────────────────────────────────────────────────
 export default function CompanyProfile({ code }: Props) {
   const [profile, setProfile] = useState<StockProfile | null>(null);
+  const [sentiment, setSentiment] = useState<NewsSentiment | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (!code) return;
     setLoading(true);
+    setSentiment(null);
     apiProfile(code)
       .then(setProfile)
       .catch(() => setProfile(null))
       .finally(() => setLoading(false));
+    // 센티먼트는 LLM 호출이 느릴 수 있어 별도 비동기 — 프로필 카드는 먼저 떠야 함
+    apiSentiment(code)
+      .then(setSentiment)
+      .catch(() => setSentiment(null));
   }, [code]);
 
   if (loading && !profile) {
@@ -458,6 +608,7 @@ export default function CompanyProfile({ code }: Props) {
         <DividendCard profile={profile} />
         <InvestorFlowCard profile={profile} />
         <HoldingCard profile={profile} />
+        <SentimentCard sentiment={sentiment} />
       </div>
     </div>
   );

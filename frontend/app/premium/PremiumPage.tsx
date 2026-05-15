@@ -71,7 +71,7 @@ function PlanCard({ plan, selected, onSelect }: { plan: Plan; selected: boolean;
 
 function FeatureList() {
   const features = [
-    ["🤖", "PRISM™ 로보어드바이저 — AI 맞춤 포트폴리오"],
+    ["🤖", "PRISM 로보어드바이저 — 모멘텀 스코어 기반 맞춤 포트폴리오"],
     ["📊", "실시간 KIS API 차트 데이터"],
     ["⚡", "5차원 기술적 분석 스코어링"],
     ["★",  "관심종목 무제한 등록"],
@@ -186,7 +186,7 @@ export default function PremiumPage() {
           PREMIUM 구독 중
         </div>
         <div style={{ color: "var(--muted)", marginBottom: "24px", fontSize: "0.9rem" }}>
-          PRISM™ 로보어드바이저를 포함한 모든 기능을 이용 중입니다.
+          PRISM 로보어드바이저를 포함한 모든 기능을 이용 중입니다.
         </div>
         {msg && <div style={{ color: "var(--muted)", marginBottom: "16px", fontSize: "0.85rem" }}>{msg}</div>}
         <button
@@ -225,7 +225,7 @@ export default function PremiumPage() {
           Mr. Stock Buddy 프리미엄
         </h1>
         <p style={{ color: "var(--muted)", fontSize: "0.9rem" }}>
-          PRISM™ AI 엔진으로 나만의 포트폴리오를 구성하세요.
+          PRISM 모멘텀 스코어로 나만의 포트폴리오를 구성하세요.
         </p>
       </div>
 
