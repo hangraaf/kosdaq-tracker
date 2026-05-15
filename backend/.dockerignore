@@ -2,5 +2,6 @@ __pycache__
 *.pyc
 *.pyo
 .env
-data/
+data/*
+!data/stocks_fallback.json
 .git
