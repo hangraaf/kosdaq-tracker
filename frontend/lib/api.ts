@@ -1,7 +1,18 @@
 const BASE = process.env.NEXT_PUBLIC_API_URL ?? "https://kosdaq-tracker.onrender.com";
 
+function getToken(): string | null {
+  if (typeof localStorage === "undefined") return null;
+  try {
+    const raw = localStorage.getItem("bh-auth");
+    if (!raw) return null;
+    return JSON.parse(raw)?.state?.token ?? null;
+  } catch {
+    return null;
+  }
+}
+
 async function req<T>(path: string, options?: RequestInit): Promise<T> {
-  const token = typeof localStorage !== "undefined" ? localStorage.getItem("token") : null;
+  const token = getToken();
   const res = await fetch(`${BASE}${path}`, {
     ...options,
     headers: {
@@ -12,6 +23,11 @@ async function req<T>(path: string, options?: RequestInit): Promise<T> {
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: res.statusText }));
+    if (res.status === 401) {
+      const { useAuthStore } = await import("./store");
+      useAuthStore.getState().clearAuth();
+      throw new Error("세션이 만료되었습니다. 다시 로그인해 주세요.");
+    }
     throw new Error(err.detail ?? "API 오류가 발생했습니다.");
   }
   return res.json();
