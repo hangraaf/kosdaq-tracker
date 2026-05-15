@@ -53,9 +53,23 @@ export const useUIStore = create<UIState>()((set) => ({
   selectedCode: null,
   market: "전체",
   period: "1개월",
-  setMenu: (menu) => set({ menu }),
+  setMenu: (menu) => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      params.set("page", menu);
+      window.history.pushState({}, "", `?${params.toString()}`);
+    }
+    set({ menu });
+  },
   setSelectedCode: (code) => set({ selectedCode: code }),
-  setChart: (code) => set({ selectedCode: code, menu: "차트" }),
+  setChart: (code) => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      params.set("page", "차트");
+      window.history.pushState({}, "", `?${params.toString()}`);
+    }
+    set({ selectedCode: code, menu: "차트" });
+  },
   setMarket: (market) => set({ market }),
   setPeriod: (period) => set({ period }),
 }));
