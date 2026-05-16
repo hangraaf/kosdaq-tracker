@@ -5,10 +5,10 @@ import { useEffect, useState } from "react";
 type Props = { size?: number };
 
 /**
- * PRISM Bauhaus Clock
- * 사이드바 폭에 풀-블리드로 박히는 정사각형 대시보드 디스플레이.
- * Bauhaus 어휘 — 원/사각/삼각 + Primary(노랑/빨강/파랑) — 를
- * 12·3·6·9 인덱스 마크로 사용. 묵직한 직사각 차체 안에 원형 다이얼.
+ * PRISM Clock — Junghans Max Bill 톤
+ * 오프화이트 원형 다이얼, 그린 포인트.
+ * 외곽 링에 1~31 일자 숫자, 하단 아크에 요일 한자(日月火水木金土) 배치.
+ * 오늘 날짜·요일은 그린으로 강조.
  */
 export default function PrismClock({ size }: Props) {
   const [now, setNow] = useState<Date | null>(null);
@@ -27,17 +27,32 @@ export default function PrismClock({ size }: Props) {
   const minDeg = m * 6;
   const hourDeg = h * 30;
 
-  // 사각 캔버스 200x200 — 다이얼 중심 (100,100), 반경 78
+  // 200x200 캔버스, 중심 (100,100)
   const cx = 100;
   const cy = 100;
-  const r = 78;
 
-  const dateLabel = now
-    ? now
-        .toLocaleDateString("ko-KR", { month: "2-digit", day: "2-digit", weekday: "short" })
-        .replace(/\s+/g, " ")
-        .toUpperCase()
-    : "";
+  // 링 반경
+  const rOuter = 96;       // 외곽 케이스
+  const rDateRing = 86;    // 날짜 숫자 트랙
+  const rDial = 76;        // 다이얼 면
+  const rHourEnd = 71;     // 시 인덱스 안쪽 끝
+  const rHourStart = 64;   // 시 인덱스 바깥쪽 끝(원 안쪽)
+  const rMinDot = 70;      // 분 도트
+
+  // 컬러 — 융한스 톤
+  const OFF_WHITE = "#ece4d2";
+  const OFF_WHITE_HI = "#f5efe1";
+  const INK = "#1a1a1a";
+  const INK_SOFT = "#2a2a2a";
+  const HAIRLINE = "rgba(26,26,26,0.18)";
+  const HAIRLINE_FAINT = "rgba(26,26,26,0.10)";
+  const GREEN = "#2f7d4f";
+  const GREEN_DEEP = "#1f5e3a";
+
+  const today = now ? now.getDate() : 0;
+  const dow = now ? now.getDay() : 0; // 0=일 ... 6=토
+  // 일 월 화 수 목 금 토 → 日 月 火 水 木 金 土
+  const dayChars = ["日", "月", "火", "水", "木", "金", "土"];
 
   const wrapperStyle: React.CSSProperties = size
     ? { width: size, height: size }
@@ -49,9 +64,8 @@ export default function PrismClock({ size }: Props) {
         ...wrapperStyle,
         position: "relative",
         display: "block",
-        boxShadow:
-          "inset 0 1px 0 rgba(255,255,255,0.06), inset 0 -1px 0 rgba(0,0,0,0.55), 0 12px 28px -18px rgba(0,0,0,0.75)",
         background: "#0c1118",
+        padding: 8,
       }}
       aria-label="현재 시각"
     >
@@ -63,154 +77,187 @@ export default function PrismClock({ size }: Props) {
         style={{ display: "block" }}
       >
         <defs>
-          {/* 다이얼 패널 — 차콜 차체 */}
-          <linearGradient id="bh-panel" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%"   stopColor="#181d26" />
-            <stop offset="55%"  stopColor="#10141b" />
-            <stop offset="100%" stopColor="#070a0f" />
-          </linearGradient>
-          {/* 다이얼 (원) — 미세하게 밝은 안쪽 */}
-          <radialGradient id="bh-face" cx="50%" cy="46%" r="62%">
-            <stop offset="0%"   stopColor="#1a2230" />
-            <stop offset="70%"  stopColor="#0f141c" />
-            <stop offset="100%" stopColor="#070a0f" />
+          <radialGradient id="jh-face" cx="50%" cy="44%" r="62%">
+            <stop offset="0%"   stopColor={OFF_WHITE_HI} />
+            <stop offset="70%"  stopColor={OFF_WHITE} />
+            <stop offset="100%" stopColor="#dfd6c1" />
           </radialGradient>
-          {/* 핸드 — 무광 화이트 */}
-          <linearGradient id="bh-hand" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%"   stopColor="#f4f3ee" />
-            <stop offset="100%" stopColor="#c8c6bd" />
+          <linearGradient id="jh-case" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%"   stopColor="#dcd3bd" />
+            <stop offset="50%"  stopColor="#c8bfa9" />
+            <stop offset="100%" stopColor="#9d9582" />
+          </linearGradient>
+          <linearGradient id="jh-hand" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%"   stopColor="#222" />
+            <stop offset="100%" stopColor="#0c0c0c" />
           </linearGradient>
         </defs>
 
-        {/* 차체 — 사각 풀블리드 */}
-        <rect x="0" y="0" width="200" height="200" fill="url(#bh-panel)" />
+        {/* 케이스 외곽 */}
+        <circle cx={cx} cy={cy} r={rOuter} fill="url(#jh-case)" />
+        <circle cx={cx} cy={cy} r={rOuter} fill="none" stroke="rgba(0,0,0,0.35)" strokeWidth="0.6" />
+        <circle cx={cx} cy={cy} r={rOuter - 2.5} fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth="0.4" />
 
-        {/* Bauhaus 그리드 — 십자 분할선 (시각적 균형의 축) */}
-        <line x1="0"   y1="100" x2="200" y2="100" stroke="rgba(244,243,238,0.05)" strokeWidth="1" />
-        <line x1="100" y1="0"   x2="100" y2="200" stroke="rgba(244,243,238,0.05)" strokeWidth="1" />
+        {/* 다이얼 */}
+        <circle cx={cx} cy={cy} r={rDial + 6} fill="url(#jh-face)" />
+        <circle cx={cx} cy={cy} r={rDial + 6} fill="none" stroke={HAIRLINE_FAINT} strokeWidth="0.4" />
 
-        {/* 내부 보더 — 차체와 다이얼을 분리하는 얇은 프레임 */}
-        <rect
-          x="6" y="6" width="188" height="188"
-          fill="none"
-          stroke="rgba(244,243,238,0.08)"
-          strokeWidth="1"
-        />
+        {/* 날짜 숫자 링 1~31 — 외곽 링 트랙 */}
+        {Array.from({ length: 31 }).map((_, i) => {
+          const dayNum = i + 1;
+          // 1일을 12시 방향에서 시작해 시계방향으로 분포
+          const ang = -90 + (i / 31) * 360;
+          const rr = ((ang) * Math.PI) / 180;
+          const x = cx + Math.cos(rr) * rDateRing;
+          const y = cy + Math.sin(rr) * rDateRing;
+          const isToday = dayNum === today;
+          return (
+            <g key={`d-${dayNum}`} transform={`translate(${x} ${y}) rotate(${ang + 90})`}>
+              {isToday && (
+                <circle
+                  cx="0" cy="0" r="5.2"
+                  fill={GREEN}
+                  stroke={GREEN_DEEP}
+                  strokeWidth="0.4"
+                />
+              )}
+              <text
+                x="0" y="0"
+                textAnchor="middle"
+                dominantBaseline="central"
+                fill={isToday ? OFF_WHITE_HI : INK_SOFT}
+                fontFamily="'Helvetica Neue', 'Inter', sans-serif"
+                fontSize={isToday ? 5.2 : 4.4}
+                fontWeight={isToday ? 700 : 500}
+                letterSpacing="0.02em"
+              >
+                {dayNum}
+              </text>
+            </g>
+          );
+        })}
 
-        {/* 다이얼 원 */}
-        <circle cx={cx} cy={cy} r={r} fill="url(#bh-face)" />
-        <circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(244,243,238,0.10)" strokeWidth="0.75" />
+        {/* 다이얼과 날짜 링 분리 헤어라인 */}
+        <circle cx={cx} cy={cy} r={rDial + 4} fill="none" stroke={HAIRLINE} strokeWidth="0.35" />
 
-        {/* 분 눈금 — 60개. 시 단위(5분)는 더 진한 점, 그 외는 미세점 */}
+        {/* 분 눈금 — 60 도트 (시 위치 제외) */}
         {Array.from({ length: 60 }).map((_, i) => {
-          if (i % 15 === 0) return null; // 12/3/6/9 자리는 도형이 차지
-          const isHour = i % 5 === 0;
+          if (i % 5 === 0) return null;
           const a = (i * 6 * Math.PI) / 180;
-          const r1 = isHour ? r - 8 : r - 4;
-          const r2 = r - 2;
-          const x1 = cx + Math.sin(a) * r1;
-          const y1 = cy - Math.cos(a) * r1;
-          const x2 = cx + Math.sin(a) * r2;
-          const y2 = cy - Math.cos(a) * r2;
+          const x = cx + Math.sin(a) * rMinDot;
+          const y = cy - Math.cos(a) * rMinDot;
+          return <circle key={`m-${i}`} cx={x} cy={y} r="0.55" fill={HAIRLINE} />;
+        })}
+
+        {/* 시 인덱스 — 슬림 바통 12개 */}
+        {Array.from({ length: 12 }).map((_, i) => {
+          const a = (i * 30 * Math.PI) / 180;
+          const x1 = cx + Math.sin(a) * rHourStart;
+          const y1 = cy - Math.cos(a) * rHourStart;
+          const x2 = cx + Math.sin(a) * rHourEnd;
+          const y2 = cy - Math.cos(a) * rHourEnd;
           return (
             <line
-              key={i}
+              key={`h-${i}`}
               x1={x1} y1={y1} x2={x2} y2={y2}
-              stroke={isHour ? "rgba(244,243,238,0.55)" : "rgba(244,243,238,0.18)"}
-              strokeWidth={isHour ? 1.4 : 0.6}
+              stroke={INK}
+              strokeWidth={i === 0 ? 1.8 : 1.1}
               strokeLinecap="butt"
             />
           );
         })}
 
-        {/* Bauhaus 인덱스 마크 — 12 노란 원 / 3 빨간 사각 / 6 파란 삼각 / 9 화이트 막대 */}
-        {/* 12 — Yellow circle */}
-        <circle cx={cx} cy={cy - r + 8} r="5.2" fill="#f3c20d" />
-        {/* 3 — Red square */}
-        <rect
-          x={cx + r - 13} y={cy - 5}
-          width="10" height="10"
-          fill="#c8362e"
-        />
-        {/* 6 — Blue triangle (정삼각형, 아래꼭짓점은 다이얼 안쪽 향하도록) */}
-        <polygon
-          points={`${cx - 6},${cy + r - 12} ${cx + 6},${cy + r - 12} ${cx},${cy + r - 2}`}
-          fill="#1f4ea8"
-        />
-        {/* 9 — White bar */}
-        <rect
-          x={cx - r + 3} y={cy - 2}
-          width="11" height="4"
-          fill="#f4f3ee"
-        />
+        {/* 요일 한자 아크 — 6시 방향 위쪽, 7글자 부채꼴 */}
+        {dayChars.map((ch, i) => {
+          // -60도 ~ +60도 구간(시계 좌표에서 6시 기준 ±) — 6시 = 180도
+          // 7개를 균등하게 펼치되, 5시(150°)~7시(210°)는 너무 좁으니 130°~230°로
+          const start = 130;
+          const end = 230;
+          const ang = start + ((end - start) * i) / (dayChars.length - 1);
+          const rArc = 42;
+          const rr = (ang * Math.PI) / 180;
+          const x = cx + Math.cos(rr) * rArc;
+          const y = cy + Math.sin(rr) * rArc;
+          const isToday = i === dow;
+          return (
+            <g key={`dow-${i}`} transform={`translate(${x} ${y})`}>
+              {isToday && (
+                <circle cx="0" cy="0" r="5.4" fill={GREEN} />
+              )}
+              <text
+                x="0" y="0.4"
+                textAnchor="middle"
+                dominantBaseline="central"
+                fill={isToday ? OFF_WHITE_HI : INK_SOFT}
+                fontFamily="'Noto Serif KR', 'Songti SC', 'STSong', serif"
+                fontSize={isToday ? 6.2 : 5.4}
+                fontWeight={isToday ? 700 : 500}
+              >
+                {ch}
+              </text>
+            </g>
+          );
+        })}
 
-        {/* 날짜 윈도우 — 6시 위쪽, Bauhaus 폰트 톤 */}
-        <g transform={`translate(${cx} ${cy + 30})`}>
-          <rect x="-22" y="-7" width="44" height="14"
-            fill="#070a0f"
-            stroke="rgba(244,243,238,0.18)"
-            strokeWidth="0.5"
-          />
-          <text
-            x="0" y="1"
-            textAnchor="middle"
-            dominantBaseline="middle"
-            fill="#f4f3ee"
-            fontFamily="'Futura', 'Helvetica Neue', 'Inter', sans-serif"
-            fontSize="6.4"
-            fontWeight={600}
-            letterSpacing="0.22em"
-          >
-            {dateLabel}
-          </text>
-        </g>
-
-        {/* 시침 — 굵은 직사각형 (화이트) */}
-        <g transform={`rotate(${hourDeg} ${cx} ${cy})`}>
-          <rect
-            x={cx - 2.8} y={cy - 44}
-            width="5.6" height="50"
-            fill="url(#bh-hand)"
-          />
-        </g>
-
-        {/* 분침 — 얇고 긴 직사각형 (화이트) */}
-        <g transform={`rotate(${minDeg} ${cx} ${cy})`}>
-          <rect
-            x={cx - 1.6} y={cy - 64}
-            width="3.2" height="72"
-            fill="url(#bh-hand)"
-          />
-        </g>
-
-        {/* 초침 — 빨강 라인 + 끝점에 노란 원 (Bauhaus 컬러 시퀀스) */}
-        <g transform={`rotate(${secDeg} ${cx} ${cy})`}>
-          <line
-            x1={cx} y1={cy + 14}
-            x2={cx} y2={cy - 66}
-            stroke="#c8362e"
-            strokeWidth="1.1"
-            strokeLinecap="butt"
-          />
-          <circle cx={cx} cy={cy - 66} r="2.6" fill="#f3c20d" />
-        </g>
-
-        {/* 중심 핀 — 검정 원 + 화이트 코어 */}
-        <circle cx={cx} cy={cy} r="4" fill="#070a0f" />
-        <circle cx={cx} cy={cy} r="1.4" fill="#f4f3ee" />
-
-        {/* 하단 워드마크 — Bauhaus 산세리프 */}
+        {/* 워드마크 — 12시 아래 */}
         <text
-          x="100" y="192"
+          x="100" y="40"
           textAnchor="middle"
-          fill="rgba(244,243,238,0.42)"
-          fontFamily="'Futura', 'Helvetica Neue', 'Inter', sans-serif"
-          fontSize="6"
+          fill={INK_SOFT}
+          fontFamily="'Helvetica Neue', 'Inter', sans-serif"
+          fontSize="4.4"
           fontWeight={700}
           letterSpacing="0.42em"
         >
           PRISM
         </text>
+        <text
+          x="100" y="46"
+          textAnchor="middle"
+          fill={GREEN}
+          fontFamily="'Helvetica Neue', 'Inter', sans-serif"
+          fontSize="2.8"
+          fontWeight={500}
+          letterSpacing="0.32em"
+        >
+          KOSDAQ TRACKER
+        </text>
+
+        {/* 시침 */}
+        <g transform={`rotate(${hourDeg} ${cx} ${cy})`}>
+          <rect
+            x={cx - 1.6} y={cy - 44}
+            width="3.2" height="50"
+            fill="url(#jh-hand)"
+            rx="0.5"
+          />
+        </g>
+
+        {/* 분침 */}
+        <g transform={`rotate(${minDeg} ${cx} ${cy})`}>
+          <rect
+            x={cx - 1.1} y={cy - 64}
+            width="2.2" height="72"
+            fill="url(#jh-hand)"
+            rx="0.5"
+          />
+        </g>
+
+        {/* 초침 — 그린 */}
+        <g transform={`rotate(${secDeg} ${cx} ${cy})`}>
+          <line
+            x1={cx} y1={cy + 16}
+            x2={cx} y2={cy - 68}
+            stroke={GREEN}
+            strokeWidth="0.9"
+            strokeLinecap="butt"
+          />
+          <circle cx={cx} cy={cy - 62} r="2.2" fill={GREEN} />
+        </g>
+
+        {/* 중심 핀 */}
+        <circle cx={cx} cy={cy} r="2.6" fill={INK} />
+        <circle cx={cx} cy={cy} r="0.9" fill={OFF_WHITE_HI} />
       </svg>
     </div>
   );
