@@ -16,7 +16,7 @@ import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from config import settings
 import db
-from models import TokenResponse, UserCreate, UserProfile, UserProfileUpdate
+from models import TokenResponse, UserCreate, UserProfile, UserProfileUpdate, PasswordChange
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
@@ -155,6 +155,29 @@ def update_me(
         created_at=float(user.get("created_at") or 0),
         provider=user.get("provider") or "",
     )
+
+
+@router.post("/password")
+def change_password(
+    body: PasswordChange,
+    current: Annotated[dict, Depends(get_current_user)],
+):
+    """로그인 상태에서 비밀번호 변경. OAuth-only 계정(pwd_hash 빈 값)은 거부."""
+    user = db.users_get(current["username"])
+    if not user:
+        raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다.")
+    stored = user.get("pwd_hash") or ""
+    if not stored:
+        raise HTTPException(
+            status_code=400,
+            detail="소셜 로그인 계정은 비밀번호가 설정되어 있지 않습니다.",
+        )
+    if not _verify_pw(body.current_password, stored):
+        raise HTTPException(status_code=401, detail="현재 비밀번호가 올바르지 않습니다.")
+    if body.current_password == body.new_password:
+        raise HTTPException(status_code=400, detail="새 비밀번호는 기존과 달라야 합니다.")
+    db.users_update(current["username"], pwd_hash=_hash_pw(body.new_password))
+    return {"ok": True}
 
 
 @router.post("/marketing-opt-in")

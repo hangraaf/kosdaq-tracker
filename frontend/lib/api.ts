@@ -96,6 +96,13 @@ export async function apiUpdateProfile(patch: {
   return req("/auth/me", { method: "PATCH", body: JSON.stringify(patch) });
 }
 
+export async function apiChangePassword(data: {
+  current_password: string;
+  new_password: string;
+}): Promise<{ ok: boolean }> {
+  return req("/auth/password", { method: "POST", body: JSON.stringify(data) });
+}
+
 // ── OAuth ────────────────────────────────────────────────────────────────
 
 /** 백엔드 OAuth 로그인 시작 URL — 직접 navigate 시켜야 함. */

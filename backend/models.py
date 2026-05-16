@@ -54,6 +54,11 @@ class UserProfileUpdate(BaseModel):
     marketing_opt_in: bool | None = None
 
 
+class PasswordChange(BaseModel):
+    current_password: str = Field(min_length=1)
+    new_password: str = Field(min_length=6, max_length=200)
+
+
 # ── Portfolio ─────────────────────────────────────────────────────────────
 
 class PortfolioEntry(BaseModel):
