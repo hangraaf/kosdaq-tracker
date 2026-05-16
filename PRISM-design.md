@@ -88,7 +88,7 @@ box-shadow:
 | Eyebrow | Nanum Gothic | 10.5px (0.66rem) | 700 | 1.4 | 0.18em uppercase |
 | Numeric Data | JetBrains Mono | 13–14px | 400–700 | 1.4 | normal |
 
-> **모노 글리프 규칙**: 메뉴 아이콘은 컬러 이모지 금지, 단색 유니코드 글리프(`◉ ▦ △ ✧ ◈ ❖ ✦`)를 모노 폰트로 출력.
+> **아이콘 정책**: 사이드바·헤더·버튼·뱃지 등 기본 내비게이션과 라벨에는 **어떤 아이콘도 사용하지 않는다**. 이모지(📰 🤖)는 물론, 장식적 유니코드 글리프(`◉ ▦ △ ✧ ◈ ❖ ✦`)도 모두 금지. 정보 위계는 타이포그래피·간격·active state 인디케이터로 표현한다. 정보 전달용 아이콘이 정말 필요한 좁은 케이스에서만 lucide/Heroicons 같은 단색 outline SVG(stroke 1.5px / 16–18px)를 검토.
 
 ## 4. Component Stylings
 
@@ -126,10 +126,17 @@ box-shadow:
 - Up/Down: 텍스트 컬러만 `.up`/`.down` 클래스, 배경 없음
 
 ### Glow Dot (시그니처 마이크로 컴포넌트)
-PRISM 커서의 dot과 동형. 활성 메뉴·푸터·로딩 상태에서 재사용.
+PRISM 커서의 dot과 동형. 푸터 호흡 닷·로딩 상태에서 재사용.
 - size: `5–6px`
 - bg: `--green-deep` (정지) / `--green-soft` (활성) / `--red` (호버)
 - shadow: **분광 3단 스택** (위 레시피 참조)
+
+### Vertical Spectral Accent Bar (내비게이션 활성 표시)
+사이드바·탭 등 1차 내비게이션의 활성 상태 표시. Linear / Vercel 톤.
+- 좌측 부착, width `2px`, height: 항목 높이 - 16px
+- background: `linear-gradient(180deg, green-soft → blue → red)` (분광 4축 압축)
+- box-shadow: soft glow (`0 0 8px green-soft alpha 0.55, 0 0 14px blue alpha 0.35`)
+- 등장 전환: `transform: scaleY(0 → 1)` 240ms cubic-bezier(0.22, 1, 0.36, 1)
 
 ### Spectral Underline
 hairline 그라데이션. 활성 메뉴·섹션 헤더·카드 강조에 사용.
