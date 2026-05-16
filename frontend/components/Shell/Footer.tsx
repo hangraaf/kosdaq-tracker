@@ -9,7 +9,7 @@ export default function Footer() {
         <Link href="/terms">이용약관</Link>
         <Link href="/privacy">개인정보처리방침</Link>
       </div>
-      <div>© PUPLE STOCK SLIME · v2.0</div>
+      <div>© PURPLE STOCK SLIME · v2.0</div>
     </footer>
   );
 }

@@ -8,7 +8,7 @@ import PingOnLoad from "@/components/PingOnLoad";
 import PrismCursor from "@/components/PrismCursor";
 
 export const metadata: Metadata = {
-  title: "PUPLE STOCK SLIME — KOSPI · KOSDAQ Tracker",
+  title: "PURPLE STOCK SLIME — KOSPI · KOSDAQ Tracker",
   description: "Kraken Purple 톤 기반 한국 주식 트래커",
 };
 
