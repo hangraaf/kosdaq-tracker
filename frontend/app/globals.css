@@ -1509,6 +1509,31 @@ body {
   margin-top: 2px;
 }
 
+/* ── 간판 로고 (Billboard) — 검색창 위 가운데 정렬 ── */
+.psl-billboard {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 18px 24px 6px;
+  background: var(--surface);
+}
+.psl-billboard-link {
+  display: inline-flex;
+  line-height: 0;
+  transition: transform 160ms ease, filter 160ms ease;
+}
+.psl-billboard-link:hover {
+  transform: translateY(-1px);
+  filter: drop-shadow(0 6px 18px rgba(113, 50, 245, 0.28));
+}
+.psl-billboard-img {
+  display: block;
+  width: clamp(260px, 32vw, 440px);
+  height: auto;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
 /* ── Responsive ── */
 @media (max-width: 768px) {
   .psl-header { padding: 10px 16px; gap: 10px; }
@@ -1518,5 +1543,7 @@ body {
   .psl-header-right .psl-clock { display: none; }
   .psl-search { max-width: none; }
   .psl-logo-text { display: none; }
+  .psl-billboard { padding: 12px 16px 4px; }
+  .psl-billboard-img { width: clamp(220px, 64vw, 320px); }
 }
 

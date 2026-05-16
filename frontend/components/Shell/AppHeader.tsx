@@ -16,6 +16,19 @@ export default function AppHeader() {
 
   return (
     <>
+      {/* 간판 로고 — 사이트 아이덴티티 (검색창 위 가운데 정렬) */}
+      <div className="psl-billboard">
+        <Link href="/" aria-label="PURPLE STOCK SLIME 홈" className="psl-billboard-link">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/images/purple-stock-slime.png"
+            alt="PURPLE STOCK SLIME"
+            className="psl-billboard-img"
+            draggable={false}
+          />
+        </Link>
+      </div>
+
       <header className="psl-header">
         <button
           type="button"
