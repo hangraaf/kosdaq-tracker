@@ -7,20 +7,29 @@ import { useAuthStore, useUIStore } from "@/lib/store";
 
 const Plot = dynamic(() => import("react-plotly.js"), { ssr: false });
 
+const cardStyle: React.CSSProperties = {
+  background: "var(--surface)",
+  border: "1px solid var(--line)",
+  borderRadius: "16px",
+  boxShadow: "rgba(0,0,0,0.03) 0px 4px 24px",
+};
+
 function DataSourceBadge({ source, realtime }: { source: string; realtime: boolean }) {
   const isKIS = source === "KIS";
-  const bg = isKIS ? "#0D2A4A" : "#7A6A4A";
   const label = isKIS ? "KIS 실시간 시세" : "DEMO 모의 시세";
-  const sub = isKIS ? "한국투자증권 API" : "백테스트용 합성 데이터";
+  const sub   = isKIS ? "한국투자증권 API" : "백테스트용 합성 데이터";
   return (
     <span title={sub} style={{
       display: "inline-flex", alignItems: "center", gap: "6px",
-      background: bg, color: "#fff", fontFamily: "var(--mono)", fontSize: "0.7rem",
-      fontWeight: 700, padding: "3px 10px", borderRadius: "2px", letterSpacing: "0.02em",
+      background: isKIS ? "var(--purple)" : "rgba(104,107,130,0.18)",
+      color: isKIS ? "#fff" : "var(--ink-muted)",
+      fontFamily: "var(--mono)", fontSize: "0.7rem",
+      fontWeight: 600, padding: "4px 10px", borderRadius: "8px",
+      letterSpacing: "0.02em",
     }}>
       <span style={{
         width: "6px", height: "6px", borderRadius: "50%",
-        background: realtime ? "#7CCB7A" : "#E8C46A",
+        background: realtime ? "#7CCB7A" : "var(--ink-soft)",
         boxShadow: realtime ? "0 0 6px #7CCB7A" : "none",
       }} />
       {label}
@@ -42,15 +51,15 @@ function ConditionsTable({ backtest }: { backtest: BacktestResult }) {
   ];
   return (
     <div style={{ marginTop: "16px" }}>
-      <div style={{ fontFamily: "var(--maru)", fontSize: "0.78rem", fontWeight: 700, color: "var(--muted)", marginBottom: "6px" }}>
-        ▣ 계산 조건 · 가정
+      <div style={{ fontFamily: "var(--maru)", fontSize: "0.78rem", fontWeight: 600, color: "var(--ink-muted)", marginBottom: "8px" }}>
+        계산 조건 · 가정
       </div>
       <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.78rem" }}>
         <tbody>
           {rows.map(([k, v]) => (
-            <tr key={k} style={{ borderBottom: "1px solid var(--border)" }}>
-              <td style={{ padding: "6px 10px", color: "var(--muted)", width: "38%", background: "var(--surf2)", fontWeight: 600 }}>{k}</td>
-              <td style={{ padding: "6px 10px", fontFamily: "var(--mono)", color: "var(--fg)" }}>{v}</td>
+            <tr key={k} style={{ borderBottom: "1px solid var(--line)" }}>
+              <td style={{ padding: "8px 10px", color: "var(--ink-muted)", width: "38%", background: "var(--surface-2)", fontWeight: 500 }}>{k}</td>
+              <td style={{ padding: "8px 10px", fontFamily: "var(--mono)", color: "var(--ink)" }}>{v}</td>
             </tr>
           ))}
         </tbody>
@@ -61,7 +70,7 @@ function ConditionsTable({ backtest }: { backtest: BacktestResult }) {
 
 function BacktestPanel({ backtest, color }: { backtest: BacktestResult; color: string }) {
   const pos = backtest.total_return >= 0;
-  const retColor = pos ? "#B5453F" : "#436B95";
+  const retColor = pos ? "var(--red)" : "var(--blue)";
   const sign = pos ? "+" : "";
   const dates = backtest.series.map(p => p.date);
   const values = backtest.series.map(p => p.value);
@@ -71,94 +80,89 @@ function BacktestPanel({ backtest, color }: { backtest: BacktestResult; color: s
   const mdd = backtest.max_drawdown ?? 0;
   const source = backtest.data_source ?? "DEMO";
   const realtime = !!backtest.realtime;
+  const plotBg = "#ffffff";
+  const gridColor = "#eef0f4";
 
   return (
-    <div style={{ border: "1px solid var(--border)", background: "var(--surf)", padding: "20px", marginBottom: "24px" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px", flexWrap: "wrap" }}>
+    <div style={{ ...cardStyle, padding: "20px", marginBottom: "24px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "12px", flexWrap: "wrap" }}>
         <DataSourceBadge source={source} realtime={realtime} />
-        <span style={{ fontSize: "0.7rem", color: "var(--muted)" }}>
-          기간: <b style={{ color: "var(--fg)" }}>{backtest.period_start}</b> ~ <b style={{ color: "var(--fg)" }}>{backtest.period_end}</b> · {backtest.days}영업일
+        <span style={{ fontSize: "0.72rem", color: "var(--ink-soft)" }}>
+          기간: <b style={{ color: "var(--ink)" }}>{backtest.period_start}</b> ~ <b style={{ color: "var(--ink)" }}>{backtest.period_end}</b> · {backtest.days}영업일
         </span>
       </div>
 
-      <div style={{ display: "flex", alignItems: "baseline", gap: "16px", marginBottom: "12px", flexWrap: "wrap" }}>
-        <div style={{ fontFamily: "var(--maru)", fontSize: "0.82rem", color: "var(--muted)", fontWeight: 700 }}>
+      <div style={{ display: "flex", alignItems: "baseline", gap: "12px", marginBottom: "14px", flexWrap: "wrap" }}>
+        <div style={{ fontFamily: "var(--maru)", fontSize: "0.82rem", color: "var(--ink-muted)", fontWeight: 600 }}>
           만약 {backtest.days}영업일 전 이 포트폴리오에 투자했다면?
         </div>
-        <div style={{ background: retColor, color: "#fff", fontFamily: "var(--mono)", fontWeight: 700, fontSize: "1.6rem", padding: "4px 16px" }}>
+        <div style={{
+          background: retColor, color: "#fff",
+          fontFamily: "var(--mono)", fontWeight: 700, fontSize: "1.6rem",
+          padding: "4px 16px", borderRadius: "10px",
+        }}>
           {sign}{backtest.total_return.toFixed(1)}%
         </div>
         <div style={{
-          background: "#3A1208", color: "#F0C8B0",
-          fontFamily: "var(--mono)", fontSize: "0.78rem", fontWeight: 700,
-          padding: "4px 10px",
+          background: "var(--ink)", color: "#fff",
+          fontFamily: "var(--mono)", fontSize: "0.78rem", fontWeight: 600,
+          padding: "4px 10px", borderRadius: "8px",
         }}>
           MDD {mdd.toFixed(2)}%
         </div>
-        <div style={{ fontSize: "0.72rem", color: "var(--muted)" }}>
+        <div style={{ fontSize: "0.72rem", color: "var(--ink-soft)" }}>
           ±1σ 밴드 · 수수료·세금 반영 · 투자 권유 아님
         </div>
       </div>
 
-      {/* 누적 수익률 + 신뢰구간 밴드 */}
       <Plot
         data={[
-          // upper (invisible upper bound)
-          {
-            x: dates, y: uppers, type: "scatter", mode: "lines",
+          { x: dates, y: uppers, type: "scatter", mode: "lines",
             line: { color: "rgba(0,0,0,0)", width: 0 },
-            hoverinfo: "skip", showlegend: false,
-          },
-          // lower with fill to upper → band
-          {
-            x: dates, y: lowers, type: "scatter", mode: "lines",
+            hoverinfo: "skip", showlegend: false },
+          { x: dates, y: lowers, type: "scatter", mode: "lines",
             line: { color: "rgba(0,0,0,0)", width: 0 },
             fill: "tonexty", fillcolor: `${color}22`,
-            name: "±1σ 신뢰구간", hoverinfo: "skip",
-          },
-          // mid path
-          {
-            x: dates, y: values, type: "scatter", mode: "lines",
+            name: "±1σ 신뢰구간", hoverinfo: "skip" },
+          { x: dates, y: values, type: "scatter", mode: "lines",
             line: { color, width: 2.2 },
             name: "포트폴리오 가치",
-            hovertemplate: "<b>%{x}</b><br>가치: %{y:.2f}<extra></extra>",
-          },
+            hovertemplate: "<b>%{x}</b><br>가치: %{y:.2f}<extra></extra>" },
         ]}
         layout={{
           height: 220,
           margin: { l: 10, r: 56, t: 6, b: 28 },
-          paper_bgcolor: "rgba(253,250,244,1)",
-          plot_bgcolor: "rgba(253,250,244,1)",
+          paper_bgcolor: plotBg,
+          plot_bgcolor: plotBg,
           showlegend: false,
           xaxis: { type: "date", showgrid: false, tickfont: { size: 10 }, rangeslider: { visible: false } },
-          yaxis: { side: "right", tickfont: { size: 10 }, gridcolor: "#E8E1D0", zeroline: false, title: { text: "가치 (시작=100)", font: { size: 9 } } },
+          yaxis: { side: "right", tickfont: { size: 10 }, gridcolor: gridColor, zeroline: false, title: { text: "가치 (시작=100)", font: { size: 9 } } },
           shapes: [{ type: "line", x0: dates[0], x1: dates[dates.length - 1], y0: 100, y1: 100,
-            xref: "x", yref: "y", line: { color: "#B0883A", width: 1, dash: "dash" } }],
+            xref: "x", yref: "y", line: { color: "#7132f5", width: 1, dash: "dash" } }],
         }}
         config={{ responsive: true, displayModeBar: false }}
         style={{ width: "100%", height: "220px" }}
         useResizeHandler
       />
 
-      {/* Drawdown bar — 손실 구간 시각화 */}
-      <div style={{ marginTop: "6px", fontSize: "0.7rem", color: "var(--muted)", fontFamily: "var(--maru)", fontWeight: 700 }}>
-        ▼ Drawdown (고점 대비 낙폭 %)
+      <div style={{ marginTop: "8px", fontSize: "0.72rem", color: "var(--ink-muted)", fontFamily: "var(--maru)", fontWeight: 600 }}>
+        Drawdown (고점 대비 낙폭 %)
       </div>
       <Plot
         data={[{
           x: dates, y: drawdowns, type: "bar",
-          marker: { color: drawdowns.map(d => (d < -5 ? "#8B1A1A" : d < 0 ? "#B5453F" : "#7CCB7A")) },
+          marker: { color: drawdowns.map(d => (d < -5 ? "#8B1A1A" : d < 0 ? "var(--red)" : "rgba(104,107,130,0.16)")) },
           hovertemplate: "<b>%{x}</b><br>낙폭: %{y:.2f}%<extra></extra>",
         }]}
         layout={{
           height: 90,
           margin: { l: 10, r: 56, t: 2, b: 22 },
-          paper_bgcolor: "rgba(253,250,244,1)",
-          plot_bgcolor: "rgba(253,250,244,1)",
+          paper_bgcolor: plotBg,
+          plot_bgcolor: plotBg,
           showlegend: false,
           xaxis: { type: "date", showgrid: false, tickfont: { size: 9 } },
-          yaxis: { side: "right", tickfont: { size: 9 }, gridcolor: "#E8E1D0",
-            zeroline: true, zerolinecolor: "#B0883A", rangemode: "tozero" },
+          yaxis: { side: "right", tickfont: { size: 9 }, gridcolor: gridColor,
+            zeroline: true, zerolinecolor: "#7132f5", rangemode: "tozero" },
         }}
         config={{ responsive: true, displayModeBar: false }}
         style={{ width: "100%", height: "90px" }}
@@ -173,9 +177,10 @@ function BacktestPanel({ backtest, color }: { backtest: BacktestResult; color: s
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
     <div style={{
-      fontFamily: "var(--maru)", fontSize: "0.92rem", fontWeight: 800,
-      borderLeft: "5px solid #B82828", padding: "2px 0 4px 12px",
-      marginBottom: "12px", color: "var(--fg)",
+      fontFamily: "var(--maru)", fontSize: "0.95rem", fontWeight: 700,
+      letterSpacing: "-0.2px",
+      borderLeft: "3px solid var(--purple)", padding: "2px 0 4px 12px",
+      marginBottom: "14px", color: "var(--ink)",
     }}>
       {children}
     </div>
@@ -183,11 +188,12 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 }
 
 function PrismBadge({ score }: { score: number }) {
-  const color = score >= 70 ? "#B5453F" : score >= 50 ? "#B0883A" : "#436B95";
+  const bg   = score >= 70 ? "var(--purple-deep)" : score >= 50 ? "var(--purple)" : "var(--purple-subtle)";
+  const fg   = score >= 50 ? "#fff" : "var(--purple)";
   return (
     <span style={{
-      background: color, color: "#fff", fontFamily: "var(--mono)", fontWeight: 700,
-      fontSize: "0.75rem", padding: "2px 8px", borderRadius: "2px",
+      background: bg, color: fg, fontFamily: "var(--mono)", fontWeight: 600,
+      fontSize: "0.74rem", padding: "3px 10px", borderRadius: "8px",
     }}>
       PRISM {score.toFixed(1)}
     </span>
@@ -197,10 +203,10 @@ function PrismBadge({ score }: { score: number }) {
 function WeightBar({ weight }: { weight: number }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-      <div style={{ flex: 1, height: "6px", background: "var(--surf2)", borderRadius: "3px" }}>
-        <div style={{ width: `${weight}%`, height: "100%", background: "var(--blue)", borderRadius: "3px" }} />
+      <div style={{ flex: 1, height: "6px", background: "var(--purple-pale)", borderRadius: "3px" }}>
+        <div style={{ width: `${weight}%`, height: "100%", background: "var(--purple)", borderRadius: "3px" }} />
       </div>
-      <span style={{ fontFamily: "var(--mono)", fontSize: "0.78rem", fontWeight: 700, color: "var(--muted)", width: "40px", textAlign: "right" }}>
+      <span style={{ fontFamily: "var(--mono)", fontSize: "0.78rem", fontWeight: 600, color: "var(--ink-muted)", width: "40px", textAlign: "right" }}>
         {weight.toFixed(1)}%
       </span>
     </div>
@@ -214,14 +220,26 @@ function ResultView({ result, onSelectStock }: { result: RoboResult; onSelectSto
       <div style={{
         background: result.bg, border: `2px solid ${result.color}`,
         padding: "20px", marginBottom: "24px",
+        borderRadius: "16px",
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "8px" }}>
-          <span style={{ fontSize: "2rem" }}>{["🛡","⚓","⚖","🚀","⚡"][result.profile_id - 1]}</span>
+        <div style={{ display: "flex", alignItems: "center", gap: "14px", marginBottom: "10px" }}>
+          <span style={{
+            display: "inline-flex", alignItems: "center", justifyContent: "center",
+            width: "40px", height: "40px", borderRadius: "12px",
+            background: result.color, color: "#fff",
+            fontFamily: "var(--mono)", fontWeight: 700, fontSize: "1rem",
+          }}>
+            {result.profile_id}
+          </span>
           <div>
-            <div style={{ fontFamily: "var(--maru)", fontSize: "1.1rem", fontWeight: 700, color: result.fg }}>
+            <div style={{ fontFamily: "var(--maru)", fontSize: "1.1rem", fontWeight: 700, color: result.fg, letterSpacing: "-0.3px" }}>
               {result.profile_name} <span style={{ fontSize: "0.8rem", opacity: 0.7 }}>{result.profile_eng}</span>
             </div>
-            <div style={{ fontSize: "0.78rem", background: result.color, color: "#fff", display: "inline-block", padding: "1px 8px", marginTop: "2px" }}>
+            <div style={{
+              fontSize: "0.74rem", background: result.color, color: "#fff",
+              display: "inline-block", padding: "2px 10px", marginTop: "4px",
+              borderRadius: "8px",
+            }}>
               {result.tag}
             </div>
           </div>
@@ -240,35 +258,36 @@ function ResultView({ result, onSelectStock }: { result: RoboResult; onSelectSto
 
       {/* 추천 종목 */}
       <SectionLabel>PRISM 모멘텀 포트폴리오 ({result.items.length}종목)</SectionLabel>
-      <div style={{ overflowX: "auto" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.875rem" }}>
-          <thead>
-            <tr style={{ background: "var(--surf2)", borderBottom: "2px solid var(--border)" }}>
-              {["종목", "업종", "PRISM 점수", "비중", "추천 근거"].map(h => (
-                <th key={h} style={{ padding: "8px 10px", textAlign: "left", fontSize: "0.75rem", fontWeight: 700, color: "var(--muted)" }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {result.items.map((item) => (
-              <tr key={item.code} style={{ borderBottom: "1px solid var(--border)" }}>
-                <td
-                  style={{ padding: "10px 10px", cursor: "pointer" }}
-                  onClick={() => onSelectStock(item.code)}
-                >
-                  <span style={{ fontWeight: 600, color: "var(--blue)", textDecoration: "underline" }}>{item.name}</span>
-                  <span style={{ color: "var(--muted)", fontSize: "0.75rem", marginLeft: "6px" }}>{item.code}</span>
-                </td>
-                <td style={{ padding: "10px 10px", fontSize: "0.8rem", color: "var(--muted)" }}>{item.sector}</td>
-                <td style={{ padding: "10px 10px" }}><PrismBadge score={item.prism_score} /></td>
-                <td style={{ padding: "10px 10px", minWidth: "140px" }}><WeightBar weight={item.weight} /></td>
-                <td style={{ padding: "10px 10px", fontSize: "0.8rem", color: "var(--muted)" }}>{item.reason}</td>
+      <div style={{ ...cardStyle, overflow: "hidden" }}>
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.875rem" }}>
+            <thead>
+              <tr style={{ background: "var(--surface-2)", borderBottom: "1px solid var(--line)" }}>
+                {["종목", "업종", "PRISM 점수", "비중", "추천 근거"].map(h => (
+                  <th key={h} style={{ padding: "10px 12px", textAlign: "left", fontSize: "0.72rem", fontWeight: 600, color: "var(--ink-muted)", letterSpacing: "0.03em" }}>{h}</th>
+                ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {result.items.map((item) => (
+                <tr key={item.code} style={{ borderBottom: "1px solid var(--line)" }}>
+                  <td
+                    style={{ padding: "12px", cursor: "pointer" }}
+                    onClick={() => onSelectStock(item.code)}
+                  >
+                    <span style={{ fontWeight: 600, color: "var(--purple)" }}>{item.name}</span>
+                    <span style={{ color: "var(--ink-soft)", fontSize: "0.75rem", marginLeft: "6px" }}>{item.code}</span>
+                  </td>
+                  <td style={{ padding: "12px", fontSize: "0.8rem", color: "var(--ink-muted)" }}>{item.sector}</td>
+                  <td style={{ padding: "12px" }}><PrismBadge score={item.prism_score} /></td>
+                  <td style={{ padding: "12px", minWidth: "140px" }}><WeightBar weight={item.weight} /></td>
+                  <td style={{ padding: "12px", fontSize: "0.8rem", color: "var(--ink-muted)" }}>{item.reason}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
-
     </div>
   );
 }
@@ -292,27 +311,40 @@ export default function RoboPage() {
 
   if (!token) {
     return (
-      <div style={{ padding: "60px 0", textAlign: "center", color: "var(--muted)" }}>
-        <div style={{ fontSize: "2rem", marginBottom: "12px" }}>🔐</div>
-        <div style={{ fontFamily: "var(--maru)", fontSize: "1rem" }}>로그인 후 이용 가능한 서비스입니다.</div>
+      <div style={{ ...cardStyle, padding: "72px 24px", textAlign: "center", maxWidth: "500px", margin: "0 auto" }}>
+        <div style={{ fontFamily: "var(--maru)", fontSize: "1.05rem", color: "var(--ink)", fontWeight: 600, marginBottom: "8px" }}>
+          로그인이 필요합니다
+        </div>
+        <div style={{ fontSize: "0.86rem", color: "var(--ink-soft)" }}>
+          로그인 후 PRISM 로보어드바이저를 이용할 수 있습니다.
+        </div>
       </div>
     );
   }
 
   if (!isPremium()) {
     return (
-      <div style={{ padding: "60px 0", textAlign: "center" }}>
-        <div style={{ fontSize: "2.5rem", marginBottom: "12px" }}>🤖</div>
-        <div style={{ fontFamily: "var(--maru)", fontSize: "1.2rem", color: "var(--blue-deep)", marginBottom: "8px" }}>
+      <div style={{ ...cardStyle, padding: "48px 24px", textAlign: "center", maxWidth: "500px", margin: "0 auto" }}>
+        <div style={{
+          display: "inline-block", background: "var(--purple)", color: "#fff",
+          fontFamily: "var(--maru)", fontWeight: 700, fontSize: "0.7rem",
+          padding: "4px 14px", letterSpacing: "0.12em", borderRadius: "9999px",
+          marginBottom: "14px",
+        }}>
+          PREMIUM
+        </div>
+        <div style={{ fontFamily: "var(--maru)", fontSize: "1.3rem", fontWeight: 700, color: "var(--ink)", letterSpacing: "-0.4px", marginBottom: "8px" }}>
           PRISM 로보어드바이저
         </div>
-        <div style={{ color: "var(--muted)", marginBottom: "20px" }}>프리미엄 구독자 전용 서비스입니다.</div>
+        <div style={{ color: "var(--ink-soft)", marginBottom: "22px", fontSize: "0.9rem" }}>
+          프리미엄 구독자 전용 서비스입니다.
+        </div>
         <div style={{
-          display: "inline-block", background: "#D4A030", color: "#3A1208",
-          fontFamily: "var(--maru)", fontWeight: 700, padding: "12px 28px",
-          cursor: "pointer", fontSize: "1rem",
+          display: "inline-block", background: "var(--purple)", color: "#fff",
+          fontFamily: "var(--maru)", fontWeight: 600, padding: "12px 28px",
+          cursor: "pointer", fontSize: "0.95rem", borderRadius: "12px",
         }}>
-          ★ PREMIUM 업그레이드
+          PREMIUM 업그레이드
         </div>
       </div>
     );
@@ -343,10 +375,14 @@ export default function RoboPage() {
 
   return (
     <div>
-      <h1 style={{ fontFamily: "var(--maru)", color: "var(--blue-deep)", marginBottom: "8px" }}>
-        🤖 PRISM 로보어드바이저
+      <h1 style={{
+        fontFamily: "var(--maru)", color: "var(--ink)",
+        fontSize: "1.75rem", fontWeight: 700, letterSpacing: "-0.5px",
+        margin: "0 0 8px",
+      }}>
+        PRISM 로보어드바이저
       </h1>
-      <p style={{ color: "var(--muted)", fontSize: "0.88rem", marginBottom: "12px" }}>
+      <p style={{ color: "var(--ink-muted)", fontSize: "0.88rem", marginBottom: "16px" }}>
         5가지 질문으로 투자 성향을 파악하고, 맞춤 포트폴리오를 추천합니다.
       </p>
 
@@ -355,24 +391,26 @@ export default function RoboPage() {
         <summary style={{
           cursor: "pointer",
           fontSize: "0.78rem",
-          color: "var(--muted)",
-          fontWeight: 700,
-          letterSpacing: "0.04em",
-          padding: "8px 12px",
-          background: "var(--surf2)",
-          border: "1px solid var(--border)",
+          color: "var(--ink-muted)",
+          fontWeight: 600,
+          letterSpacing: "0.02em",
+          padding: "10px 14px",
+          background: "var(--purple-pale)",
+          border: "1px solid var(--line-soft)",
+          borderRadius: "12px",
           userSelect: "none",
         }}>
-          📖 PRISM 모멘텀 스코어가 뭔가요? (클릭해서 펼치기)
+          PRISM 모멘텀 스코어가 뭔가요? (펼쳐서 보기)
         </summary>
         <div style={{
-          padding: "14px 16px",
-          background: "var(--surf2)",
-          border: "1px solid var(--border)",
-          borderTop: "none",
-          fontSize: "0.82rem",
+          marginTop: "6px",
+          padding: "16px 18px",
+          background: "var(--surface)",
+          border: "1px solid var(--line)",
+          borderRadius: "12px",
+          fontSize: "0.84rem",
           lineHeight: 1.75,
-          color: "var(--fg)",
+          color: "var(--ink)",
         }}>
           <p style={{ marginTop: 0 }}>
             <b>PRISM(Predictive Resonance Index for Stock Momentum)</b>은 한 종목의 최근 60일 가격·거래량
@@ -385,7 +423,7 @@ export default function RoboPage() {
             <li><b>RSI (15%)</b> — 과매수/과매도 균형도</li>
             <li><b>안정성 (10%)</b> — 20일 변동성의 역</li>
           </ul>
-          <p style={{ margin: "8px 0 0", color: "var(--muted)", fontSize: "0.78rem" }}>
+          <p style={{ margin: "8px 0 0", color: "var(--ink-muted)", fontSize: "0.78rem" }}>
             <b>주의:</b> PRISM은 <b>AI나 머신러닝 모델이 아닌 규칙 기반 산식</b>입니다. 회사의 재무 건전성,
             업계 경쟁력, 뉴스 호재/악재 등은 반영되지 않습니다. 투자 판단의 보조 지표로만 활용하세요.
           </p>
@@ -395,12 +433,12 @@ export default function RoboPage() {
       {!result ? (
         <div>
           {questions.map((q, qi) => (
-            <div key={q.id} className="bh-card" style={{ marginBottom: "16px" }}>
-              <div style={{ fontWeight: 700, marginBottom: "12px", color: "var(--fg)" }}>
-                <span style={{ color: "var(--blue)", marginRight: "8px" }}>Q{qi + 1}.</span>
+            <div key={q.id} style={{ ...cardStyle, padding: "16px 18px", marginBottom: "14px" }}>
+              <div style={{ fontWeight: 700, marginBottom: "12px", color: "var(--ink)", fontFamily: "var(--maru)", letterSpacing: "-0.2px" }}>
+                <span style={{ color: "var(--purple)", marginRight: "8px" }}>Q{qi + 1}.</span>
                 {q.q}
               </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                 {q.opts.map((opt, i) => {
                   const sel = answers[q.id] === i;
                   return (
@@ -410,11 +448,11 @@ export default function RoboPage() {
                         name={q.id}
                         checked={sel}
                         onChange={() => setAnswers(prev => ({ ...prev, [q.id]: i }))}
-                        style={{ accentColor: "var(--blue)" }}
+                        style={{ accentColor: "var(--purple)" }}
                       />
                       <span style={{
                         fontSize: "0.88rem",
-                        color: sel ? "var(--fg)" : "var(--muted)",
+                        color: sel ? "var(--ink)" : "var(--ink-muted)",
                         fontWeight: sel ? 600 : 400,
                       }}>
                         {opt}
@@ -428,17 +466,18 @@ export default function RoboPage() {
 
           {error && (
             <div style={{
-              border: "2px solid #B82828",
-              background: "#FFF0F0",
-              color: "#8B1A1A",
+              border: "1px solid var(--red)",
+              background: "rgba(181,69,63,0.08)",
+              color: "var(--red)",
               padding: "12px 16px",
               marginBottom: "16px",
               fontSize: "0.9rem",
-              fontWeight: 600,
+              fontWeight: 500,
               lineHeight: 1.5,
+              borderRadius: "12px",
             }}>
-              <div style={{ fontFamily: "var(--maru)", marginBottom: "4px" }}>⚠ 분석 실패</div>
-              <div style={{ fontWeight: 400, fontSize: "0.82rem", wordBreak: "break-all" }}>{error}</div>
+              <div style={{ fontFamily: "var(--maru)", fontWeight: 700, marginBottom: "4px" }}>분석 실패</div>
+              <div style={{ fontSize: "0.82rem", wordBreak: "break-all" }}>{error}</div>
             </div>
           )}
 
@@ -447,13 +486,16 @@ export default function RoboPage() {
             disabled={!allAnswered || loading}
             style={{
               padding: "12px 32px",
-              background: allAnswered ? "var(--blue)" : "var(--surf2)",
-              color: allAnswered ? "#fff" : "var(--muted)",
-              border: "none", fontWeight: 700, fontSize: "1rem",
+              background: allAnswered ? "var(--purple)" : "var(--surface-2)",
+              color: allAnswered ? "#fff" : "var(--ink-soft)",
+              border: "none", fontWeight: 600, fontSize: "1rem",
               cursor: allAnswered ? "pointer" : "not-allowed",
               fontFamily: "var(--maru)",
-              transition: "all 0.2s",
+              borderRadius: "12px",
+              transition: "background 160ms ease",
             }}
+            onMouseEnter={e => { if (allAnswered && !loading) e.currentTarget.style.background = "var(--purple-deep)"; }}
+            onMouseLeave={e => { if (allAnswered && !loading) e.currentTarget.style.background = "var(--purple)"; }}
           >
             {loading ? "분석 중..." : "PRISM 분석 시작"}
           </button>
@@ -465,9 +507,12 @@ export default function RoboPage() {
             onClick={() => { setResult(null); setAnswers({}); }}
             style={{
               marginTop: "20px", padding: "10px 24px",
-              background: "var(--surf)", border: "1px solid var(--border)",
-              color: "var(--muted)", fontWeight: 600, cursor: "pointer", fontSize: "0.88rem",
+              background: "var(--surface)", border: "1px solid var(--purple-dark)",
+              color: "var(--purple-dark)", fontWeight: 600, cursor: "pointer", fontSize: "0.88rem",
+              borderRadius: "12px",
             }}
+            onMouseEnter={e => (e.currentTarget.style.background = "var(--purple-pale)")}
+            onMouseLeave={e => (e.currentTarget.style.background = "var(--surface)")}
           >
             다시 설문하기
           </button>
