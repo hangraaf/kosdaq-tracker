@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { apiRegister, apiMe, oauthLoginUrl } from "@/lib/api";
 import { useAuthStore } from "@/lib/store";
+import { playLoginChime } from "@/lib/chime";
 
 const EMAIL_RE = /^[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}$/;
 
@@ -58,6 +59,7 @@ export default function SignupPage() {
       setAuth(res.access_token, res.username, res.display, res.plan);
       const me = await apiMe().catch(() => null);
       if (me) setAuth(res.access_token, me.username, me.display, me.plan);
+      playLoginChime();
       router.push("/");
     } catch (err) {
       setSubmitErr((err as Error).message);

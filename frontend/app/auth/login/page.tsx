@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { apiLogin, apiMe, oauthLoginUrl } from "@/lib/api";
 import { useAuthStore } from "@/lib/store";
+import { playLoginChime } from "@/lib/chime";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -28,6 +29,7 @@ export default function LoginPage() {
       setAuth(res.access_token, res.username, res.display, res.plan);
       const me = await apiMe().catch(() => null);
       if (me) setAuth(res.access_token, me.username, me.display, me.plan);
+      playLoginChime();
       router.push("/");
     } catch (err) {
       setSubmitErr((err as Error).message);

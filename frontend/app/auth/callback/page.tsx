@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAuthStore } from "@/lib/store";
+import { playLoginChime } from "@/lib/chime";
 
 /**
  * OAuth 콜백 처리 페이지.
@@ -37,6 +38,7 @@ export default function OAuthCallbackPage() {
     }
 
     setAuth(token, username, display ?? username, plan ?? "free");
+    playLoginChime();
 
     // URL의 토큰을 즉시 지우고 홈으로 이동
     const dest = returnTo.startsWith("/") ? returnTo : "/";

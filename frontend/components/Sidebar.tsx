@@ -5,6 +5,7 @@ import Link from "next/link";
 import MrStockBuddy from "./Logo/MrStockBuddy";
 import { useAuthStore, useUIStore } from "@/lib/store";
 import { apiMe } from "@/lib/api";
+import { playLogoutChime } from "@/lib/chime";
 
 const MENU_ITEMS = [
   { key: "뉴스",           label: "뉴스" },
@@ -41,7 +42,11 @@ function AuthPanel() {
             </div>
           </Link>
         </div>
-        <button onClick={clearAuth} className="prism-profile-logout" type="button">
+        <button
+          onClick={() => { playLogoutChime(); clearAuth(); }}
+          className="prism-profile-logout"
+          type="button"
+        >
           로그아웃
         </button>
       </div>
