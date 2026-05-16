@@ -32,6 +32,13 @@ class Settings(BaseSettings):
     toss_client_key: str = ""
     toss_secret_key: str = ""
 
+    # OAuth — Kakao
+    kakao_rest_api_key: str = ""
+    kakao_client_secret: str = ""   # 선택 (Kakao 콘솔에서 활성화한 경우)
+    # OAuth 콜백 베이스 URL — 환경별로 다르게 (dev: http://localhost:8000, prod: https://...)
+    oauth_backend_base_url: str = "http://localhost:8000"
+    oauth_frontend_base_url: str = "http://localhost:3000"
+
     # PostgreSQL (선택 — 설정 시 JSON+SQLite 대신 PG 사용)
     database_url: str = ""   # postgresql+asyncpg://user:pass@host/db
     use_postgres: bool = False

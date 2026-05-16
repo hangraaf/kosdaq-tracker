@@ -263,6 +263,26 @@ body {
   animation: prism-pulse 3.6s ease-in-out infinite;
 }
 
+/* 카카오 로그인 버튼 — Kakao BI 가이드 톤 (#FEE500 + 검정) */
+.prism-auth-btn-kakao {
+  width: 100%;
+  background: #FEE500;
+  color: #191919;
+  border: 1px solid rgba(0,0,0,0.10);
+  padding: 10px;
+  font-weight: 700;
+  font-size: 0.86rem;
+  cursor: pointer;
+  border-radius: 3px;
+  letter-spacing: 0.01em;
+  transition: filter 200ms ease, box-shadow 220ms ease;
+  font-family: var(--font);
+}
+.prism-auth-btn-kakao:hover {
+  filter: brightness(0.96);
+  box-shadow: 0 0 0 1px rgba(254,229,0,0.40), 0 0 18px rgba(254,229,0,0.30);
+}
+
 /* 인증 패널 — 톤 통일 */
 .prism-auth-btn-primary {
   flex: 1;

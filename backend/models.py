@@ -22,6 +22,7 @@ class UserCreate(BaseModel):
     password: str = Field(min_length=6)
     display: str = ""
     email: str = ""
+    marketing_opt_in: bool = False
 
 
 class UserLogin(BaseModel):

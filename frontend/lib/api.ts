@@ -70,13 +70,21 @@ export async function apiLogin(username: string, password: string): Promise<Toke
 }
 
 export async function apiRegister(data: {
-  username: string; password: string; display?: string; email?: string;
+  username: string; password: string; display?: string; email?: string; marketing_opt_in?: boolean;
 }): Promise<TokenResponse> {
   return req("/auth/register", { method: "POST", body: JSON.stringify(data) });
 }
 
 export async function apiMe(): Promise<{ username: string; display: string; plan: string; email: string }> {
   return req("/auth/me");
+}
+
+// ── OAuth ────────────────────────────────────────────────────────────────
+
+/** 백엔드 OAuth 로그인 시작 URL — 직접 navigate 시켜야 함. */
+export function oauthLoginUrl(provider: "kakao", returnTo: string = "/"): string {
+  const qs = new URLSearchParams({ return_to: returnTo }).toString();
+  return `${BASE}/auth/oauth/${provider}/login?${qs}`;
 }
 
 // ── Status ───────────────────────────────────────────────────────────────

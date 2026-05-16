@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import MrStockBuddy from "./Logo/MrStockBuddy";
 import { useAuthStore, useUIStore } from "@/lib/store";
-import { apiLogin, apiMe, apiRegister } from "@/lib/api";
+import { apiLogin, apiMe, apiRegister, oauthLoginUrl } from "@/lib/api";
 
 const MENU_ITEMS = [
   { key: "뉴스",           label: "뉴스" },
@@ -20,8 +20,13 @@ function AuthPanel() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [display, setDisplay] = useState("");
+  const [marketingOptIn, setMarketingOptIn] = useState(false);
   const [error, setError] = useState("");
   const { token, display: userDisplay, plan, setAuth, clearAuth } = useAuthStore();
+
+  const startKakaoLogin = () => {
+    window.location.href = oauthLoginUrl("kakao", window.location.pathname + window.location.search);
+  };
 
   useEffect(() => {
     if (!token) return;
@@ -86,12 +91,17 @@ function AuthPanel() {
 
   if (mode === "guest") {
     return (
-      <div style={{ padding: "14px 18px", display: "flex", gap: "10px" }}>
-        <button onClick={() => setMode("login")} className="prism-auth-btn-primary">
-          로그인
-        </button>
-        <button onClick={() => setMode("register")} className="prism-auth-btn-ghost">
-          회원가입
+      <div style={{ padding: "14px 18px", display: "flex", flexDirection: "column", gap: "10px" }}>
+        <div style={{ display: "flex", gap: "10px" }}>
+          <button onClick={() => setMode("login")} className="prism-auth-btn-primary">
+            로그인
+          </button>
+          <button onClick={() => setMode("register")} className="prism-auth-btn-ghost">
+            회원가입
+          </button>
+        </div>
+        <button onClick={startKakaoLogin} className="prism-auth-btn-kakao" type="button">
+          카카오로 시작하기
         </button>
       </div>
     );
@@ -105,7 +115,7 @@ function AuthPanel() {
       if (mode === "login") {
         res = await apiLogin(username, password);
       } else {
-        res = await apiRegister({ username, password, display });
+        res = await apiRegister({ username, password, display, marketing_opt_in: marketingOptIn });
       }
       setAuth(res.access_token, res.username, res.display, res.plan);
       const me = await apiMe();
@@ -132,6 +142,28 @@ function AuthPanel() {
         <input placeholder="닉네임" value={display} onChange={e => setDisplay(e.target.value)} style={inputStyle} />
       )}
       <input type="password" placeholder="비밀번호" value={password} onChange={e => setPassword(e.target.value)} style={inputStyle} />
+      {mode === "register" && (
+        <label style={{
+          display: "flex",
+          alignItems: "flex-start",
+          gap: "8px",
+          padding: "8px 2px 10px",
+          fontSize: "0.74rem",
+          color: "rgba(220,232,222,0.78)",
+          cursor: "pointer",
+          lineHeight: 1.45,
+        }}>
+          <input
+            type="checkbox"
+            checked={marketingOptIn}
+            onChange={e => setMarketingOptIn(e.target.checked)}
+            style={{ marginTop: "2px", accentColor: "var(--green-soft)", flexShrink: 0 }}
+          />
+          <span>
+            <span style={{ color: "rgba(171,225,183,0.92)", fontWeight: 700 }}>(선택)</span> 업데이트·이벤트 등 마케팅 정보를 받겠습니다. 동의는 언제든 철회할 수 있습니다.
+          </span>
+        </label>
+      )}
       {error && <div style={{ color: "#E97A74", fontSize: "0.74rem", marginBottom: "6px" }}>{error}</div>}
       <div style={{ display: "flex", gap: "8px" }}>
         <button type="submit" className="prism-auth-btn-primary">확인</button>

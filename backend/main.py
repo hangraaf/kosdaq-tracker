@@ -22,36 +22,32 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from config import DATA_DIR, settings
 from routers import auth, guru, market, news, payments, portfolio, robo, stocks
+from routers import oauth_kakao
 
 
 def _init_admin():
     """환경변수로 admin plan 자동 부여 — 기존 비밀번호 유지."""
+    import db as _db
     username = os.getenv("ADMIN_USERNAME", "").strip().lower()
     if not username:
         return
-    users_file = DATA_DIR / "users.json"
-    users: dict = {}
-    if users_file.exists():
-        try:
-            users = json.loads(users_file.read_text(encoding="utf-8"))
-        except Exception:
-            pass
-    if username in users:
-        users[username]["plan"] = "admin"
+    existing = _db.users_get(username)
+    if existing:
+        _db.users_update(username, plan="admin")
         print(f"[STARTUP] {username} → admin 승격 완료")
-    else:
-        password = os.getenv("ADMIN_PASSWORD", "").strip()
-        if not password:
-            return
-        from routers.auth import _hash_pw
-        users[username] = {
-            "pwd_hash": _hash_pw(password),
-            "display": os.getenv("ADMIN_DISPLAY", username),
-            "email": os.getenv("ADMIN_EMAIL", ""),
-            "plan": "admin",
-        }
-        print(f"[STARTUP] {username} 신규 admin 계정 생성 완료")
-    users_file.write_text(json.dumps(users, ensure_ascii=False, indent=2), encoding="utf-8")
+        return
+    password = os.getenv("ADMIN_PASSWORD", "").strip()
+    if not password:
+        return
+    from routers.auth import _hash_pw
+    _db.users_create(
+        username=username,
+        pwd_hash=_hash_pw(password),
+        display=os.getenv("ADMIN_DISPLAY", username),
+        email=os.getenv("ADMIN_EMAIL", ""),
+        plan="admin",
+    )
+    print(f"[STARTUP] {username} 신규 admin 계정 생성 완료")
 
 
 _REFRESH_SCRIPT = Path(__file__).parent / "scripts" / "refresh_stocks.py"
@@ -143,6 +139,7 @@ app.add_middleware(
 )
 
 app.include_router(auth.router)
+app.include_router(oauth_kakao.router)
 app.include_router(stocks.router)
 app.include_router(market.router)
 app.include_router(portfolio.router)
@@ -172,17 +169,10 @@ def debug_kis():
 
 @app.get("/debug/admin")
 def debug_admin():
-    """admin 계정 존재 여부 확인용 (비밀번호 제외)."""
-    import os, json
-    from config import DATA_DIR
-    users_file = DATA_DIR / "users.json"
-    if not users_file.exists():
-        return {"users_file": "없음", "users": []}
-    users = json.loads(users_file.read_text(encoding="utf-8"))
-    return {
-        "users_file": "존재",
-        "users": [{"username": k, "plan": v.get("plan"), "display": v.get("display")} for k, v in users.items()],
-    }
+    """전체 사용자 요약 (비밀번호 해시 제외)."""
+    import db as _db
+    rows = _db.users_list_all()
+    return {"count": len(rows), "users": rows}
 
 
 @app.get("/")
