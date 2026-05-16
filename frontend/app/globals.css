@@ -1475,7 +1475,7 @@ body {
   z-index: 40;
 }
 .psl-header-logo  { justify-self: start; display: flex; align-items: center; }
-.psl-header-mid   { justify-self: center; display: flex; justify-content: center; min-width: 0; width: min(480px, 100%); }
+.psl-header-mid   { justify-self: center; display: flex; justify-content: center; min-width: 0; width: min(620px, 100%); }
 .psl-header-right { justify-self: end; display: flex; align-items: center; gap: 14px; }
 
 /* 슬라임 간판 — 헤더 위 독립 행, 검색바 중앙 위로 정렬됨 */
@@ -1496,7 +1496,7 @@ body {
 /* ── 검색바 (헤더 중앙) ── */
 .psl-search {
   position: relative;
-  width: min(480px, 100%);
+  width: min(620px, 100%);
 }
 .psl-search-input {
   width: 100%;

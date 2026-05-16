@@ -9,7 +9,7 @@ import { useUIStore } from "@/lib/store";
  * 입력 200ms 디바운스 후 /stocks/search 호출, 결과 클릭 시 차트 페이지로 점프.
  */
 export default function SearchBar({
-  placeholder = "종목명·코드·업종 검색  예) 카카오, 005930",
+  placeholder = "종목 검색",
 }: {
   placeholder?: string;
 }) {
@@ -129,7 +129,7 @@ export default function SearchBar({
                   pick(h);
                 }}
               >
-                <span className={`psl-search-mkt psl-search-mkt--${h.market === "코스닥" ? "kosdaq" : "kospi"}`}>
+                <span className={`psl-search-mkt psl-search-mkt--${/kosdaq|코스닥/i.test(h.market) ? "kosdaq" : "kospi"}`}>
                   {h.market}
                 </span>
                 <span className="psl-search-name">{h.name}</span>
