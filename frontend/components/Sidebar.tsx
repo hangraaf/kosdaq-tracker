@@ -162,8 +162,9 @@ export default function Sidebar() {
         </div>
       </div>
 
-      {/* 하단 스크롤 영역 — 인증 + 메뉴 + 푸터 */}
+      {/* 하단 스크롤 영역 — 인증 + 메뉴 + 푸터 (딥월넛 원목 패널) */}
       <div
+        className="prism-sidebar-scroll"
         style={{
           flex: 1,
           minHeight: 0,
@@ -215,7 +216,7 @@ export default function Sidebar() {
       <div style={{
         padding: "12px 16px 14px",
         fontSize: "0.68rem",
-        color: "rgba(171,225,183,0.62)",
+        color: "rgba(200,161,101,0.72)",
         fontFamily: "var(--maru)",
         letterSpacing: "0.06em",
         textAlign: "center",
