@@ -64,28 +64,28 @@ function buildSignals(ohlcv: OHLCVRow[]) {
   const lm60 = ma60[ma60.length - 1];
 
   // MA 배열 상태
-  let maTrend = "혼조", maTrendColor = "var(--muted)";
+  let maTrend = "혼조", maTrendColor = "var(--ink-muted)";
   if (lm5 && lm20 && lm60) {
     if (last > lm5 && lm5 > lm20 && lm20 > lm60) {
-      maTrend = "정배열 (상승)"; maTrendColor = "#B5453F";
+      maTrend = "정배열 (상승)"; maTrendColor = "var(--red)";
     } else if (last < lm5 && lm5 < lm20 && lm20 < lm60) {
-      maTrend = "역배열 (하락)"; maTrendColor = "#436B95";
+      maTrend = "역배열 (하락)"; maTrendColor = "var(--blue)";
     }
   }
 
   // 골든/데드크로스 최근 감지
-  let crossSignal = "없음", crossColor = "var(--muted)";
+  let crossSignal = "없음", crossColor = "var(--ink-muted)";
   let crossDesc = "MA5와 MA20이 교차하지 않았습니다.";
   for (let i = ohlcv.length - 1; i >= Math.max(0, ohlcv.length - 30); i--) {
     const p5 = ma5[i - 1], p20 = ma20[i - 1], c5 = ma5[i], c20 = ma20[i];
     if (p5 === null || p20 === null || c5 === null || c20 === null) continue;
     if (p5 < p20 && c5 >= c20) {
-      crossSignal = "골든크로스 ▲"; crossColor = "var(--yellow)";
+      crossSignal = "골든크로스"; crossColor = "var(--purple)";
       crossDesc = "MA5가 MA20 위로 돌파 — 단기 상승 전환 신호입니다.";
       break;
     }
     if (p5 > p20 && c5 <= c20) {
-      crossSignal = "데드크로스 ▼"; crossColor = "#436B95";
+      crossSignal = "데드크로스"; crossColor = "var(--blue)";
       crossDesc = "MA5가 MA20 아래로 돌파 — 단기 하락 전환 신호입니다.";
       break;
     }
@@ -94,16 +94,16 @@ function buildSignals(ohlcv: OHLCVRow[]) {
   // RSI (직접 계산)
   const rsiArr = rsiCalc(closes);
   const lastRsi = rsiArr[rsiArr.length - 1];
-  let rsiStatus = "-", rsiColor = "var(--muted)", rsiDesc = "";
+  let rsiStatus = "-", rsiColor = "var(--ink-muted)", rsiDesc = "";
   if (lastRsi !== null) {
     if (lastRsi >= 70) {
-      rsiStatus = `${lastRsi.toFixed(0)} 과매수 주의`; rsiColor = "#B5453F";
+      rsiStatus = `${lastRsi.toFixed(0)} 과매수 주의`; rsiColor = "var(--red)";
       rsiDesc = "RSI 70 이상 — 단기 고점 가능성, 신중하게 접근하세요.";
     } else if (lastRsi <= 30) {
-      rsiStatus = `${lastRsi.toFixed(0)} 과매도 반등 기대`; rsiColor = "#436B95";
+      rsiStatus = `${lastRsi.toFixed(0)} 과매도 반등 기대`; rsiColor = "var(--blue)";
       rsiDesc = "RSI 30 이하 — 과도 하락, 반등을 기대해볼 수 있습니다.";
     } else {
-      rsiStatus = `${lastRsi.toFixed(0)} 중립`; rsiColor = "var(--fg)";
+      rsiStatus = `${lastRsi.toFixed(0)} 중립`; rsiColor = "var(--ink)";
       rsiDesc = "RSI 30~70 중립 구간입니다.";
     }
   }
@@ -112,14 +112,14 @@ function buildSignals(ohlcv: OHLCVRow[]) {
   const { hist } = macdCalc(closes);
   const lastHist = hist[hist.length - 1] ?? null;
   const prevHist = hist[hist.length - 2] ?? null;
-  let macdStatus = "-", macdColor = "var(--muted)", macdDesc = "";
+  let macdStatus = "-", macdColor = "var(--ink-muted)", macdDesc = "";
   if (lastHist !== null) {
     const growing = prevHist !== null && lastHist > prevHist;
     if (lastHist > 0) {
-      macdStatus = growing ? "▲ 상승세 강화" : "▲ 매수세 우세"; macdColor = "#B5453F";
+      macdStatus = growing ? "상승세 강화" : "매수세 우세"; macdColor = "var(--red)";
       macdDesc = "MACD 막대가 0선 위 — 매수세 우세 상태입니다.";
     } else {
-      macdStatus = growing ? "▼ 하락세 약화" : "▼ 매도세 우세"; macdColor = "#436B95";
+      macdStatus = growing ? "하락세 약화" : "매도세 우세"; macdColor = "var(--blue)";
       macdDesc = "MACD 막대가 0선 아래 — 매도세 우세 상태입니다.";
     }
   }
@@ -139,23 +139,32 @@ function SigCard({ title, value, valueColor, desc, badge }: SigCardProps) {
   return (
     <div style={{
       flex: "1 1 180px",
-      padding: "10px 14px",
-      background: "var(--surf)",
-      border: "1px solid var(--border)",
+      padding: "12px 16px",
+      background: "var(--surface)",
+      border: "1px solid var(--line)",
       borderTop: `3px solid ${valueColor}`,
+      borderRadius: "12px",
+      boxShadow: "rgba(16,24,40,0.04) 0px 1px 4px",
     }}>
-      <div style={{ fontSize: "0.62rem", letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--muted)", fontWeight: 700, marginBottom: "5px" }}>
-        {title} {badge && <span style={{ background: "var(--blue-pale)", color: "var(--blue-deep)", padding: "1px 5px", fontSize: "0.58rem", fontWeight: 800, marginLeft: "4px" }}>{badge}</span>}
+      <div style={{ fontSize: "0.62rem", letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-soft)", fontWeight: 600, marginBottom: "6px" }}>
+        {title} {badge && <span style={{ background: "var(--purple-subtle)", color: "var(--purple)", padding: "1px 6px", fontSize: "0.58rem", fontWeight: 700, marginLeft: "4px", borderRadius: "6px" }}>{badge}</span>}
       </div>
-      <div style={{ fontFamily: "var(--mono)", fontWeight: 800, fontSize: "0.92rem", color: valueColor, marginBottom: "5px" }}>
+      <div style={{ fontFamily: "var(--mono)", fontWeight: 700, fontSize: "0.92rem", color: valueColor, marginBottom: "6px" }}>
         {value}
       </div>
-      <div style={{ fontSize: "0.7rem", color: "var(--muted)", lineHeight: 1.5 }}>
+      <div style={{ fontSize: "0.72rem", color: "var(--ink-muted)", lineHeight: 1.5 }}>
         {desc}
       </div>
     </div>
   );
 }
+
+const cardStyle: React.CSSProperties = {
+  background: "var(--surface)",
+  border: "1px solid var(--line)",
+  borderRadius: "16px",
+  boxShadow: "rgba(0,0,0,0.03) 0px 4px 24px",
+};
 
 const WS_BASE = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000")
   .replace(/^http/, "ws");
@@ -235,9 +244,13 @@ export default function ChartPage() {
 
   if (!selectedCode) {
     return (
-      <div style={{ padding: "60px 0", textAlign: "center", color: "var(--muted)" }}>
-        <div style={{ fontSize: "2rem", marginBottom: "12px" }}>▲</div>
-        <div style={{ fontFamily: "var(--maru)", fontSize: "1rem" }}>종목 탭에서 종목을 선택하면 차트가 표시됩니다.</div>
+      <div style={{ ...cardStyle, padding: "72px 24px", textAlign: "center", maxWidth: "500px", margin: "0 auto" }}>
+        <div style={{ fontFamily: "var(--maru)", fontSize: "1.05rem", color: "var(--ink)", fontWeight: 600, marginBottom: "8px" }}>
+          종목을 선택해주세요
+        </div>
+        <div style={{ fontSize: "0.86rem", color: "var(--ink-soft)" }}>
+          종목 탭에서 종목을 선택하면 차트가 표시됩니다.
+        </div>
       </div>
     );
   }
@@ -259,16 +272,20 @@ export default function ChartPage() {
       {snap && (
         <div style={{ marginBottom: "16px" }}>
           <div style={{ display: "flex", alignItems: "baseline", gap: "10px", flexWrap: "wrap" }}>
-            <h1 style={{ fontFamily: "var(--maru)", color: "var(--blue-deep)", margin: 0 }}>
+            <h1 style={{
+              fontFamily: "var(--maru)", color: "var(--ink)",
+              fontSize: "1.75rem", fontWeight: 700, letterSpacing: "-0.5px",
+              margin: 0,
+            }}>
               {snap.name}
             </h1>
-            <span style={{ color: "var(--muted)", fontSize: "0.85rem" }}>{snap.code} · {snap.market}</span>
+            <span style={{ color: "var(--ink-soft)", fontSize: "0.85rem" }}>{snap.code} · {snap.market}</span>
             <LiveBadge live={isLive} />
           </div>
 
           {/* 현재가 + 등락 */}
-          <div style={{ display: "flex", alignItems: "flex-end", gap: "14px", marginTop: "6px", flexWrap: "wrap" }}>
-            <div style={{ fontFamily: "var(--mono)", fontSize: "1.8rem", fontWeight: 800, color: "var(--fg)" }}>
+          <div style={{ display: "flex", alignItems: "flex-end", gap: "14px", marginTop: "8px", flexWrap: "wrap" }}>
+            <div style={{ fontFamily: "var(--mono)", fontSize: "1.85rem", fontWeight: 700, color: "var(--ink)", letterSpacing: "-0.5px" }}>
               {snap.price.toLocaleString()}원
             </div>
             <div style={{
@@ -283,9 +300,9 @@ export default function ChartPage() {
           {/* 지표 카드 4개 */}
           <div style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))",
-            gap: "6px",
-            marginTop: "10px",
+            gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
+            gap: "8px",
+            marginTop: "12px",
           }}>
             {[
               { label: "거래량",   value: snap.volume.toLocaleString() },
@@ -293,9 +310,13 @@ export default function ChartPage() {
               { label: "업종",     value: snap.sector },
               { label: "시장",     value: snap.market },
             ].map(m => (
-              <div key={m.label} className="bh-card" style={{ padding: "8px 12px" }}>
-                <div style={{ fontSize: "0.65rem", color: "var(--muted)", fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: "3px" }}>{m.label}</div>
-                <div style={{ fontFamily: "var(--mono)", fontWeight: 700, fontSize: "0.9rem" }}>{m.value}</div>
+              <div key={m.label} style={{
+                ...cardStyle,
+                padding: "10px 14px",
+                boxShadow: "rgba(16,24,40,0.04) 0px 1px 4px",
+              }}>
+                <div style={{ fontSize: "0.66rem", color: "var(--ink-soft)", fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase", marginBottom: "4px" }}>{m.label}</div>
+                <div style={{ fontFamily: "var(--mono)", fontWeight: 700, fontSize: "0.92rem", color: "var(--ink)" }}>{m.value}</div>
               </div>
             ))}
           </div>
@@ -310,16 +331,20 @@ export default function ChartPage() {
         <div style={{
           display: "flex",
           gap: 0,
-          border: "1px solid var(--border)",
+          border: "1px solid var(--line)",
+          borderBottomLeftRadius: 0,
+          borderBottomRightRadius: 0,
+          borderRadius: "12px 12px 0 0",
           borderBottom: "none",
-          background: "var(--surf2)",
+          background: "var(--surface)",
           flexWrap: "wrap",
           marginBottom: 0,
+          overflow: "hidden",
         }}>
           {/* 최고가 */}
-          <div style={{ flex: "1 1 120px", padding: "8px 14px", borderRight: "1px solid var(--border)" }}>
-            <div style={{ fontSize: "0.58rem", letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--muted)", fontWeight: 700 }}>3개월 최고가</div>
-            <div style={{ fontFamily: "var(--mono)", fontWeight: 800, color: "#B5453F", fontSize: "0.9rem" }}>
+          <div style={{ flex: "1 1 120px", padding: "10px 14px", borderRight: "1px solid var(--line)" }}>
+            <div style={{ fontSize: "0.6rem", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-soft)", fontWeight: 600 }}>3개월 최고가</div>
+            <div style={{ fontFamily: "var(--mono)", fontWeight: 700, color: "var(--red)", fontSize: "0.92rem", marginTop: "2px" }}>
               {h3m.toLocaleString()}원
               <span style={{ fontWeight: 500, fontSize: "0.75rem", marginLeft: "6px" }}>
                 ({pctH3m > 0 ? "+" : ""}{pctH3m.toFixed(1)}%)
@@ -327,9 +352,9 @@ export default function ChartPage() {
             </div>
           </div>
           {/* 최저가 */}
-          <div style={{ flex: "1 1 120px", padding: "8px 14px", borderRight: "1px solid var(--border)" }}>
-            <div style={{ fontSize: "0.58rem", letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--muted)", fontWeight: 700 }}>3개월 최저가</div>
-            <div style={{ fontFamily: "var(--mono)", fontWeight: 800, color: "#436B95", fontSize: "0.9rem" }}>
+          <div style={{ flex: "1 1 120px", padding: "10px 14px", borderRight: "1px solid var(--line)" }}>
+            <div style={{ fontSize: "0.6rem", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-soft)", fontWeight: 600 }}>3개월 최저가</div>
+            <div style={{ fontFamily: "var(--mono)", fontWeight: 700, color: "var(--blue)", fontSize: "0.92rem", marginTop: "2px" }}>
               {l3m.toLocaleString()}원
               <span style={{ fontWeight: 500, fontSize: "0.75rem", marginLeft: "6px" }}>
                 ({pctL3m > 0 ? "+" : ""}{pctL3m.toFixed(1)}%)
@@ -337,34 +362,34 @@ export default function ChartPage() {
             </div>
           </div>
           {/* 등락폭 */}
-          <div style={{ flex: "1 1 120px", padding: "8px 14px", borderRight: "1px solid var(--border)" }}>
-            <div style={{ fontSize: "0.58rem", letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--muted)", fontWeight: 700 }}>3개월 등락폭</div>
-            <div style={{ fontFamily: "var(--mono)", fontWeight: 800, fontSize: "0.9rem" }}>
+          <div style={{ flex: "1 1 120px", padding: "10px 14px", borderRight: "1px solid var(--line)" }}>
+            <div style={{ fontSize: "0.6rem", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-soft)", fontWeight: 600 }}>3개월 등락폭</div>
+            <div style={{ fontFamily: "var(--mono)", fontWeight: 700, fontSize: "0.92rem", color: "var(--ink)", marginTop: "2px" }}>
               {h3m > 0 && l3m > 0 ? `${((h3m - l3m) / l3m * 100).toFixed(1)}%` : "-"}
             </div>
           </div>
           {/* 현재가 위치 게이지 */}
-          <div style={{ flex: "2 1 200px", padding: "8px 14px" }}>
-            <div style={{ fontSize: "0.58rem", letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--muted)", fontWeight: 700, marginBottom: "4px" }}>
+          <div style={{ flex: "2 1 200px", padding: "10px 14px" }}>
+            <div style={{ fontSize: "0.6rem", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-soft)", fontWeight: 600, marginBottom: "6px" }}>
               현재가 위치 (저점→고점)
             </div>
-            <div style={{ position: "relative", height: "8px", background: "linear-gradient(to right, var(--blue), var(--border), var(--red))", borderRadius: "4px" }}>
+            <div style={{ position: "relative", height: "8px", background: "linear-gradient(to right, var(--blue), var(--line), var(--red))", borderRadius: "4px" }}>
               <div style={{
                 position: "absolute",
                 left: hl3mWidth,
                 top: "-3px",
                 width: "14px",
                 height: "14px",
-                background: "var(--yellow)",
-                border: "2px solid #FFF",
+                background: "var(--purple)",
+                border: "2px solid #fff",
                 borderRadius: "50%",
                 transform: "translateX(-50%)",
-                boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
+                boxShadow: "0 1px 4px rgba(113,50,245,0.4)",
               }} />
             </div>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.6rem", color: "var(--muted)", marginTop: "3px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.62rem", color: "var(--ink-soft)", marginTop: "4px" }}>
               <span>저점</span>
-              <span style={{ color: "var(--yellow)", fontWeight: 700 }}>{hl3mRange.toFixed(0)}%</span>
+              <span style={{ color: "var(--purple)", fontWeight: 700 }}>{hl3mRange.toFixed(0)}%</span>
               <span>고점</span>
             </div>
           </div>
@@ -373,35 +398,41 @@ export default function ChartPage() {
 
       {/* ── 기간 버튼 ─────────────────────────────────── */}
       <div style={{
-        display: "flex", gap: "4px", marginBottom: "8px", flexWrap: "wrap",
-        padding: "6px 8px",
-        background: "var(--surf)",
-        border: "1px solid var(--border)",
+        display: "flex", gap: "6px", marginBottom: "10px", flexWrap: "wrap",
+        padding: "8px 10px",
+        background: "var(--surface)",
+        border: "1px solid var(--line)",
+        borderRadius: ohlcv3m.length > 0 ? "0" : "12px",
         borderTop: ohlcv3m.length > 0 ? "none" : undefined,
+        alignItems: "center",
       }}>
-        <span style={{ fontSize: "0.65rem", color: "var(--muted)", fontWeight: 700, alignSelf: "center", marginRight: "4px", letterSpacing: "0.06em" }}>기간</span>
-        {PERIODS.map(p => (
-          <button
-            key={p}
-            onClick={() => setPeriod(p)}
-            style={{
-              padding: "4px 12px",
-              background: period === p ? "var(--blue)" : "transparent",
-              color: period === p ? "#fff" : "var(--muted)",
-              border: `1px solid ${period === p ? "var(--blue)" : "var(--border)"}`,
-              fontWeight: 700, fontSize: "0.78rem", cursor: "pointer",
-              transition: "all 0.12s",
-            }}
-          >
-            {p}
-          </button>
-        ))}
+        <span style={{ fontSize: "0.66rem", color: "var(--ink-soft)", fontWeight: 600, marginRight: "4px", letterSpacing: "0.04em" }}>기간</span>
+        {PERIODS.map(p => {
+          const on = period === p;
+          return (
+            <button
+              key={p}
+              onClick={() => setPeriod(p)}
+              style={{
+                padding: "6px 14px",
+                background: on ? "var(--purple)" : "var(--surface)",
+                color: on ? "#fff" : "var(--ink-muted)",
+                border: `1px solid ${on ? "var(--purple)" : "var(--line)"}`,
+                fontWeight: 600, fontSize: "0.78rem", cursor: "pointer",
+                borderRadius: "10px",
+                transition: "all 160ms ease",
+              }}
+            >
+              {p}
+            </button>
+          );
+        })}
       </div>
 
       {/* ── 캔들 차트 ────────────────────────────────── */}
-      <div className="bh-card" style={{ padding: "12px" }}>
+      <div style={{ ...cardStyle, padding: "14px" }}>
         {loading ? (
-          <div style={{ height: "400px", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--muted)" }}>
+          <div style={{ height: "400px", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--ink-soft)" }}>
             차트 로딩 중...
           </div>
         ) : (
@@ -411,14 +442,14 @@ export default function ChartPage() {
 
       {/* ── 신호 요약 패널 (초보자 친화) ──────────────── */}
       {signals && !loading && (
-        <div style={{ marginTop: "10px" }}>
+        <div style={{ marginTop: "14px" }}>
           <div style={{
-            fontSize: "0.62rem", letterSpacing: "0.16em", textTransform: "uppercase",
-            color: "var(--muted)", fontWeight: 700, marginBottom: "6px", paddingLeft: "2px",
+            fontSize: "0.66rem", letterSpacing: "0.1em", textTransform: "uppercase",
+            color: "var(--ink-soft)", fontWeight: 600, marginBottom: "8px", paddingLeft: "2px",
           }}>
             차트 신호 요약 — 초보자 가이드
           </div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
             <SigCard
               title="이동평균 배열"
               value={signals.maTrend}
@@ -452,33 +483,35 @@ export default function ChartPage() {
       )}
 
       {/* ── 지표 설명 (초보자용) ────────────────────── */}
-      <details style={{ marginTop: "12px" }}>
+      <details style={{ marginTop: "14px" }}>
         <summary style={{
           cursor: "pointer",
-          fontSize: "0.75rem",
-          color: "var(--muted)",
-          fontWeight: 700,
-          letterSpacing: "0.06em",
-          padding: "8px 10px",
-          background: "var(--surf2)",
-          border: "1px solid var(--border)",
+          fontSize: "0.78rem",
+          color: "var(--ink-muted)",
+          fontWeight: 600,
+          letterSpacing: "0.02em",
+          padding: "10px 14px",
+          background: "var(--purple-pale)",
+          border: "1px solid var(--line-soft)",
+          borderRadius: "12px",
           userSelect: "none",
         }}>
-          📖 차트 지표 읽는 법 (클릭해서 펼치기)
+          차트 지표 읽는 법 (펼쳐서 보기)
         </summary>
         <div style={{
-          padding: "14px 16px",
-          background: "var(--surf2)",
-          border: "1px solid var(--border)",
-          borderTop: "none",
-          fontSize: "0.8rem",
-          lineHeight: 1.8,
-          color: "var(--fg)",
+          marginTop: "6px",
+          padding: "16px 18px",
+          background: "var(--surface)",
+          border: "1px solid var(--line)",
+          borderRadius: "12px",
+          fontSize: "0.82rem",
+          lineHeight: 1.7,
+          color: "var(--ink)",
         }}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "14px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "16px" }}>
             {[
               {
-                title: "🕯 캔들(봉차트)",
+                title: "캔들 (봉차트)",
                 items: [
                   "빨간 봉 = 시가보다 종가가 높은 날 (상승)",
                   "파란 봉 = 시가보다 종가가 낮은 날 (하락)",
@@ -486,24 +519,24 @@ export default function ChartPage() {
                 ],
               },
               {
-                title: "📈 이동평균선 (MA)",
+                title: "이동평균선 (MA)",
                 items: [
-                  "MA5 (금색) = 최근 5일 평균가 — 단기 추세",
-                  "MA20 (파랑) = 최근 20일 평균가 — 중기 추세",
-                  "MA60 (빨강) = 최근 60일 평균가 — 장기 추세",
+                  "MA5 = 최근 5일 평균가 — 단기 추세",
+                  "MA20 = 최근 20일 평균가 — 중기 추세",
+                  "MA60 = 최근 60일 평균가 — 장기 추세",
                   "주가가 MA 위 = 그 기간보다 비쌈 (강세)",
                 ],
               },
               {
-                title: "🟡 골든/데드크로스",
+                title: "골든·데드 크로스",
                 items: [
-                  "골든크로스 ▲ = MA5가 MA20을 위로 돌파 → 매수 신호",
-                  "데드크로스 ▼ = MA5가 MA20을 아래로 돌파 → 매도 신호",
+                  "골든크로스 = MA5가 MA20을 위로 돌파 → 매수 신호",
+                  "데드크로스 = MA5가 MA20을 아래로 돌파 → 매도 신호",
                   "단독 신호로만 판단하지 말고 거래량 등 함께 확인",
                 ],
               },
               {
-                title: "⚡ RSI",
+                title: "RSI",
                 items: [
                   "0~100 사이 숫자. 최근 14일 기준",
                   "70 이상 → 너무 많이 올랐을 수 있음 (과매수)",
@@ -512,16 +545,16 @@ export default function ChartPage() {
                 ],
               },
               {
-                title: "📊 MACD",
+                title: "MACD",
                 items: [
-                  "막대가 0 위 (빨강) → 매수세 강한 상태",
-                  "막대가 0 아래 (파랑) → 매도세 강한 상태",
+                  "막대가 0 위 → 매수세 강한 상태",
+                  "막대가 0 아래 → 매도세 강한 상태",
                   "막대가 커지면 추세가 강해지는 중",
                   "MACD선이 시그널선 위로 = 매수 신호",
                 ],
               },
               {
-                title: "📉 볼린저밴드",
+                title: "볼린저밴드",
                 items: [
                   "상단선 접근 = 단기 과매수 가능성",
                   "하단선 접근 = 단기 과매도, 반등 기대",
@@ -530,7 +563,7 @@ export default function ChartPage() {
               },
             ].map(({ title, items }) => (
               <div key={title}>
-                <div style={{ fontWeight: 800, marginBottom: "5px", color: "var(--blue-deep)" }}>{title}</div>
+                <div style={{ fontFamily: "var(--maru)", fontWeight: 700, marginBottom: "6px", color: "var(--purple)", letterSpacing: "-0.2px" }}>{title}</div>
                 <ul style={{ margin: 0, paddingLeft: "18px" }}>
                   {items.map(it => <li key={it} style={{ marginBottom: "2px" }}>{it}</li>)}
                 </ul>
@@ -541,7 +574,7 @@ export default function ChartPage() {
       </details>
 
       {/* ── 투자 대가 조언 ────────────────────────────── */}
-      <div style={{ marginTop: "24px", borderTop: "2px solid var(--border)", paddingTop: "20px" }}>
+      <div style={{ marginTop: "28px", borderTop: "1px solid var(--line)", paddingTop: "24px" }}>
         <GuruPage />
       </div>
     </div>
