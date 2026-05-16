@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
-import { useUIStore, useAuthStore } from "@/lib/store";
+import { useUIStore, useAuthStore, useAuthModalStore } from "@/lib/store";
 import HeaderClock from "./HeaderClock";
 import { MENU_ITEMS } from "./PrimaryNav";
 
@@ -16,6 +16,7 @@ export default function MobileDrawer({
 }) {
   const { menu, setMenu } = useUIStore();
   const { token, display, clearAuth } = useAuthStore();
+  const { openLogin, openSignup } = useAuthModalStore();
 
   useEffect(() => {
     if (!open) return;
@@ -89,12 +90,22 @@ export default function MobileDrawer({
             </div>
           ) : (
             <div style={{ display: "flex", gap: 8 }}>
-              <Link href="/auth/login" onClick={onClose} className="psl-btn-ghost" style={{ textDecoration: "none", flex: 1, textAlign: "center" }}>
+              <button
+                type="button"
+                className="psl-btn-ghost"
+                onClick={() => { openLogin(); onClose(); }}
+                style={{ flex: 1 }}
+              >
                 로그인
-              </Link>
-              <Link href="/auth/signup" onClick={onClose} className="psl-btn-primary" style={{ textDecoration: "none", flex: 1, textAlign: "center" }}>
+              </button>
+              <button
+                type="button"
+                className="psl-btn-primary"
+                onClick={() => { openSignup(); onClose(); }}
+                style={{ flex: 1 }}
+              >
                 회원가입
-              </Link>
+              </button>
             </div>
           )}
         </div>

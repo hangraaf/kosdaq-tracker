@@ -627,6 +627,297 @@ body {
   font-size: 0.78rem;
 }
 
+/* ── 인증 모달 (PSL Purple Slime, 인라인 오버레이) ────────────────── */
+@keyframes psl-authmodal-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes psl-authmodal-pop {
+  from { opacity: 0; transform: translateY(8px) scale(0.985); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+.psl-authmodal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 64px 20px 32px;
+  overflow-y: auto;
+  background:
+    radial-gradient(70% 50% at 50% 0%, rgba(113,50,245,0.18) 0%, transparent 70%),
+    rgba(16, 17, 20, 0.55);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  animation: psl-authmodal-fade 180ms ease-out;
+  font-family: var(--font);
+}
+.psl-authmodal-card {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  margin: auto 0;
+  padding: 36px 32px 28px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-top: 3px solid var(--purple);
+  border-radius: 10px;
+  box-shadow:
+    0 24px 60px -20px rgba(91, 30, 207, 0.35),
+    0 8px 24px -8px rgba(16, 17, 20, 0.25);
+  animation: psl-authmodal-pop 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.psl-authmodal-close {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  line-height: 1;
+  color: var(--ink-muted);
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 160ms ease, color 160ms ease;
+}
+.psl-authmodal-close:hover {
+  background: var(--purple-pale);
+  color: var(--purple);
+}
+.psl-authmodal-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  margin-bottom: 24px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.psl-authmodal-tab {
+  flex: 1;
+  height: 36px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  font-family: var(--font);
+  font-size: 0.88rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: var(--ink-muted);
+  cursor: pointer;
+  transition: background 180ms ease, color 180ms ease, box-shadow 180ms ease;
+}
+.psl-authmodal-tab:hover { color: var(--ink); }
+.psl-authmodal-tab.is-active {
+  background: var(--surface);
+  color: var(--purple);
+  box-shadow: 0 1px 3px rgba(16, 17, 20, 0.06), inset 0 0 0 1px var(--line);
+}
+.psl-authmodal-title {
+  font-family: var(--maru);
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.psl-authmodal-sub {
+  font-size: 0.82rem;
+  color: var(--ink-muted);
+  line-height: 1.55;
+  margin-bottom: 22px;
+}
+.psl-authmodal-field { margin-bottom: 16px; }
+.psl-authmodal-label {
+  display: block;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.psl-authmodal-input {
+  display: block;
+  width: 100%;
+  height: 42px;
+  padding: 0 14px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-family: var(--font);
+  font-size: 0.92rem;
+  color: var(--ink);
+  outline: none;
+  transition: border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
+}
+.psl-authmodal-input::placeholder { color: var(--ink-soft); }
+.psl-authmodal-input:focus {
+  border-color: var(--purple);
+  box-shadow: 0 0 0 3px var(--purple-subtle);
+  background: var(--surface);
+}
+.psl-authmodal-input.is-invalid { border-color: var(--up); }
+.psl-authmodal-input.is-invalid:focus {
+  border-color: var(--up);
+  box-shadow: 0 0 0 3px rgba(181, 69, 63, 0.15);
+}
+.psl-authmodal-helper {
+  margin-top: 5px;
+  font-size: 0.72rem;
+  color: var(--ink-soft);
+  line-height: 1.45;
+}
+.psl-authmodal-helper.is-error { color: var(--up); }
+.psl-authmodal-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 4px 0;
+  margin-top: 8px;
+  font-size: 0.8rem;
+  color: var(--ink);
+  line-height: 1.5;
+  cursor: pointer;
+}
+.psl-authmodal-check input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  margin-top: 2px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  cursor: pointer;
+  position: relative;
+  transition: background 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+.psl-authmodal-check input[type="checkbox"]:checked {
+  background: var(--purple);
+  border-color: var(--purple);
+}
+.psl-authmodal-check input[type="checkbox"]:checked::after {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 1px;
+  width: 5px;
+  height: 9px;
+  border-right: 1.5px solid #fff;
+  border-bottom: 1.5px solid #fff;
+  transform: rotate(45deg);
+}
+.psl-authmodal-check input[type="checkbox"]:focus-visible {
+  box-shadow: 0 0 0 3px var(--purple-subtle);
+  outline: none;
+}
+.psl-authmodal-check a {
+  color: var(--purple);
+  text-decoration: underline;
+  text-decoration-color: rgba(113, 50, 245, 0.4);
+}
+.psl-authmodal-check a:hover { text-decoration-color: var(--purple); }
+.psl-authmodal-req { color: var(--purple); font-weight: 700; }
+.psl-authmodal-opt { color: var(--ink-muted); font-weight: 700; }
+.psl-authmodal-submit {
+  display: block;
+  width: 100%;
+  height: 44px;
+  margin-top: 20px;
+  background: var(--purple);
+  color: #fff;
+  border: 1px solid var(--purple);
+  border-radius: 8px;
+  font-family: var(--font);
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: background 180ms ease, box-shadow 180ms ease, transform 120ms ease;
+}
+.psl-authmodal-submit:hover:not(:disabled) {
+  background: var(--purple-deep);
+  box-shadow: 0 6px 18px -6px rgba(113, 50, 245, 0.55);
+}
+.psl-authmodal-submit:active:not(:disabled) { transform: translateY(1px); }
+.psl-authmodal-submit:disabled { opacity: 0.55; cursor: not-allowed; }
+.psl-authmodal-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0 14px;
+  color: var(--ink-soft);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.psl-authmodal-divider::before,
+.psl-authmodal-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+.psl-authmodal-oauth {
+  display: block;
+  width: 100%;
+  height: 42px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  border-radius: 8px;
+  font-family: var(--font);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 180ms ease, background 180ms ease, box-shadow 180ms ease;
+}
+.psl-authmodal-oauth:hover {
+  border-color: var(--purple);
+  background: var(--purple-pale);
+  box-shadow: 0 0 0 3px var(--purple-subtle);
+}
+.psl-authmodal-foot {
+  margin-top: 18px;
+  text-align: center;
+  font-size: 0.82rem;
+  color: var(--ink-muted);
+}
+.psl-authmodal-link {
+  margin-left: 6px;
+  background: transparent;
+  border: none;
+  padding: 0;
+  color: var(--purple);
+  font-family: var(--font);
+  font-size: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  border-bottom: 1px solid transparent;
+  transition: border-color 180ms ease;
+}
+.psl-authmodal-link:hover { border-bottom-color: var(--purple); }
+.psl-authmodal-error {
+  margin-top: 14px;
+  padding: 10px 12px;
+  border: 1px solid rgba(181, 69, 63, 0.35);
+  background: rgba(181, 69, 63, 0.07);
+  color: var(--up);
+  border-radius: 6px;
+  font-size: 0.8rem;
+}
+@media (max-width: 480px) {
+  .psl-authmodal-card { padding: 28px 22px 22px; }
+  .psl-authmodal-title { font-size: 1.32rem; }
+}
+
 /* ── 라이트 표면 폼 (프로필/설정) ──────────────── */
 .prism-form { font-family: var(--font); }
 .prism-form-section {

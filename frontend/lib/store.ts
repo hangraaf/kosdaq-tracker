@@ -36,6 +36,25 @@ export const useAuthStore = create<AuthState>()(
   )
 );
 
+// ── 인증 모달 (로그인/회원가입 인라인) ─────────────────────────────────
+type AuthModalMode = "login" | "signup";
+interface AuthModalState {
+  open: boolean;
+  mode: AuthModalMode;
+  openLogin: () => void;
+  openSignup: () => void;
+  setMode: (mode: AuthModalMode) => void;
+  close: () => void;
+}
+export const useAuthModalStore = create<AuthModalState>()((set) => ({
+  open: false,
+  mode: "login",
+  openLogin: () => set({ open: true, mode: "login" }),
+  openSignup: () => set({ open: true, mode: "signup" }),
+  setMode: (mode) => set({ mode }),
+  close: () => set({ open: false }),
+}));
+
 interface UIState {
   menu: string;
   selectedCode: string | null;

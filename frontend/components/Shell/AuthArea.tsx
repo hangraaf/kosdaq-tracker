@@ -2,13 +2,14 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
-import { useAuthStore } from "@/lib/store";
+import { useAuthStore, useAuthModalStore } from "@/lib/store";
 import { apiMe } from "@/lib/api";
 import { playLogoutChime } from "@/lib/chime";
 
-/** 헤더 우측 인증 영역 — 비로그인: 버튼 2개 / 로그인: 아바타 + 로그아웃 */
+/** 헤더 우측 인증 영역 — 비로그인: 버튼 2개 (모달 트리거) / 로그인: 아바타 + 로그아웃 */
 export default function AuthArea() {
   const { token, display, plan, setAuth, clearAuth } = useAuthStore();
+  const { openLogin, openSignup } = useAuthModalStore();
 
   useEffect(() => {
     if (!token) return;
@@ -20,12 +21,12 @@ export default function AuthArea() {
   if (!token) {
     return (
       <div className="psl-auth">
-        <Link href="/auth/login" className="psl-btn-ghost" style={{ textDecoration: "none", display: "inline-flex", alignItems: "center" }}>
+        <button type="button" className="psl-btn-ghost" onClick={openLogin}>
           로그인
-        </Link>
-        <Link href="/auth/signup" className="psl-btn-primary" style={{ textDecoration: "none", display: "inline-flex", alignItems: "center" }}>
+        </button>
+        <button type="button" className="psl-btn-primary" onClick={openSignup}>
           회원가입
-        </Link>
+        </button>
       </div>
     );
   }

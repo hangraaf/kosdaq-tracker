@@ -6,6 +6,7 @@ import PrimaryNav from "@/components/Shell/PrimaryNav";
 import Footer from "@/components/Shell/Footer";
 import PingOnLoad from "@/components/PingOnLoad";
 import PrismCursor from "@/components/PrismCursor";
+import AuthModal from "@/components/Auth/AuthModal";
 
 export const metadata: Metadata = {
   title: "PURPLE STOCK SLIME — KOSPI · KOSDAQ Tracker",
@@ -37,6 +38,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           {/* Row 5 — 푸터 */}
           <Footer />
         </div>
+
+        <AuthModal />
       </body>
     </html>
   );
