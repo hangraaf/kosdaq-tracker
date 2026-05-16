@@ -49,7 +49,7 @@ function AuthPanel() {
   }
 
   return (
-    <div style={{ padding: "14px 18px", display: "flex", flexDirection: "column", gap: "10px" }}>
+    <div style={{ padding: "18px 18px 16px", display: "flex", flexDirection: "column", gap: "10px" }}>
       <div style={{ display: "flex", gap: "10px" }}>
         <Link href="/auth/login" className="prism-auth-btn-primary" style={{ textAlign: "center", textDecoration: "none" }}>
           로그인

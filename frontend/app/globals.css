@@ -835,37 +835,30 @@ body {
 
 /* ── 사이드바 프로필 (PRISM 분광) ────────────── */
 .prism-profile {
-  padding: 18px 18px 16px;
+  padding: 20px 18px 18px;
   position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
 }
-.prism-profile::after {
-  content: "";
-  position: absolute;
-  left: 18px;
-  right: 18px;
-  bottom: 0;
-  height: 1px;
-  background: linear-gradient(90deg,
-    transparent 0%,
-    rgba(171,225,183,0.30) 25%,
-    rgba(67,107,149,0.30) 55%,
-    rgba(181,69,63,0.20) 80%,
-    transparent 100%);
-}
+.prism-profile::after { content: none; }
 .prism-profile-row {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
+  width: 100%;
 }
 .prism-profile-avatar {
-  width: 40px;
-  height: 40px;
+  width: 52px;
+  height: 52px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-family: var(--maru);
-  font-size: 1rem;
+  font-size: 1.25rem;
   font-weight: 700;
   flex-shrink: 0;
   position: relative;
@@ -889,28 +882,33 @@ body {
 }
 .prism-profile-meta {
   min-width: 0;
-  flex: 1;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
 }
 .prism-profile-name {
   font-family: var(--maru);
   color: #F0EBE0;
   font-weight: 700;
-  font-size: 0.95rem;
-  letter-spacing: -0.2px;
+  font-size: 0.98rem;
+  letter-spacing: 0.01em;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   line-height: 1.25;
+  max-width: 100%;
+  text-align: center;
 }
 .prism-profile-plan {
   display: inline-block;
   position: relative;
-  margin-top: 4px;
   font-size: 0.62rem;
   font-weight: 700;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.22em;
   text-transform: uppercase;
-  padding-bottom: 3px;
+  padding-bottom: 4px;
 }
 .prism-profile-plan--free { color: rgba(171,225,183,0.65); }
 .prism-profile-plan--premium {
@@ -928,19 +926,21 @@ body {
     rgba(181,69,63,0.50) 100%);
 }
 .prism-profile-logout {
-  display: flex;
+  display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
-  margin-top: 14px;
+  margin-top: 6px;
   background: transparent;
   border: none;
-  padding: 4px 0;
+  padding: 4px 14px;
   color: rgba(171,225,183,0.60);
   font-family: var(--font);
   font-size: 0.74rem;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
   cursor: pointer;
   transition: color 200ms ease;
+  align-self: center;
 }
 .prism-profile-logout::before {
   content: "";
