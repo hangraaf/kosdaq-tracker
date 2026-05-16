@@ -131,7 +131,7 @@ export default function Sidebar() {
 
       {/* 메뉴 */}
       <nav style={{ padding: "10px 0 14px", flex: 1 }}>
-        <div className="prism-section-label">화면</div>
+        <div className="prism-section-label">DESK</div>
         {MENU_ITEMS.map(item => {
           const active = menu === item.key;
           return (
