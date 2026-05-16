@@ -18,9 +18,10 @@ function priceColor(v: number) {
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
     <div style={{
-      fontFamily: "var(--maru)", fontSize: "0.92rem", fontWeight: 800,
-      borderLeft: "5px solid #B82828", padding: "2px 0 4px 12px",
-      marginBottom: "12px", color: "var(--fg)",
+      fontFamily: "var(--maru)", fontSize: "0.95rem", fontWeight: 700,
+      letterSpacing: "-0.2px",
+      borderLeft: "3px solid var(--purple)", padding: "2px 0 4px 12px",
+      marginBottom: "14px", color: "var(--ink)",
     }}>
       {children}
     </div>
@@ -63,9 +64,10 @@ function PriceCell({ code, snap, onLoad }: {
         onClick={e => { e.stopPropagation(); fetch(); }}
         onMouseEnter={() => fetch()}
         style={{
-          background: "none", border: "none", cursor: "pointer",
-          color: "var(--muted)", fontSize: "0.72rem", padding: "2px 6px",
-          borderRadius: "2px",
+          background: "var(--purple-subtle)", border: "none", cursor: "pointer",
+          color: "var(--purple)", fontSize: "0.72rem", fontWeight: 600,
+          padding: "4px 10px",
+          borderRadius: "8px",
         }}
       >
         {loading ? "조회 중..." : "시세 보기"}
@@ -124,24 +126,34 @@ export default function StocksPage() {
 
   return (
     <div>
-      <h1 style={{ fontFamily: "var(--maru)", color: "var(--blue-deep)", marginBottom: "20px" }}>
+      <h1 style={{
+        fontFamily: "var(--maru)", color: "var(--ink)",
+        fontSize: "1.75rem", fontWeight: 700, letterSpacing: "-0.5px",
+        marginBottom: "20px",
+      }}>
         종목 탐색
       </h1>
 
       {/* 필터 */}
-      <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "16px" }}>
-        {MARKETS.map(m => (
-          <button key={m} onClick={() => setMarket(m)} style={{
-            padding: "6px 16px",
-            background: market === m ? "var(--blue)" : "var(--surf)",
-            color: market === m ? "#fff" : "var(--muted)",
-            border: `1px solid ${market === m ? "var(--blue)" : "var(--border)"}`,
-            fontWeight: 700, fontSize: "0.82rem", cursor: "pointer",
-          }}>{m}</button>
-        ))}
+      <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "14px" }}>
+        {MARKETS.map(m => {
+          const on = market === m;
+          return (
+            <button key={m} onClick={() => setMarket(m)} style={{
+              padding: "8px 16px",
+              background: on ? "var(--purple)" : "var(--surface)",
+              color: on ? "#fff" : "var(--ink-muted)",
+              border: `1px solid ${on ? "var(--purple)" : "var(--line)"}`,
+              fontWeight: 600, fontSize: "0.82rem", cursor: "pointer",
+              borderRadius: "12px",
+              transition: "all 160ms ease",
+            }}>{m}</button>
+          );
+        })}
         <select value={sector} onChange={e => setSector(e.target.value)} style={{
-          padding: "6px 12px", background: "var(--surf)", border: "1px solid var(--border)",
-          color: "var(--fg)", fontSize: "0.82rem", cursor: "pointer",
+          padding: "8px 12px", background: "var(--surface)", border: "1px solid var(--line)",
+          color: "var(--ink)", fontSize: "0.82rem", cursor: "pointer",
+          borderRadius: "12px",
         }}>
           <option value="">전체 업종</option>
           {sectors.map(s => <option key={s} value={s}>{s}</option>)}
@@ -151,33 +163,41 @@ export default function StocksPage() {
           value={q}
           onChange={e => setQ(e.target.value)}
           style={{
-            padding: "6px 12px", background: "var(--surf)", border: "1px solid var(--border)",
-            color: "var(--fg)", fontSize: "0.82rem", minWidth: "160px", outline: "none",
+            padding: "8px 14px", background: "var(--surface)", border: "1px solid var(--line)",
+            color: "var(--ink)", fontSize: "0.82rem", minWidth: "180px", outline: "none",
+            borderRadius: "12px",
           }}
         />
       </div>
 
       {/* 안내 배너 */}
       <div style={{
-        padding: "7px 12px", background: "#F5F0E6", border: "1px solid var(--border)",
-        borderBottom: "none", fontSize: "0.72rem", color: "var(--muted)",
+        padding: "10px 14px", background: "var(--purple-pale)",
+        border: "1px solid var(--line-soft)",
+        borderRadius: "10px",
+        marginBottom: "12px",
+        fontSize: "0.74rem", color: "var(--ink-muted)",
       }}>
         종목 행에 마우스를 올리면 시세를 조회합니다. 클릭하면 차트로 이동합니다.
       </div>
 
-      <div className="bh-card" style={{ padding: 0, overflow: "hidden" }}>
+      <div style={{
+        background: "var(--surface)", border: "1px solid var(--line)",
+        borderRadius: "16px", boxShadow: "rgba(0,0,0,0.03) 0px 4px 24px",
+        padding: "16px", overflow: "hidden",
+      }}>
         <SectionLabel>
           {market} 종목 {loading ? "..." : `(${stocks.length}개)`}
         </SectionLabel>
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.875rem" }}>
             <thead>
-              <tr style={{ background: "var(--surf2)", borderBottom: "2px solid var(--border)" }}>
+              <tr style={{ background: "var(--surface-2)", borderBottom: "1px solid var(--line)" }}>
                 {["종목명", "코드", "업종", "현재가", "등락률", "전일대비"].map(h => (
                   <th key={h} style={{
-                    padding: "8px 10px", textAlign: h === "종목명" || h === "코드" || h === "업종" ? "left" : "right",
-                    fontSize: "0.75rem", fontWeight: 700, color: "var(--muted)",
-                    letterSpacing: "0.05em", whiteSpace: "nowrap",
+                    padding: "10px 10px", textAlign: h === "종목명" || h === "코드" || h === "업종" ? "left" : "right",
+                    fontSize: "0.72rem", fontWeight: 600, color: "var(--ink-muted)",
+                    letterSpacing: "0.03em", whiteSpace: "nowrap",
                   }}>{h}</th>
                 ))}
               </tr>
@@ -187,9 +207,9 @@ export default function StocksPage() {
                 <tr
                   key={s.code}
                   onClick={() => handleClick(s.code)}
-                  style={{ cursor: "pointer", borderBottom: "1px solid var(--border)" }}
+                  style={{ cursor: "pointer", borderBottom: "1px solid var(--line)" }}
                   onMouseEnter={e => {
-                    e.currentTarget.style.background = "var(--surf2)";
+                    e.currentTarget.style.background = "var(--purple-pale)";
                     // 호버 시 자동 시세 조회
                     if (!snapshots[s.code]) {
                       apiSnapshot(s.code).then(snap => {
@@ -222,12 +242,13 @@ export default function StocksPage() {
 
         {/* 더 보기 */}
         {displayed.length < stocks.length && (
-          <div style={{ padding: "12px", textAlign: "center", borderTop: "1px solid var(--border)" }}>
+          <div style={{ padding: "14px", textAlign: "center", borderTop: "1px solid var(--line)" }}>
             <button
               onClick={() => setPage(p => p + 1)}
               style={{
-                padding: "8px 24px", background: "var(--blue)", color: "#fff",
-                border: "none", fontWeight: 700, fontSize: "0.82rem", cursor: "pointer",
+                padding: "10px 28px", background: "var(--purple)", color: "#fff",
+                border: "none", fontWeight: 600, fontSize: "0.82rem", cursor: "pointer",
+                borderRadius: "12px",
               }}
             >
               더 보기 ({displayed.length} / {stocks.length})
