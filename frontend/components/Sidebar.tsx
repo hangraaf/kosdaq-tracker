@@ -95,23 +95,30 @@ export default function Sidebar() {
         borderRight: "1px solid rgba(171,225,183,0.10)",
       }}
     >
-      {/* 상단 고정 영역 — 로고 + 클럭 */}
+      {/* 상단 고정 영역 — 로고 + 클럭(풀블리드 정사각형) */}
       <div
         style={{
           flexShrink: 0,
-          padding: "20px 12px 14px",
+          padding: 0,
           display: "flex",
           flexDirection: "column",
-          alignItems: "center",
-          gap: "12px",
+          alignItems: "stretch",
           background:
             "linear-gradient(180deg, rgba(12,26,40,0.18) 0%, rgba(12,26,40,0) 100%)",
           borderBottom: "1px solid rgba(171,225,183,0.10)",
           boxShadow: "0 8px 20px -16px rgba(0,0,0,0.55)",
         }}
       >
-        <MrStockBuddy size={132} />
-        <PrismClock size={124} />
+        <div
+          style={{
+            padding: "20px 12px 14px",
+            display: "flex",
+            justifyContent: "center",
+          }}
+        >
+          <MrStockBuddy size={132} />
+        </div>
+        <PrismClock />
       </div>
 
       {/* 하단 스크롤 영역 — 인증 + 메뉴 + 푸터 */}
