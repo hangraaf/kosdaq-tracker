@@ -139,6 +139,16 @@ export async function apiListStocks(params?: {
   return req(`/stocks/?${qs}`);
 }
 
+export interface StockSearchHit {
+  code: string; name: string; market: string; sector: string;
+}
+
+export async function apiSearchStocks(q: string, limit = 10): Promise<StockSearchHit[]> {
+  const qs = new URLSearchParams({ q, limit: String(limit) }).toString();
+  const res = await req<{ items: StockSearchHit[] }>(`/stocks/search?${qs}`);
+  return res.items;
+}
+
 export async function apiSectors(market = "전체"): Promise<string[]> {
   return req(`/stocks/sectors?market=${encodeURIComponent(market)}`);
 }

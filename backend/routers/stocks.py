@@ -60,6 +60,33 @@ def list_stocks(
              "sector": s.sector, "base_price": s.base_price} for s in stocks]
 
 
+@router.get("/search")
+def search_stocks(
+    q: str = Query("", description="검색어 — 종목명·코드·업종 부분일치"),
+    limit: int = Query(10, ge=1, le=50),
+):
+    """헤더 검색바 자동완성 — 종목명/코드/업종 부분일치, 상위 N개."""
+    kw = (q or "").strip()
+    if not kw:
+        return {"items": []}
+    kw_lower = kw.lower()
+    pool = MARKET_STOCKS["전체"]
+    results = []
+    for s in pool:
+        if (
+            kw_lower in s.name.lower()
+            or kw in s.code
+            or kw_lower in s.sector.lower()
+        ):
+            results.append({
+                "code": s.code, "name": s.name,
+                "market": s.market, "sector": s.sector,
+            })
+            if len(results) >= limit:
+                break
+    return {"items": results}
+
+
 @router.get("/sectors")
 def list_sectors(market: str = Query("전체")):
     stocks = MARKET_STOCKS.get(market, MARKET_STOCKS["전체"])

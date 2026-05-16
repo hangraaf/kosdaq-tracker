@@ -1539,6 +1539,81 @@ body {
   transform-origin: left;
 }
 
+/* ── 검색 자동완성 드롭다운 ── */
+.psl-search-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 60;
+  background: var(--surface);
+  border: 1px solid var(--purple-subtle);
+  border-radius: 12px;
+  box-shadow: 0 12px 32px -8px rgba(113, 50, 245, 0.18), 0 4px 12px rgba(0, 0, 0, 0.06);
+  padding: 6px;
+  max-height: 360px;
+  overflow-y: auto;
+}
+.psl-search-empty {
+  padding: 12px 10px;
+  font-family: var(--font);
+  font-size: 0.86rem;
+  color: var(--ink-soft);
+  text-align: center;
+}
+.psl-search-item {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  font-family: var(--font);
+  font-size: 0.88rem;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+.psl-search-item.is-active,
+.psl-search-item:hover {
+  background: var(--purple-subtle);
+}
+.psl-search-mkt {
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: var(--surface);
+  background: var(--ink-soft);
+}
+.psl-search-mkt--kospi { background: var(--purple); }
+.psl-search-mkt--kosdaq { background: var(--purple-dark); }
+.psl-search-name {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.psl-search-code {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+}
+.psl-search-sector {
+  font-size: 0.74rem;
+  color: var(--ink-muted);
+  white-space: nowrap;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* ── 시계 (헤더 우측, 디지털) ── */
 .psl-clock {
   font-family: var(--mono);
