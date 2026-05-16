@@ -22,6 +22,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
 
 _pwd_ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
 _SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
+_EMAIL_RE = re.compile(r"^[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}$")
 
 
 def _hash_pw(password: str) -> str:
@@ -78,20 +79,27 @@ def get_premium_user(current: Annotated[dict, Depends(get_current_user)]) -> dic
 @router.post("/register", response_model=TokenResponse)
 def register(body: UserCreate):
     uname = body.username.strip().lower()
+    if not _EMAIL_RE.match(uname):
+        raise HTTPException(status_code=400, detail="올바른 이메일 형식이 아닙니다.")
+    display = (body.display or "").strip()
+    if not display:
+        raise HTTPException(status_code=400, detail="닉네임을 입력해 주세요.")
     if db.users_get(uname):
-        raise HTTPException(status_code=400, detail="이미 사용 중인 아이디입니다.")
+        raise HTTPException(status_code=400, detail="이미 가입된 이메일입니다.")
+    # email 필드는 username과 동일하게 저장 (이메일=ID 정책)
+    email = (body.email or uname).strip().lower()
     db.users_create(
         username=uname,
         pwd_hash=_hash_pw(body.password),
-        display=body.display or body.username,
-        email=body.email,
+        display=display,
+        email=email,
         plan="free",
         marketing_opt_in=body.marketing_opt_in,
     )
     token = create_token({"sub": uname})
     return TokenResponse(
         access_token=token, username=uname,
-        display=body.display or body.username, plan="free",
+        display=display, plan="free",
     )
 
 

@@ -120,6 +120,59 @@ box-shadow:
 - radius: `4px`
 - padding: `16px`
 
+### Forms & Inputs
+
+폼은 PRISM의 **글로우 닷**과 **spectral hairline**을 그대로 인풋 상태 표시에 재사용한다. focus·valid·invalid 모두 색만 바뀌고 모양은 동일 — 학습비용 0.
+
+**Field Layout**
+- 라벨은 인풋 *위에* 8px 간격으로 배치. 플로팅 라벨 금지(다크/라이트 듀얼 톤에서 가독성 흔들림).
+- 라벨: Nanum Gothic 12px / 700 / 0.04em / `--muted` (라이트), `rgba(171,225,183,0.70)` (다크)
+- 헬퍼 텍스트: 라벨과 동일 폰트, 12px / 400 / `--muted`. 인풋 아래 6px 간격.
+- 필드 사이 수직 간격: **20px** (스페이싱 스케일 준수).
+
+**Text Input — 라이트 표면**
+- height: `40px` (touch-friendly. 16px+padding 12px)
+- bg: `#ffffff`
+- border: `1px solid --border` (`#abb4ac`)
+- radius: `4px`
+- padding: `0 12px`
+- font: Nanum Gothic 14px / 400 / `--fg`
+- placeholder: `--muted`
+- focus: 보더 → `--green`, 좌측 4px 안쪽에 **3px 글로우 닷** 부착 (사이드바 active와 동일 분광 3단 shadow). 박스 자체에는 `box-shadow: 0 0 0 3px rgba(56,105,72,0.10)` 분광 그린 워시.
+- valid: 보더 → `--green`, 우측에 5px green-soft 닷 (정적, glow 없음).
+- invalid: 보더 → `--red`, 우측 5px red 닷 + 헬퍼 텍스트 `--red`로 전환. **색 단독으로 의미 전달 금지** — 헬퍼 텍스트 문구 필수.
+- disabled: bg `--surf2`, 텍스트 `--muted`, 보더 dashed.
+
+**Text Input — 다크 표면**
+- bg: `rgba(247,250,244,0.04)` (cream을 4% 워시)
+- border: `1px solid rgba(171,225,183,0.20)`
+- color: `#F0F7EE`
+- placeholder: `rgba(171,225,183,0.40)`
+- focus: 보더 → `rgba(171,225,183,0.55)`, 좌측 글로우 닷 + 박스에 분광 3단 shadow (Soft Glow tier).
+- 나머지 상태는 라이트와 같은 규칙(닷 색만 분광 4축에서 매핑).
+
+**Checkbox** — 약관 동의 등
+- size: `16x16px`
+- 미체크: `1px solid --border`, bg transparent, radius `2px`
+- 체크: bg `--green`, 보더 동색, 내부 1.5px stroke 체크마크(라이트 본문 컬러). **이모지·유니코드 ✓ 금지** — SVG.
+- focus ring: `0 0 0 3px rgba(56,105,72,0.18)`
+- 라벨: 우측 8px, 13px / 500 / `--fg`. 약관 링크는 `--green` underline.
+
+**Radio**
+- 동일 16px 원형. 체크 시 내부 6px green-deep 닷 + 분광 1단 shadow(작게).
+
+**OAuth Provider Button (보조)**
+- 다크/라이트 모두 **Ghost 변형 + provider mark만 좌측 단색 글리프**.
+- bg: transparent, border `1px solid --border` (라이트) / `rgba(171,225,183,0.25)` (다크)
+- radius: `4px`, height `40px`
+- 라벨: "Kakao로 계속하기" — 14px / 500 / `--fg`. provider 컬러로 폼 채우지 않는다(분광 톤 깨짐 방지).
+- hover: 보더만 `--blue`로 전환 + whisper shadow.
+
+**Form Submit 영역**
+- Primary 버튼은 §Buttons의 라이트 표면 Primary(`--green` solid, radius 4px) 사용. **너비는 100%** — 모바일 친화.
+- Primary 위에 **8px 높이의 spectral hairline divider** 1줄(§시그니처 모티프 2번)을 깔아 폼 바디와 액션을 분리. 단순 회색 선 금지.
+- OAuth 보조 버튼은 Primary 아래 12px 간격, 좌측에 caption "또는" 위치한 hairline 좌우 분기 패턴(`flex-row`, 양쪽 hairline + 가운데 text).
+
 ### Badges
 - Premium / Admin: `--morinaga-gold` 텍스트, 보더 없음, micro eyebrow
 - Free: `rgba(171,225,183,0.75)` 텍스트

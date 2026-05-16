@@ -18,9 +18,10 @@ class Stock:
 # ── Auth ─────────────────────────────────────────────────────────────────
 
 class UserCreate(BaseModel):
-    username: str = Field(min_length=2, max_length=30)
+    # username 필드는 이메일을 그대로 받는다 (소문자 정규화는 라우터에서). 일부 이메일이 길 수 있어 max_length=120.
+    username: str = Field(min_length=3, max_length=120)
     password: str = Field(min_length=6)
-    display: str = ""
+    display: str = Field(default="", max_length=40)
     email: str = ""
     marketing_opt_in: bool = False
 
