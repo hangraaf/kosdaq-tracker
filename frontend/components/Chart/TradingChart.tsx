@@ -29,6 +29,39 @@ function bollingerBands(closes: number[], n = 20, mult = 2) {
   });
 }
 
+function ema(arr: number[], n: number): number[] {
+  const k = 2 / (n + 1);
+  const out: number[] = [];
+  for (let i = 0; i < arr.length; i++) {
+    if (i === 0) { out.push(arr[0]); continue; }
+    out.push(arr[i] * k + out[i - 1] * (1 - k));
+  }
+  return out;
+}
+
+function macdCalc(closes: number[]) {
+  const fast   = ema(closes, 12);
+  const slow   = ema(closes, 26);
+  const line   = fast.map((v, i) => v - slow[i]);
+  const signal = ema(line, 9);
+  const hist   = line.map((v, i) => v - signal[i]);
+  return { line, signal, hist };
+}
+
+function rsiCalc(closes: number[], n = 14): (number | null)[] {
+  const out: (number | null)[] = Array(n).fill(null);
+  for (let i = n; i < closes.length; i++) {
+    let gain = 0, loss = 0;
+    for (let j = i - n + 1; j <= i; j++) {
+      const d = closes[j] - closes[j - 1];
+      if (d >= 0) gain += d; else loss -= d;
+    }
+    const rs = loss === 0 ? 100 : gain / loss;
+    out.push(100 - 100 / (1 + rs));
+  }
+  return out;
+}
+
 function detectCrosses(ma5: (number | null)[], ma20: (number | null)[], dates: string[]) {
   const golden: { x: string; y: number }[] = [];
   const dead:   { x: string; y: number }[] = [];
@@ -240,6 +273,37 @@ export default function TradingChart({ data }: Props) {
       hovertemplate: "<b>거래대금</b><br>%{x}<br>%{y:,.0f}원<extra></extra>",
     } as Plotly.Data);
 
+    // ── MACD ─────────────────────────────────────────
+    const { line: macdLine, signal: macdSig, hist: macdHist } = macdCalc(closes);
+    const macdColors = macdHist.map(v => v >= 0 ? C.red : C.blue);
+    out.push({
+      x: dates, y: macdHist, name: "MACD 막대",
+      type: "bar", yaxis: "y3",
+      marker: { color: macdColors, opacity: 0.65 },
+      hovertemplate: "<b>MACD 막대</b><br>%{x}<br>%{y:.2f}<extra></extra>",
+    } as Plotly.Data);
+    out.push({
+      x: dates, y: macdLine, name: "MACD선",
+      mode: "lines", type: "scatter", yaxis: "y3",
+      line: { color: C.purple, width: 1.5 },
+      hovertemplate: "<b>MACD선</b> %{y:.2f}<extra></extra>",
+    } as Plotly.Data);
+    out.push({
+      x: dates, y: macdSig, name: "시그널선",
+      mode: "lines", type: "scatter", yaxis: "y3",
+      line: { color: C.inkSoft, width: 1.3, dash: "dot" },
+      hovertemplate: "<b>시그널선</b> %{y:.2f}<extra></extra>",
+    } as Plotly.Data);
+
+    // ── RSI ─────────────────────────────────────────
+    const rsiV = rsiCalc(closes);
+    out.push({
+      x: dates, y: rsiV, name: "RSI(14)",
+      mode: "lines", type: "scatter", yaxis: "y4",
+      line: { color: C.purpleDeep, width: 1.8 },
+      hovertemplate: "<b>RSI</b> %{y:.1f}<extra></extra>",
+    } as Plotly.Data);
+
     // ── Volume Profile (우측 horizontal bar, 가격 y 공유) ──
     if (show.vprof) {
       const { binMid, amount, pocIdx } = volumeProfile(data, 30);
@@ -271,7 +335,7 @@ export default function TradingChart({ data }: Props) {
     const mainXEnd = show.vprof ? 0.86 : 1;
 
     return {
-      height: 560,
+      height: 760,
       margin: { l: 10, r: 65, t: 10, b: 30 },
       paper_bgcolor: C.surface,
       plot_bgcolor:  C.surface,
@@ -291,16 +355,29 @@ export default function TradingChart({ data }: Props) {
         showgrid: false, showticklabels: false,
         zeroline: false, fixedrange: true,
       },
-      // y1: 가격 (75%)
+      // y1: 가격 (54%)
       yaxis: {
-        domain: [0.26, 1], anchor: "x",
+        domain: [0.46, 1], anchor: "x",
         gridcolor: C.grid, tickformat: ",",
         side: "right", tickfont: { size: 10, color: C.inkMuted },
       },
-      // y2: 거래대금 (24%)
+      // y2: 거래대금 (14%)
       yaxis2: {
-        domain: [0, 0.24], anchor: "x",
+        domain: [0.32, 0.45], anchor: "x",
         gridcolor: C.grid, tickformat: ".2s",
+        side: "right", tickfont: { size: 9, color: C.inkMuted },
+      },
+      // y3: MACD (14%)
+      yaxis3: {
+        domain: [0.17, 0.31], anchor: "x",
+        gridcolor: C.grid,
+        side: "right", tickfont: { size: 9, color: C.inkMuted },
+        zeroline: true, zerolinecolor: C.line,
+      },
+      // y4: RSI (16%)
+      yaxis4: {
+        domain: [0, 0.16], anchor: "x",
+        gridcolor: C.grid, range: [0, 100],
         side: "right", tickfont: { size: 9, color: C.inkMuted },
       },
       hoverlabel: { bgcolor: C.surface, font: { size: 12, color: C.ink }, namelength: -1 },
@@ -315,6 +392,17 @@ export default function TradingChart({ data }: Props) {
           xref: "x", yref: "y", line: { color: C.red, width: 1, dash: "dot" } },
         { type: "line", x0: dates[0], x1: dates[dates.length - 1], y0: low, y1: low,
           xref: "x", yref: "y", line: { color: C.blue, width: 1, dash: "dot" } },
+        // MACD 제로선
+        { type: "line", x0: dates[0], x1: dates[dates.length - 1], y0: 0, y1: 0,
+          xref: "x", yref: "y3", line: { color: C.line, width: 1 } },
+        // RSI 70 과매수 영역
+        { type: "rect", x0: dates[0], x1: dates[dates.length - 1], y0: 70, y1: 100,
+          xref: "x", yref: "y4",
+          fillcolor: "rgba(181,69,63,0.08)", line: { width: 0 } },
+        // RSI 30 과매도 영역
+        { type: "rect", x0: dates[0], x1: dates[dates.length - 1], y0: 0, y1: 30,
+          xref: "x", yref: "y4",
+          fillcolor: "rgba(67,107,149,0.08)", line: { width: 0 } },
       ],
       annotations: [
         // 현재가 라벨
@@ -336,6 +424,19 @@ export default function TradingChart({ data }: Props) {
         { xref: "paper", yref: "y2 domain", x: 0.01, y: 0.95, xanchor: "left", yanchor: "top",
           text: "거래대금 — 색이 진할수록 평균 대비 강함", showarrow: false,
           font: { size: 10, color: C.inkMuted } },
+        // MACD 레이블
+        { xref: "paper", yref: "y3 domain", x: 0.01, y: 0.95, xanchor: "left", yanchor: "top",
+          text: "MACD(12,26,9) — 막대 빨강=매수세 / 파랑=매도세", showarrow: false,
+          font: { size: 9, color: C.inkMuted } },
+        // RSI 레이블
+        { xref: "paper", yref: "y4 domain", x: 0.01, y: 0.95, xanchor: "left", yanchor: "top",
+          text: "RSI(14) — 70↑ 과매수 · 30↓ 과매도", showarrow: false,
+          font: { size: 9, color: C.inkMuted } },
+        // RSI 70/30 선 라벨
+        { xref: "paper", yref: "y4", x: 1.01, y: 70, xanchor: "left", yanchor: "middle",
+          text: "70", showarrow: false, font: { size: 9, color: C.red } },
+        { xref: "paper", yref: "y4", x: 1.01, y: 30, xanchor: "left", yanchor: "middle",
+          text: "30", showarrow: false, font: { size: 9, color: C.blue } },
         ...(show.vprof ? [{
           xref: "paper" as const, yref: "y domain" as const,
           x: mainXEnd + 0.01, y: 1, xanchor: "left" as const, yanchor: "top" as const,
@@ -347,7 +448,7 @@ export default function TradingChart({ data }: Props) {
   }, [data, show.vprof]);
 
   if (!data.length) {
-    return <div style={{ height: 560, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--ink-soft)" }}>차트 데이터 없음</div>;
+    return <div style={{ height: 760, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--ink-soft)" }}>차트 데이터 없음</div>;
   }
 
   return (
@@ -381,7 +482,7 @@ export default function TradingChart({ data }: Props) {
       </div>
 
       {/* ── Plotly 차트 ───────────────────────────── */}
-      <div style={{ minHeight: "560px" }}>
+      <div style={{ minHeight: "760px" }}>
         <Plot
           data={traces}
           layout={layout}
@@ -392,7 +493,7 @@ export default function TradingChart({ data }: Props) {
             displaylogo: false,
             locale: "ko",
           }}
-          style={{ width: "100%", height: "560px" }}
+          style={{ width: "100%", height: "760px" }}
           useResizeHandler
         />
       </div>
