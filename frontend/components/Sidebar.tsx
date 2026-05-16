@@ -7,6 +7,7 @@ import PrismClock from "./PrismClock";
 import { useAuthStore, useUIStore } from "@/lib/store";
 import { apiMe } from "@/lib/api";
 import { playLogoutChime } from "@/lib/chime";
+import { useHourlyChime } from "@/lib/useHourlyChime";
 
 const MENU_ITEMS = [
   { key: "뉴스",           label: "뉴스" },
@@ -76,6 +77,7 @@ const SIDEBAR_BG = `
 
 export default function Sidebar() {
   const { menu, setMenu } = useUIStore();
+  useHourlyChime();
 
   return (
     <aside
@@ -118,7 +120,46 @@ export default function Sidebar() {
         >
           <MrStockBuddy size={132} />
         </div>
-        <PrismClock />
+        {/* 클럭 스테이지 — sidebar 표면에 녹아드는 spectral hairline + radial backdrop */}
+        <div
+          style={{
+            position: "relative",
+            padding: "14px 22px 22px",
+            background: `
+              radial-gradient(78% 70% at 50% 55%, rgba(171,225,183,0.10) 0%, transparent 70%),
+              radial-gradient(60% 55% at 22% 28%, rgba(67,107,149,0.07) 0%, transparent 75%),
+              radial-gradient(50% 50% at 78% 82%, rgba(181,69,63,0.05) 0%, transparent 75%)
+            `,
+          }}
+        >
+          {/* 상단 spectral hairline */}
+          <div
+            aria-hidden
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 12,
+              right: 12,
+              height: 1,
+              background:
+                "linear-gradient(90deg, transparent 0%, rgba(171,225,183,0.30) 25%, rgba(67,107,149,0.30) 55%, rgba(181,69,63,0.20) 80%, transparent 100%)",
+            }}
+          />
+          <PrismClock />
+          {/* 하단 spectral hairline */}
+          <div
+            aria-hidden
+            style={{
+              position: "absolute",
+              bottom: 0,
+              left: 12,
+              right: 12,
+              height: 1,
+              background:
+                "linear-gradient(90deg, transparent 0%, rgba(171,225,183,0.30) 25%, rgba(67,107,149,0.30) 55%, rgba(181,69,63,0.20) 80%, transparent 100%)",
+            }}
+          />
+        </div>
       </div>
 
       {/* 하단 스크롤 영역 — 인증 + 메뉴 + 푸터 */}

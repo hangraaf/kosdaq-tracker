@@ -64,8 +64,7 @@ export default function PrismClock({ size }: Props) {
         ...wrapperStyle,
         position: "relative",
         display: "block",
-        background: "#0c1118",
-        padding: 8,
+        background: "transparent",
       }}
       aria-label="현재 시각"
     >
@@ -77,6 +76,20 @@ export default function PrismClock({ size }: Props) {
         style={{ display: "block" }}
       >
         <defs>
+          {/* PRISM 스펙트럴 후광 — 케이스 뒤에 깔리는 그린 → 블루 → 레드 라디얼 */}
+          <radialGradient id="jh-halo-green" cx="50%" cy="50%" r="50%">
+            <stop offset="0%"   stopColor="rgba(171,225,183,0.35)" />
+            <stop offset="55%"  stopColor="rgba(171,225,183,0.10)" />
+            <stop offset="100%" stopColor="rgba(171,225,183,0)" />
+          </radialGradient>
+          <radialGradient id="jh-halo-blue" cx="32%" cy="32%" r="55%">
+            <stop offset="0%"   stopColor="rgba(67,107,149,0.22)" />
+            <stop offset="100%" stopColor="rgba(67,107,149,0)" />
+          </radialGradient>
+          <radialGradient id="jh-halo-red" cx="72%" cy="78%" r="50%">
+            <stop offset="0%"   stopColor="rgba(181,69,63,0.16)" />
+            <stop offset="100%" stopColor="rgba(181,69,63,0)" />
+          </radialGradient>
           <radialGradient id="jh-face" cx="50%" cy="44%" r="62%">
             <stop offset="0%"   stopColor={OFF_WHITE_HI} />
             <stop offset="70%"  stopColor={OFF_WHITE} />
@@ -92,6 +105,11 @@ export default function PrismClock({ size }: Props) {
             <stop offset="100%" stopColor="#0c0c0c" />
           </linearGradient>
         </defs>
+
+        {/* PRISM 스펙트럴 후광 — 케이스 외곽보다 크게 깔아 dark green sidebar 표면에 녹아들게 함 */}
+        <circle cx={cx} cy={cy} r="100" fill="url(#jh-halo-green)" />
+        <circle cx={cx} cy={cy} r="100" fill="url(#jh-halo-blue)" />
+        <circle cx={cx} cy={cy} r="100" fill="url(#jh-halo-red)" />
 
         {/* 케이스 외곽 */}
         <circle cx={cx} cy={cy} r={rOuter} fill="url(#jh-case)" />

@@ -69,3 +69,54 @@ export function playLoginChime() {
 export function playLogoutChime() {
   playSequence([783.99, 659.25, 523.25], 220, 1.6, 0.18);
 }
+
+/**
+ * 고급 시계 정각 차임 — grandfather-clock / minute repeater 톤.
+ * 벨 파셜(0.5·1·2·2.4·3·4.5)을 겹쳐 풍부한 종소리를 합성하고,
+ * E5 → C5 두 번 타격하는 "petite sonnerie" 패턴으로 정각을 알린다.
+ */
+function playRichBell(
+  ctx: AudioContext,
+  fundamental: number,
+  startAt: number,
+  decay: number,
+  gain: number,
+) {
+  // [배수, 게인 가중치, 디케이 가중치(짧을수록 빠르게 사라짐), 파형]
+  const partials: Array<[number, number, number, OscillatorType]> = [
+    [0.5, 0.18, 1.10, "sine"],     // hum tone
+    [1.0, 1.00, 1.00, "sine"],     // fundamental
+    [2.0, 0.42, 0.70, "sine"],     // prime
+    [2.4, 0.28, 0.55, "triangle"], // minor-third(벨 특유의 디튠)
+    [3.0, 0.20, 0.45, "sine"],     // fifth
+    [4.5, 0.10, 0.30, "sine"],     // nominal upper
+  ];
+
+  partials.forEach(([mult, g, dMul, type]) => {
+    const osc = ctx.createOscillator();
+    osc.type = type;
+    osc.frequency.setValueAtTime(fundamental * mult, startAt);
+
+    const env = ctx.createGain();
+    const peak = gain * g;
+    const dur = decay * dMul;
+    env.gain.setValueAtTime(0, startAt);
+    env.gain.linearRampToValueAtTime(peak, startAt + 0.008);
+    env.gain.exponentialRampToValueAtTime(0.0001, startAt + dur);
+
+    osc.connect(env).connect(ctx.destination);
+    osc.start(startAt);
+    osc.stop(startAt + dur + 0.05);
+  });
+}
+
+export function playHourlyChime() {
+  const ctx = getCtx();
+  if (!ctx) return;
+  if (ctx.state === "suspended") void ctx.resume();
+  const t0 = ctx.currentTime + 0.05;
+  // ding (E5) → 1.1s 후 dong (C5, 더 길고 깊은 디케이)
+  playRichBell(ctx, 659.25, t0,        4.0, 0.26);
+  playRichBell(ctx, 523.25, t0 + 1.05, 5.2, 0.30);
+  setTimeout(() => ctx.close().catch(() => {}), 7000);
+}
