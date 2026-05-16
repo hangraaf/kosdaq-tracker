@@ -1168,13 +1168,12 @@ body {
   background: var(--surface);
 }
 
-/* ── AppHeader (64px) ── */
+/* ── AppHeader — 가운데 컬럼이 슬라임 간판+검색바를 세로로 쌓음 ── */
 .psl-header {
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 10px 24px;
-  height: 64px;
+  padding: 14px 24px 16px;
   background: var(--surface);
   border-bottom: 1px solid var(--line);
   position: sticky;
@@ -1509,29 +1508,35 @@ body {
   margin-top: 2px;
 }
 
-/* ── 간판 로고 (Billboard) — 검색창 위 가운데 정렬 ── */
-.psl-billboard {
+/* ── 간판 로고 (Billboard) — 검색창과 한 묶음, 드립이 검색바로 흘러내림 ── */
+.psl-search-stack {
   display: flex;
-  justify-content: center;
+  flex-direction: column;
   align-items: center;
-  padding: 18px 24px 6px;
-  background: var(--surface);
+  gap: 0;
+  width: min(480px, 100%);
 }
 .psl-billboard-link {
   display: inline-flex;
+  justify-content: center;
   line-height: 0;
-  transition: transform 160ms ease, filter 160ms ease;
+  width: 100%;
+  /* 슬라임 드립이 검색바 위로 자연스럽게 내려앉도록 음의 마진 */
+  margin-bottom: -14px;
+  transition: transform 160ms ease, filter 220ms ease;
+  filter: drop-shadow(0 4px 10px rgba(113, 50, 245, 0.18));
 }
 .psl-billboard-link:hover {
   transform: translateY(-1px);
-  filter: drop-shadow(0 6px 18px rgba(113, 50, 245, 0.28));
+  filter: drop-shadow(0 8px 22px rgba(113, 50, 245, 0.34));
 }
 .psl-billboard-img {
   display: block;
-  width: clamp(260px, 32vw, 440px);
+  width: clamp(220px, 28vw, 360px);
   height: auto;
   user-select: none;
   -webkit-user-drag: none;
+  pointer-events: none;
 }
 
 /* ── Responsive ── */
@@ -1543,7 +1548,8 @@ body {
   .psl-header-right .psl-clock { display: none; }
   .psl-search { max-width: none; }
   .psl-logo-text { display: none; }
-  .psl-billboard { padding: 12px 16px 4px; }
-  .psl-billboard-img { width: clamp(220px, 64vw, 320px); }
+  .psl-search-stack { width: 100%; }
+  .psl-billboard-img { width: clamp(180px, 56vw, 280px); }
+  .psl-billboard-link { margin-bottom: -10px; }
 }
 
