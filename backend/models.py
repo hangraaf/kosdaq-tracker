@@ -44,6 +44,14 @@ class UserProfile(BaseModel):
     display: str
     plan: str
     email: str
+    marketing_opt_in: bool = False
+    created_at: float = 0
+    provider: str = ""
+
+
+class UserProfileUpdate(BaseModel):
+    display: str | None = Field(default=None, max_length=40)
+    marketing_opt_in: bool | None = None
 
 
 # ── Portfolio ─────────────────────────────────────────────────────────────

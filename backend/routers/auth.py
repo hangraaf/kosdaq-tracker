@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import re
+import time
 from datetime import datetime, timedelta, timezone
 from typing import Annotated
 
@@ -15,7 +16,7 @@ import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from config import settings
 import db
-from models import TokenResponse, UserCreate, UserProfile
+from models import TokenResponse, UserCreate, UserProfile, UserProfileUpdate
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
@@ -67,6 +68,9 @@ def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> dict:
         "display": user.get("display") or username,
         "plan": user.get("plan") or "free",
         "email": user.get("email") or "",
+        "marketing_opt_in": bool(user.get("marketing_opt_in")),
+        "created_at": float(user.get("created_at") or 0),
+        "provider": user.get("provider") or "",
     }
 
 
@@ -120,6 +124,37 @@ def login(form: Annotated[OAuth2PasswordRequestForm, Depends()]):
 @router.get("/me", response_model=UserProfile)
 def me(current: Annotated[dict, Depends(get_current_user)]):
     return UserProfile(**current)
+
+
+@router.patch("/me", response_model=UserProfile)
+def update_me(
+    body: UserProfileUpdate,
+    current: Annotated[dict, Depends(get_current_user)],
+):
+    """프로필 갱신 — 닉네임, 마케팅 동의 토글. 입력하지 않은 필드는 보존."""
+    fields: dict = {}
+    if body.display is not None:
+        d = body.display.strip()
+        if not d:
+            raise HTTPException(status_code=400, detail="닉네임을 입력해 주세요.")
+        if len(d) > 40:
+            raise HTTPException(status_code=400, detail="닉네임은 40자 이내로 입력해 주세요.")
+        fields["display"] = d
+    if body.marketing_opt_in is not None:
+        fields["marketing_opt_in"] = body.marketing_opt_in
+        fields["marketing_opt_in_at"] = time.time() if body.marketing_opt_in else 0
+    if fields:
+        db.users_update(current["username"], **fields)
+    user = db.users_get(current["username"]) or {}
+    return UserProfile(
+        username=current["username"],
+        display=user.get("display") or current["username"],
+        plan=user.get("plan") or "free",
+        email=user.get("email") or "",
+        marketing_opt_in=bool(user.get("marketing_opt_in")),
+        created_at=float(user.get("created_at") or 0),
+        provider=user.get("provider") or "",
+    )
 
 
 @router.post("/marketing-opt-in")

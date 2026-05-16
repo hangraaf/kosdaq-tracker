@@ -75,8 +75,25 @@ export async function apiRegister(data: {
   return req("/auth/register", { method: "POST", body: JSON.stringify(data) });
 }
 
-export async function apiMe(): Promise<{ username: string; display: string; plan: string; email: string }> {
+export interface UserProfile {
+  username: string;
+  display: string;
+  plan: string;
+  email: string;
+  marketing_opt_in: boolean;
+  created_at: number;
+  provider: string;
+}
+
+export async function apiMe(): Promise<UserProfile> {
   return req("/auth/me");
+}
+
+export async function apiUpdateProfile(patch: {
+  display?: string;
+  marketing_opt_in?: boolean;
+}): Promise<UserProfile> {
+  return req("/auth/me", { method: "PATCH", body: JSON.stringify(patch) });
 }
 
 // ── OAuth ────────────────────────────────────────────────────────────────

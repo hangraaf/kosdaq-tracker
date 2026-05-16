@@ -34,12 +34,12 @@ function AuthPanel() {
           <div className={`prism-profile-avatar ${isPaid ? "prism-profile-avatar--premium" : "prism-profile-avatar--free"}`}>
             {initial}
           </div>
-          <div className="prism-profile-meta">
+          <Link href="/profile" className="prism-profile-meta" style={{ textDecoration: "none" }} title="계정 설정">
             <div className="prism-profile-name">{userDisplay}</div>
             <div className={`prism-profile-plan ${isPaid ? "prism-profile-plan--premium" : "prism-profile-plan--free"}`}>
               {planLabel}
             </div>
-          </div>
+          </Link>
         </div>
         <button onClick={clearAuth} className="prism-profile-logout" type="button">
           로그아웃
