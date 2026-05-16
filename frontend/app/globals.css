@@ -1462,7 +1462,8 @@ body {
 /* ── AppHeader — 한 줄: 고스트 / 검색 / 시계+인증
    슬라임은 검색바 위에 absolute로 떠 있는 장식 (헤더 높이에 영향 없음) ── */
 .psl-header {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
   gap: 16px;
   padding: 12px 24px;
@@ -1473,9 +1474,9 @@ body {
   top: 0;
   z-index: 40;
 }
-.psl-header-logo  { flex-shrink: 0; }
-.psl-header-mid   { flex: 1; display: flex; justify-content: center; min-width: 0; }
-.psl-header-right { flex-shrink: 0; display: flex; align-items: center; gap: 14px; }
+.psl-header-logo  { justify-self: start; display: flex; align-items: center; }
+.psl-header-mid   { justify-self: center; display: flex; justify-content: center; min-width: 0; width: min(480px, 100%); }
+.psl-header-right { justify-self: end; display: flex; align-items: center; gap: 14px; }
 
 /* 슬라임 간판 — 헤더 위 독립 행, 검색바 중앙 위로 정렬됨 */
 .psl-billboard {
@@ -1839,7 +1840,13 @@ body {
 
 /* ── Responsive ── */
 @media (max-width: 768px) {
-  .psl-header { padding: 10px 16px; gap: 10px; }
+  .psl-header {
+    display: flex;
+    grid-template-columns: none;
+    padding: 10px 16px;
+    gap: 10px;
+  }
+  .psl-header-mid { flex: 1; width: auto; }
   .psl-nav { display: none; }
   .psl-hamburger { display: inline-flex; }
   .psl-header-right .psl-auth { display: none; }
