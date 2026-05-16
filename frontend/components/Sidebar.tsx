@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import MrStockBuddy from "./Logo/MrStockBuddy";
+import PrismClock from "./PrismClock";
 import { useAuthStore, useUIStore } from "@/lib/store";
 import { apiMe } from "@/lib/api";
 import { playLogoutChime } from "@/lib/chime";
@@ -86,7 +87,7 @@ export default function Sidebar() {
         alignSelf: "stretch",
         position: "sticky",
         top: 0,
-        overflowY: "auto",
+        overflow: "hidden",
         flexShrink: 0,
         display: "flex",
         flexDirection: "column",
@@ -94,13 +95,35 @@ export default function Sidebar() {
         borderRight: "1px solid rgba(171,225,183,0.10)",
       }}
     >
-      {/* 로고 */}
-      <div style={{ padding: "22px 12px 10px", display: "flex", justifyContent: "center" }}>
-        <MrStockBuddy size={148} />
+      {/* 상단 고정 영역 — 로고 + 클럭 */}
+      <div
+        style={{
+          flexShrink: 0,
+          padding: "20px 12px 14px",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: "12px",
+          background:
+            "linear-gradient(180deg, rgba(12,26,40,0.18) 0%, rgba(12,26,40,0) 100%)",
+          borderBottom: "1px solid rgba(171,225,183,0.10)",
+          boxShadow: "0 8px 20px -16px rgba(0,0,0,0.55)",
+        }}
+      >
+        <MrStockBuddy size={132} />
+        <PrismClock size={124} />
       </div>
 
-      <div className="prism-divider" />
-
+      {/* 하단 스크롤 영역 — 인증 + 메뉴 + 푸터 */}
+      <div
+        style={{
+          flex: 1,
+          minHeight: 0,
+          overflowY: "auto",
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
       {/* 인증 패널 */}
       <AuthPanel />
 
@@ -151,6 +174,7 @@ export default function Sidebar() {
       }}>
         <span className="prism-footer-dot" />
         PRISM Momentum · v2.0
+      </div>
       </div>
     </aside>
   );
