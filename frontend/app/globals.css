@@ -1168,10 +1168,11 @@ body {
   background: var(--surface);
 }
 
-/* ── AppHeader — 가운데 컬럼이 슬라임 간판+검색바를 세로로 쌓음 ── */
+/* ── AppHeader — 가운데 컬럼이 슬라임 간판+검색바를 세로로 쌓음
+   좌(고스트)·우(시계+인증)는 검색바 라인에 맞춰 정렬 (flex-end) ── */
 .psl-header {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   gap: 16px;
   padding: 14px 24px 16px;
   background: var(--surface);
@@ -1179,6 +1180,11 @@ body {
   position: sticky;
   top: 0;
   z-index: 40;
+}
+.psl-header-logo,
+.psl-header-right {
+  /* 검색바(40px) 한가운데에 시각적 중심이 오도록 살짝 들어올림 */
+  padding-bottom: 2px;
 }
 .psl-header-logo  { flex-shrink: 0; }
 .psl-header-mid   { flex: 1; display: flex; justify-content: center; min-width: 0; }
