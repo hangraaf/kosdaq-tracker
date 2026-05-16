@@ -14,7 +14,8 @@ function fmtRate(rate: number) {
 function Item({ item }: { item: TickerItem }) {
   const up = item.change_rate > 0;
   const down = item.change_rate < 0;
-  const color = up ? "#FF6B6B" : down ? "#74B0FF" : "#E0D8C8";
+  // 한국 증시 관행: 상승=빨강 / 하락=파랑 (보조 채도 톤으로)
+  const color = up ? "#FF8E88" : down ? "#7BB6FF" : "#D6CDE8";
   const arrow = up ? "▲" : down ? "▼" : "─";
   const absChange = Math.abs(item.change).toLocaleString("ko-KR");
 
@@ -23,11 +24,11 @@ function Item({ item }: { item: TickerItem }) {
       className="inline-flex items-center gap-1 px-4"
       style={{ color, fontFamily: "var(--mono)", fontSize: "0.82rem", fontWeight: 500, whiteSpace: "nowrap" }}
     >
-      <span style={{ color: "#B0A898" }}>{item.name}</span>
+      <span style={{ color: "#C8BEDC" }}>{item.name}</span>
       {" "}{fmt(item.price)}
       {" "}{arrow}{absChange}
       {" "}({fmtRate(item.change_rate)})
-      <span style={{ color: "#3A4A6E", opacity: 0.6, padding: "0 4px" }}>|</span>
+      <span style={{ color: "rgba(133,91,251,0.45)", padding: "0 4px" }}>|</span>
     </span>
   );
 }
@@ -59,8 +60,8 @@ export default function NewsTicker() {
   return (
     <div
       style={{
-        background: "#0A1628",
-        borderBottom: "1px solid #1F3552",
+        background: "#1a0b3d",
+        borderBottom: "1px solid var(--purple-dark)",
         overflow: "hidden",
         height: "36px",
         display: "flex",
@@ -70,7 +71,7 @@ export default function NewsTicker() {
       {/* 왼쪽 레이블 */}
       <div
         style={{
-          background: live ? "#1A6FD4" : "#4A5568",
+          background: live ? "var(--purple)" : "var(--ink-muted)",
           color: "#fff",
           fontFamily: "var(--mono)",
           fontSize: "0.72rem",

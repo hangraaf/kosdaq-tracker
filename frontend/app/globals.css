@@ -1,32 +1,54 @@
-@import url('https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700;800&family=Nanum+Gothic:wght@400;700;800&display=swap');
+@import url('https://cdn.jsdelivr.net/gh/webfontworld/maruburi/MaruBuri.css');
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
 @import "tailwindcss";
 
 :root {
-  --bg:          #f7faf4;
-  --surf:        #f0f5ee;
-  --surf2:       #e9f0e8;
-  --border:      #abb4ac;
-  --blue:        #436B95;
+  /* ── PUPLE STOCK SLIME — Kraken Purple 톤 (2026-05-16 전환) ── */
+  --purple:        #7132f5;   /* 주조 — CTA, 활성, 링크 */
+  --purple-dark:   #5741d8;   /* 보더, outlined 버튼 */
+  --purple-deep:   #5b1ecf;   /* deepest */
+  --purple-subtle: rgba(133,91,251,0.16);
+  --purple-pale:   rgba(133,91,251,0.06);
+  --ink:           #101114;   /* 본문 텍스트 */
+  --ink-muted:     #686b82;   /* 보조 텍스트 */
+  --ink-soft:      #9497a9;   /* 더 옅은 보조 */
+  --surface:       #ffffff;   /* 주 표면 */
+  --surface-2:     #f8f9fb;   /* 보조 표면 */
+  --line:          #dedee5;   /* 디바이더 보더 */
+  --line-soft:     rgba(104,107,130,0.16);
+
+  /* ── 한국 증시 관행 (차트·등락 한정 별도 유지) ── */
+  --up:            #B5453F;   /* 상승 = 빨강 */
+  --down:          #436B95;   /* 하락 = 파랑 */
+
+  /* ── 호환 alias (기존 컴포넌트 점진 마이그레이션용) ── */
+  --bg:          var(--surface);
+  --surf:        var(--surface-2);
+  --surf2:       #eef0f4;
+  --border:      var(--line);
+  --fg:          var(--ink);
+  --muted:       var(--ink-muted);
+  --blue:        var(--down);
   --blue-deep:   #2C4A6E;
   --blue-soft:   #6B8AAE;
   --blue-pale:   #C8D4E2;
-  --green:       #386948;
-  --green-deep:  #2b5d3c;
-  --green-soft:  #abe1b7;
-  --green-pale:  #b9efc5;
-  --red:         #B5453F;
+  --green:       var(--purple);
+  --green-deep:  var(--purple-deep);
+  --green-soft:  var(--purple-subtle);
+  --green-pale:  var(--purple-pale);
+  --red:         var(--up);
   --yellow:      #745c27;
-  --fg:          #2c342e;
-  --muted:       #59615a;
-  --font:        'Nanum Gothic', 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
-  --mono:        'JetBrains Mono', monospace;
-  --maru:        'Nanum Myeongjo', 'Noto Serif KR', Georgia, serif;
-  /* Morinaga 로고 팔레트 (로고 정체성 — 유지) */
-  --morinaga-gold:   #D4A030;
-  --morinaga-wine:   #5A1810;
-  --morinaga-brown:  #3A1208;
-  --morinaga-inner:  #E8B838;
+
+  /* ── 폰트 — 마루부리 단일 통일 (숫자만 mono 예외) ── */
+  --maru:        'MaruBuri', 'Noto Serif KR', Georgia, serif;
+  --font:        'MaruBuri', 'Noto Serif KR', -apple-system, BlinkMacSystemFont, sans-serif;
+  --mono:        'JetBrains Mono', 'MaruBuri', monospace;
+
+  /* ── 호환 alias (deprecated, 정리 예정) ── */
+  --morinaga-gold:   var(--purple);
+  --morinaga-wine:   var(--purple-deep);
+  --morinaga-brown:  var(--ink);
+  --morinaga-inner:  var(--purple-dark);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -1133,3 +1155,373 @@ body {
   background: #c8a165 !important;
   box-shadow: 0 0 6px rgba(232,190,120,0.55);
 }
+
+/* ───────────────────────────────────────────────────────────────
+   PUPLE STOCK SLIME — Top-Nav Shell (2026-05-16)
+   골격: LiveTicker → AppHeader → PrimaryNav → Main → Footer
+   ─────────────────────────────────────────────────────────────── */
+
+.psl-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: var(--surface);
+}
+
+/* ── AppHeader (64px) ── */
+.psl-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 24px;
+  height: 64px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+  position: sticky;
+  top: 0;
+  z-index: 40;
+}
+.psl-header-logo  { flex-shrink: 0; }
+.psl-header-mid   { flex: 1; display: flex; justify-content: center; min-width: 0; }
+.psl-header-right { flex-shrink: 0; display: flex; align-items: center; gap: 14px; }
+
+/* ── 검색바 (헤더 중앙) ── */
+.psl-search {
+  position: relative;
+  width: min(480px, 100%);
+}
+.psl-search-input {
+  width: 100%;
+  height: 40px;
+  padding: 0 14px 0 38px;
+  font-family: var(--font);
+  font-size: 0.92rem;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1.5px solid var(--purple);
+  border-radius: 12px;
+  outline: none;
+  transition: box-shadow 200ms ease, border-color 200ms ease;
+}
+.psl-search-input::placeholder { color: var(--ink-soft); }
+.psl-search-input:focus {
+  border-color: var(--purple-dark);
+  box-shadow: 0 0 0 3px var(--purple-subtle);
+}
+.psl-search-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  border: 1.5px solid var(--purple);
+  border-radius: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+.psl-search-icon::after {
+  content: "";
+  position: absolute;
+  right: -5px;
+  bottom: -5px;
+  width: 7px;
+  height: 1.5px;
+  background: var(--purple);
+  transform: rotate(45deg);
+  transform-origin: left;
+}
+
+/* ── 시계 (헤더 우측, 디지털) ── */
+.psl-clock {
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--ink-muted);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+.psl-clock-session {
+  color: var(--purple);
+  font-weight: 700;
+  margin-right: 6px;
+}
+
+/* ── 인증 영역 ── */
+.psl-auth { display: flex; align-items: center; gap: 8px; }
+.psl-btn-primary {
+  background: var(--purple);
+  color: #fff;
+  border: 1px solid var(--purple);
+  padding: 8px 16px;
+  font-family: var(--font);
+  font-size: 0.86rem;
+  font-weight: 600;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background 180ms ease, box-shadow 180ms ease;
+}
+.psl-btn-primary:hover {
+  background: var(--purple-dark);
+  box-shadow: 0 4px 16px rgba(113,50,245,0.25);
+}
+.psl-btn-ghost {
+  background: transparent;
+  color: var(--purple-dark);
+  border: 1px solid var(--purple-dark);
+  padding: 8px 16px;
+  font-family: var(--font);
+  font-size: 0.86rem;
+  font-weight: 600;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background 180ms ease;
+}
+.psl-btn-ghost:hover { background: var(--purple-subtle); }
+
+/* 로그인 상태 — 아바타 + 메뉴 */
+.psl-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--purple);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--maru);
+  font-weight: 700;
+  font-size: 0.95rem;
+  text-decoration: none;
+}
+.psl-avatar--premium {
+  background: linear-gradient(135deg, var(--purple) 0%, var(--purple-deep) 100%);
+  box-shadow: 0 0 0 1.5px var(--purple-subtle), 0 4px 14px rgba(113,50,245,0.30);
+}
+.psl-logout {
+  background: transparent;
+  border: none;
+  color: var(--ink-soft);
+  font-family: var(--font);
+  font-size: 0.78rem;
+  cursor: pointer;
+  padding: 6px 8px;
+  transition: color 180ms ease;
+}
+.psl-logout:hover { color: var(--purple); }
+
+/* ── PrimaryNav (48px) ── */
+.psl-nav {
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+  padding: 0 24px;
+  height: 48px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+  position: sticky;
+  top: 64px;
+  z-index: 39;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.psl-nav::-webkit-scrollbar { display: none; }
+.psl-nav-item {
+  position: relative;
+  background: transparent;
+  border: none;
+  padding: 0 18px;
+  font-family: var(--font);
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--ink-muted);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 180ms ease;
+}
+.psl-nav-item:hover { color: var(--ink); }
+.psl-nav-item::after {
+  content: "";
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  bottom: 0;
+  height: 2px;
+  background: var(--purple);
+  transform: scaleX(0);
+  transform-origin: center;
+  transition: transform 220ms cubic-bezier(0.22,1,0.36,1);
+}
+.psl-nav-item.is-active {
+  color: var(--purple);
+  font-weight: 700;
+}
+.psl-nav-item.is-active::after { transform: scaleX(1); }
+
+/* ── 햄버거 (모바일) ── */
+.psl-hamburger {
+  display: none;
+  width: 40px;
+  height: 40px;
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0;
+}
+.psl-hamburger span {
+  width: 16px;
+  height: 1.5px;
+  background: var(--ink);
+  border-radius: 1px;
+}
+
+/* ── 모바일 드로어 ── */
+.psl-drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(16,17,20,0.45);
+  z-index: 60;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 200ms ease;
+}
+.psl-drawer-backdrop.is-open { opacity: 1; pointer-events: auto; }
+.psl-drawer {
+  position: fixed;
+  inset: 0 auto 0 0;
+  width: min(320px, 86vw);
+  background: var(--surface);
+  z-index: 61;
+  transform: translateX(-100%);
+  transition: transform 240ms cubic-bezier(0.22,1,0.36,1);
+  display: flex;
+  flex-direction: column;
+  box-shadow: 4px 0 32px rgba(16,17,20,0.12);
+}
+.psl-drawer.is-open { transform: translateX(0); }
+.psl-drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--line);
+}
+.psl-drawer-close {
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--ink-muted);
+  font-size: 1.4rem;
+  line-height: 1;
+}
+.psl-drawer-nav { padding: 12px 0; display: flex; flex-direction: column; }
+.psl-drawer-item {
+  background: transparent;
+  border: none;
+  padding: 14px 20px;
+  font-family: var(--font);
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--ink-muted);
+  text-align: left;
+  cursor: pointer;
+  border-left: 3px solid transparent;
+  transition: background 160ms ease, color 160ms ease, border-color 160ms ease;
+}
+.psl-drawer-item:hover { background: var(--purple-pale); color: var(--ink); }
+.psl-drawer-item.is-active {
+  color: var(--purple);
+  font-weight: 700;
+  border-left-color: var(--purple);
+  background: var(--purple-pale);
+}
+.psl-drawer-foot {
+  margin-top: auto;
+  padding: 16px 20px;
+  border-top: 1px solid var(--line);
+}
+
+/* ── Footer ── */
+.psl-footer {
+  margin-top: auto;
+  padding: 24px;
+  background: var(--surface-2);
+  border-top: 1px solid var(--line);
+  font-family: var(--font);
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  justify-content: space-between;
+  align-items: center;
+}
+.psl-footer a {
+  color: var(--ink-muted);
+  text-decoration: none;
+  margin-right: 14px;
+}
+.psl-footer a:hover { color: var(--purple); }
+
+/* ── Logo ── */
+.psl-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  user-select: none;
+}
+.psl-logo-mark {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--purple-pale);
+  flex-shrink: 0;
+  display: block;
+}
+.psl-logo-mark img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  mix-blend-mode: multiply;
+}
+.psl-logo-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.05;
+}
+.psl-logo-name {
+  font-family: var(--maru);
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  color: var(--purple);
+}
+.psl-logo-sub {
+  font-family: var(--font);
+  font-size: 0.62rem;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  color: var(--ink-soft);
+  margin-top: 2px;
+}
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .psl-header { padding: 10px 16px; gap: 10px; }
+  .psl-nav { display: none; }
+  .psl-hamburger { display: inline-flex; }
+  .psl-header-right .psl-auth { display: none; }
+  .psl-header-right .psl-clock { display: none; }
+  .psl-search { max-width: none; }
+  .psl-logo-text { display: none; }
+}
+

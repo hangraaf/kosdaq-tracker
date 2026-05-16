@@ -12,10 +12,10 @@ export default function LiveBadge({ live }: { live: boolean }) {
         fontFamily: "var(--mono)",
         fontWeight: 700,
         letterSpacing: "0.08em",
-        background: live ? "rgba(181,69,63,0.12)" : "rgba(67,107,149,0.12)",
-        color: live ? "#B5453F" : "#436B95",
-        border: `1px solid ${live ? "#B5453F" : "#436B95"}`,
-        borderRadius: "2px",
+        background: live ? "var(--purple-subtle)" : "rgba(104,107,130,0.10)",
+        color: live ? "var(--purple)" : "var(--ink-muted)",
+        border: `1px solid ${live ? "var(--purple)" : "var(--ink-soft)"}`,
+        borderRadius: "6px",
       }}
     >
       <span
@@ -23,7 +23,7 @@ export default function LiveBadge({ live }: { live: boolean }) {
           width: "6px",
           height: "6px",
           borderRadius: "50%",
-          background: live ? "#B5453F" : "#436B95",
+          background: live ? "var(--purple)" : "var(--ink-soft)",
           animation: live ? "pulse 1.5s ease-in-out infinite" : "none",
         }}
       />
