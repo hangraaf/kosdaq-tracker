@@ -30,7 +30,7 @@ function AuthPanel() {
 
   if (token) {
     return (
-      <div style={{ padding: "14px 14px 12px" }}>
+      <div style={{ padding: "16px 18px 14px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <div style={{
             width: "34px", height: "34px", borderRadius: "50%",
@@ -86,7 +86,7 @@ function AuthPanel() {
 
   if (mode === "guest") {
     return (
-      <div style={{ padding: "12px 14px", display: "flex", gap: "8px" }}>
+      <div style={{ padding: "14px 18px", display: "flex", gap: "10px" }}>
         <button onClick={() => setMode("login")} className="prism-auth-btn-primary">
           로그인
         </button>
@@ -169,8 +169,8 @@ export default function Sidebar() {
     <aside
       className="prism-sidebar"
       style={{
-        width: "220px",
-        minWidth: "220px",
+        width: "256px",
+        minWidth: "256px",
         height: "100%",
         alignSelf: "stretch",
         position: "sticky",
@@ -208,16 +208,16 @@ export default function Sidebar() {
               style={{
                 display: "block",
                 width: "100%",
-                padding: "10px 18px 10px 22px",
+                padding: "13px 20px",
                 background: "transparent",
-                color: active ? "#F4FAEF" : "rgba(220,232,222,0.72)",
+                color: active ? "#F6FBF1" : "rgba(220,232,222,0.78)",
                 border: "none",
                 cursor: "pointer",
                 fontFamily: "var(--font)",
-                fontSize: "0.88rem",
-                fontWeight: active ? 600 : 500,
-                letterSpacing: "0.01em",
-                textAlign: "left",
+                fontSize: "1.02rem",
+                fontWeight: active ? 800 : 700,
+                letterSpacing: "0.02em",
+                textAlign: "center",
                 position: "relative",
               }}
             >

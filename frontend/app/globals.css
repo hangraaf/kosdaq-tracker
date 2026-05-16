@@ -182,12 +182,12 @@ body {
 .prism-section-label {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 0.66rem;
+  gap: 12px;
+  font-size: 0.68rem;
   font-weight: 700;
-  letter-spacing: 0.18em;
-  color: rgba(171,225,183,0.65);
-  padding: 14px 14px 8px;
+  letter-spacing: 0.28em;
+  color: rgba(171,225,183,0.62);
+  padding: 18px 22px 12px;
   text-transform: uppercase;
 }
 .prism-section-label::before,
@@ -198,46 +198,54 @@ body {
   background: linear-gradient(90deg, transparent, rgba(171,225,183,0.30), transparent);
 }
 
-/* 메뉴 항목 — Linear 스타일의 좌측 분광 accent bar + BG wash */
+/* 메뉴 항목 — 중앙 정렬 + 분광 underline accent */
 .prism-menu-item {
   position: relative;
-  transition: color 180ms ease, background 220ms ease;
+  transition: color 180ms ease, background 220ms ease, letter-spacing 220ms ease;
 }
-/* 좌측 세로 분광 accent (활성/hover 시 등장) */
+/* 활성/hover 분광 underline — 가운데 정렬에 맞춰 중앙에서 양옆으로 번짐 */
 .prism-menu-item::before {
   content: "";
   position: absolute;
-  left: 0;
-  top: 8px;
-  bottom: 8px;
-  width: 2px;
-  border-radius: 0 2px 2px 0;
-  background: linear-gradient(180deg,
-    rgba(171,225,183,0.95) 0%,
+  left: 50%;
+  bottom: 7px;
+  height: 1.5px;
+  width: 56px;
+  margin-left: -28px;
+  border-radius: 2px;
+  background: linear-gradient(90deg,
+    rgba(171,225,183,0.0) 0%,
+    rgba(171,225,183,0.95) 25%,
     rgba(67,107,149,0.85) 55%,
-    rgba(181,69,63,0.70) 100%);
+    rgba(181,69,63,0.70) 80%,
+    rgba(181,69,63,0.0) 100%);
   box-shadow:
-    0 0 8px rgba(171,225,183,0.55),
-    0 0 14px rgba(67,107,149,0.35);
-  transform: scaleY(0);
+    0 0 6px rgba(171,225,183,0.45),
+    0 0 12px rgba(67,107,149,0.30);
+  transform: scaleX(0);
   transform-origin: center;
   opacity: 0;
-  transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1), opacity 200ms ease;
+  transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1),
+              opacity 200ms ease,
+              width 220ms ease;
 }
 .prism-menu-item:hover {
   color: #EAF3E8 !important;
-  background: linear-gradient(90deg, rgba(171,225,183,0.06), transparent 80%) !important;
+  background: radial-gradient(80% 100% at 50% 50%, rgba(171,225,183,0.07), transparent 75%) !important;
+  letter-spacing: 0.03em;
 }
 .prism-menu-item:hover::before {
-  transform: scaleY(0.55);
+  transform: scaleX(0.55);
   opacity: 0.55;
 }
 .prism-menu-item.is-active {
-  background: linear-gradient(90deg, rgba(171,225,183,0.10), rgba(67,107,149,0.04) 60%, transparent 100%) !important;
+  background: radial-gradient(90% 100% at 50% 50%, rgba(171,225,183,0.12), rgba(67,107,149,0.04) 60%, transparent 100%) !important;
 }
 .prism-menu-item.is-active::before {
-  transform: scaleY(1);
+  transform: scaleX(1);
   opacity: 1;
+  width: 72px;
+  margin-left: -36px;
 }
 
 /* 호흡하는 푸터 닷 */
