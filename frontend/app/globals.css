@@ -1168,27 +1168,38 @@ body {
   background: var(--surface);
 }
 
-/* ── AppHeader — 가운데 컬럼이 슬라임 간판+검색바를 세로로 쌓음
-   좌(고스트)·우(시계+인증)는 검색바 라인에 맞춰 정렬 (flex-end) ── */
+/* ── AppHeader — 한 줄: 고스트 / 검색 / 시계+인증
+   슬라임은 검색바 위에 absolute로 떠 있는 장식 (헤더 높이에 영향 없음) ── */
 .psl-header {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   gap: 16px;
-  padding: 14px 24px 16px;
+  padding: 12px 24px;
+  height: 64px;
   background: var(--surface);
   border-bottom: 1px solid var(--line);
   position: sticky;
   top: 0;
   z-index: 40;
 }
-.psl-header-logo,
-.psl-header-right {
-  /* 검색바(40px) 한가운데에 시각적 중심이 오도록 살짝 들어올림 */
-  padding-bottom: 2px;
-}
 .psl-header-logo  { flex-shrink: 0; }
 .psl-header-mid   { flex: 1; display: flex; justify-content: center; min-width: 0; }
 .psl-header-right { flex-shrink: 0; display: flex; align-items: center; gap: 14px; }
+
+/* 슬라임 간판 — 헤더 위 독립 행, 검색바 중앙 위로 정렬됨 */
+.psl-billboard {
+  display: flex;
+  justify-content: center;
+  padding: 14px 24px 0;
+  background: var(--surface);
+}
+.psl-billboard > .psl-billboard-link {
+  position: relative;
+  width: min(360px, 80%);
+  /* 드립이 헤더 경계선까지 살짝 흘러들도록 음의 마진 */
+  margin-bottom: -10px;
+  z-index: 41;
+}
 
 /* ── 검색바 (헤더 중앙) ── */
 .psl-search {
@@ -1514,21 +1525,11 @@ body {
   margin-top: 2px;
 }
 
-/* ── 간판 로고 (Billboard) — 검색창과 한 묶음, 드립이 검색바로 흘러내림 ── */
-.psl-search-stack {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0;
-  width: min(480px, 100%);
-}
+/* ── 간판 로고 (Billboard) — 검색바 중앙 위 독립 행 ── */
 .psl-billboard-link {
   display: inline-flex;
   justify-content: center;
   line-height: 0;
-  width: 100%;
-  /* 슬라임 드립이 검색바 위로 자연스럽게 내려앉도록 음의 마진 */
-  margin-bottom: -14px;
   transition: transform 160ms ease, filter 220ms ease;
   filter: drop-shadow(0 4px 10px rgba(113, 50, 245, 0.18));
 }
@@ -1538,7 +1539,7 @@ body {
 }
 .psl-billboard-img {
   display: block;
-  width: clamp(220px, 28vw, 360px);
+  width: 100%;
   height: auto;
   user-select: none;
   -webkit-user-drag: none;
@@ -1554,8 +1555,7 @@ body {
   .psl-header-right .psl-clock { display: none; }
   .psl-search { max-width: none; }
   .psl-logo-text { display: none; }
-  .psl-search-stack { width: 100%; }
-  .psl-billboard-img { width: clamp(180px, 56vw, 280px); }
-  .psl-billboard-link { margin-bottom: -10px; }
+  .psl-billboard { padding: 10px 16px 0; }
+  .psl-billboard > .psl-billboard-link { width: min(280px, 70%); margin-bottom: -8px; }
 }
 

@@ -16,6 +16,19 @@ export default function AppHeader() {
 
   return (
     <>
+      {/* 간판 로고 — 헤더 위 독립 행, 검색바 중앙 위로 정렬 */}
+      <div className="psl-billboard">
+        <Link href="/" aria-label="PURPLE STOCK SLIME 홈" className="psl-billboard-link">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/images/purple-stock-slime.png"
+            alt="PURPLE STOCK SLIME"
+            className="psl-billboard-img"
+            draggable={false}
+          />
+        </Link>
+      </div>
+
       <header className="psl-header">
         <button
           type="button"
@@ -33,19 +46,7 @@ export default function AppHeader() {
         </div>
 
         <div className="psl-header-mid">
-          <div className="psl-search-stack">
-            {/* 간판 로고 — 검색창 위에 찰떡으로 얹힘 (드립이 검색바로 흘러내림) */}
-            <Link href="/" aria-label="PURPLE STOCK SLIME 홈" className="psl-billboard-link">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/images/purple-stock-slime.png"
-                alt="PURPLE STOCK SLIME"
-                className="psl-billboard-img"
-                draggable={false}
-              />
-            </Link>
-            <SearchBar />
-          </div>
+          <SearchBar />
         </div>
 
         <div className="psl-header-right">
