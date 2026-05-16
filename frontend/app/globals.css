@@ -605,6 +605,133 @@ body {
   font-size: 0.78rem;
 }
 
+/* ── 사이드바 프로필 (PRISM 분광) ────────────── */
+.prism-profile {
+  padding: 18px 18px 16px;
+  position: relative;
+}
+.prism-profile::after {
+  content: "";
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  bottom: 0;
+  height: 1px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(171,225,183,0.30) 25%,
+    rgba(67,107,149,0.30) 55%,
+    rgba(181,69,63,0.20) 80%,
+    transparent 100%);
+}
+.prism-profile-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.prism-profile-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--maru);
+  font-size: 1rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  position: relative;
+}
+.prism-profile-avatar--free {
+  background: linear-gradient(135deg, #2b5d3c 0%, #1c3f2d 100%);
+  color: rgba(240,247,238,0.92);
+  box-shadow:
+    0 0 0 1px rgba(171,225,183,0.35),
+    0 0 8px  rgba(171,225,183,0.45),
+    0 0 18px rgba(67,107,149,0.30);
+}
+.prism-profile-avatar--premium {
+  background: linear-gradient(135deg, rgba(212,160,48,0.95), rgba(232,184,56,0.95));
+  color: var(--morinaga-brown, #3A1208);
+  box-shadow:
+    0 0 0 1px rgba(212,160,48,0.45),
+    0 0 8px  rgba(171,225,183,0.55),
+    0 0 18px rgba(67,107,149,0.40),
+    0 0 30px rgba(181,69,63,0.30);
+}
+.prism-profile-meta {
+  min-width: 0;
+  flex: 1;
+}
+.prism-profile-name {
+  font-family: var(--maru);
+  color: #F0EBE0;
+  font-weight: 700;
+  font-size: 0.95rem;
+  letter-spacing: -0.2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.25;
+}
+.prism-profile-plan {
+  display: inline-block;
+  position: relative;
+  margin-top: 4px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  padding-bottom: 3px;
+}
+.prism-profile-plan--free { color: rgba(171,225,183,0.65); }
+.prism-profile-plan--premium {
+  color: var(--morinaga-gold);
+  text-shadow: 0 0 8px rgba(212,160,48,0.35);
+}
+.prism-profile-plan--premium::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 1px;
+  background: linear-gradient(90deg,
+    rgba(171,225,183,0.55) 0%,
+    rgba(67,107,149,0.55) 50%,
+    rgba(181,69,63,0.50) 100%);
+}
+.prism-profile-logout {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  background: transparent;
+  border: none;
+  padding: 4px 0;
+  color: rgba(171,225,183,0.60);
+  font-family: var(--font);
+  font-size: 0.74rem;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: color 200ms ease;
+}
+.prism-profile-logout::before {
+  content: "";
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: rgba(171,225,183,0.40);
+  transition: background 200ms ease, box-shadow 200ms ease;
+}
+.prism-profile-logout:hover {
+  color: #F0EBE0;
+}
+.prism-profile-logout:hover::before {
+  background: var(--red);
+  box-shadow:
+    0 0 6px rgba(181,69,63,0.85),
+    0 0 14px rgba(67,107,149,0.40);
+}
+
 /* ── 문서/약관 페이지 (PRISM 라이트 본문) ───────── */
 .prism-doc {
   max-width: 760px;

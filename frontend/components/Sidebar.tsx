@@ -25,57 +25,25 @@ function AuthPanel() {
   }, [token]);
 
   if (token) {
+    const isPaid = plan === "premium" || plan === "admin";
+    const planLabel = plan === "admin" ? "ADMIN" : plan === "premium" ? "PREMIUM" : "FREE";
+    const initial = (userDisplay ?? "?").trim().charAt(0).toUpperCase() || "?";
     return (
-      <div style={{ padding: "16px 18px 14px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <div style={{
-            width: "34px", height: "34px", borderRadius: "50%",
-            background: "linear-gradient(135deg, rgba(212,160,48,0.95), rgba(232,184,56,0.95))",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: "0.95rem", fontWeight: 700, color: "#3A1208",
-            boxShadow: "0 0 0 1px rgba(212,160,48,0.40), 0 0 14px rgba(212,160,48,0.22)",
-            flexShrink: 0,
-          }}>
-            {(userDisplay ?? "?")[0].toUpperCase()}
+      <div className="prism-profile">
+        <div className="prism-profile-row">
+          <div className={`prism-profile-avatar ${isPaid ? "prism-profile-avatar--premium" : "prism-profile-avatar--free"}`}>
+            {initial}
           </div>
-          <div style={{ minWidth: 0, flex: 1 }}>
-            <div style={{
-              color: "#F0EBE0",
-              fontWeight: 600,
-              fontSize: "0.86rem",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-            }}>
-              {userDisplay}
-            </div>
-            <div style={{
-              fontSize: "0.64rem",
-              fontWeight: 700,
-              letterSpacing: "0.14em",
-              color: (plan === "premium" || plan === "admin") ? "#D4A030" : "rgba(171,225,183,0.70)",
-              textTransform: "uppercase",
-              marginTop: "2px",
-            }}>
-              {plan === "admin" ? "ADMIN" : plan === "premium" ? "PREMIUM" : "FREE"}
+          <div className="prism-profile-meta">
+            <div className="prism-profile-name">{userDisplay}</div>
+            <div className={`prism-profile-plan ${isPaid ? "prism-profile-plan--premium" : "prism-profile-plan--free"}`}>
+              {planLabel}
             </div>
           </div>
-          <button
-            onClick={clearAuth}
-            style={{
-              background: "transparent",
-              border: "1px solid rgba(171,225,183,0.22)",
-              color: "rgba(171,225,183,0.78)",
-              fontSize: "0.7rem",
-              padding: "4px 8px",
-              borderRadius: "3px",
-              cursor: "pointer",
-              letterSpacing: "0.02em",
-            }}
-          >
-            로그아웃
-          </button>
         </div>
+        <button onClick={clearAuth} className="prism-profile-logout" type="button">
+          로그아웃
+        </button>
       </div>
     );
   }
