@@ -4,6 +4,7 @@ import NewsTicker from "@/components/Ticker/NewsTicker";
 import AppHeader from "@/components/Shell/AppHeader";
 import PrimaryNav from "@/components/Shell/PrimaryNav";
 import Footer from "@/components/Shell/Footer";
+import ComplianceFooter from "@/components/Shell/ComplianceFooter";
 import PingOnLoad from "@/components/PingOnLoad";
 import PrismCursor from "@/components/PrismCursor";
 import AuthModal from "@/components/Auth/AuthModal";
@@ -33,6 +34,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           {/* Row 4 — 페이지 컨텐츠 */}
           <main style={{ flex: 1, padding: "24px 28px", width: "100%" }}>
             {children}
+            <ComplianceFooter />
           </main>
 
           {/* Row 5 — 푸터 */}
