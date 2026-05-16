@@ -76,7 +76,7 @@ export default function ChangePasswordPage() {
   if (loading) {
     return (
       <div className="prism-doc">
-        <div className="prism-doc-eyebrow">PRISM · Security</div>
+        <div className="prism-doc-eyebrow">PURPLE STOCK SLIME · Security</div>
         <h1>비밀번호 변경</h1>
         <p style={{ color: "var(--muted)" }}>불러오는 중…</p>
       </div>
@@ -86,7 +86,7 @@ export default function ChangePasswordPage() {
   if (provider) {
     return (
       <div className="prism-doc">
-        <div className="prism-doc-eyebrow">PRISM · Security</div>
+        <div className="prism-doc-eyebrow">PURPLE STOCK SLIME · Security</div>
         <h1>비밀번호 변경</h1>
         <div className="prism-doc-meta">
           <Link href="/profile" style={{ color: "var(--green)" }}>← 계정 설정으로 돌아가기</Link>
@@ -101,7 +101,7 @@ export default function ChangePasswordPage() {
 
   return (
     <div className="prism-doc prism-form">
-      <div className="prism-doc-eyebrow">PRISM · Security</div>
+      <div className="prism-doc-eyebrow">PURPLE STOCK SLIME · Security</div>
       <h1>비밀번호 변경</h1>
       <div className="prism-doc-meta">
         <Link href="/profile" style={{ color: "var(--green)" }}>← 계정 설정으로 돌아가기</Link>

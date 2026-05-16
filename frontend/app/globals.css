@@ -462,7 +462,7 @@ body {
 .prism-auth-input:focus {
   border-color: rgba(171,225,183,0.55);
   background: rgba(247,250,244,0.06);
-  box-shadow: 0 0 0 3px rgba(56,105,72,0.18);
+  box-shadow: 0 0 0 3px rgba(113,50,245,0.18);
 }
 .prism-auth-input--invalid { border-color: rgba(181,69,63,0.65); }
 .prism-auth-input--invalid:focus {
@@ -515,7 +515,7 @@ body {
   transform: rotate(45deg);
 }
 .prism-auth-checkbox-row input[type="checkbox"]:focus-visible {
-  box-shadow: 0 0 0 3px rgba(56,105,72,0.30);
+  box-shadow: 0 0 0 3px rgba(113,50,245,0.30);
   outline: none;
 }
 .prism-auth-checkbox-row a {
@@ -923,10 +923,11 @@ body {
 .prism-form-section {
   margin-bottom: 28px;
   padding: 22px 22px 20px;
-  background: var(--surf);
-  border: 1px solid var(--border);
-  border-top: 2px solid var(--green);
-  border-radius: 4px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-top: 2px solid var(--purple);
+  border-radius: 14px;
+  box-shadow: rgba(0,0,0,0.03) 0px 4px 16px;
   position: relative;
 }
 .prism-form-section-title {
@@ -976,7 +977,7 @@ body {
   background: var(--green);
   transform: translateY(-50%) scale(1);
   box-shadow:
-    0 0 6px  rgba(56,105,72,0.55),
+    0 0 6px  rgba(113,50,245,0.55),
     0 0 14px rgba(67,107,149,0.40),
     0 0 22px rgba(181,69,63,0.20);
 }
@@ -990,14 +991,14 @@ body {
   padding: 0 14px 0 22px;
   font-family: var(--font);
   font-size: 0.9rem;
-  border-radius: 4px;
+  border-radius: 10px;
   outline: none;
   transition: border-color 220ms ease, box-shadow 220ms ease;
 }
 .prism-form-input::placeholder { color: var(--muted); }
 .prism-form-input:focus {
   border-color: var(--green);
-  box-shadow: 0 0 0 3px rgba(56,105,72,0.10);
+  box-shadow: 0 0 0 3px rgba(113,50,245,0.10);
 }
 .prism-form-input:disabled {
   background: var(--surf2);
@@ -1023,11 +1024,11 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 12px 14px;
-  background: #ffffff;
-  border: 1px dashed var(--border);
-  border-radius: 4px;
+  background: var(--surface-2);
+  border: 1px dashed var(--line);
+  border-radius: 10px;
   font-size: 0.88rem;
-  color: var(--fg);
+  color: var(--ink);
   font-family: var(--mono);
 }
 
@@ -1070,7 +1071,7 @@ body {
 }
 .prism-form-checkbox input[type="checkbox"]:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(56,105,72,0.18);
+  box-shadow: 0 0 0 3px rgba(113,50,245,0.18);
 }
 
 .prism-form-actions {
@@ -1080,49 +1081,50 @@ body {
   margin-top: 4px;
 }
 .prism-form-submit {
-  background: var(--green);
-  color: #F0F7EE;
-  border: 1px solid var(--green);
-  padding: 9px 18px;
+  background: var(--purple);
+  color: #ffffff;
+  border: 1px solid var(--purple);
+  padding: 10px 20px;
   font-family: var(--font);
-  font-size: 0.85rem;
+  font-size: 0.86rem;
   font-weight: 700;
   letter-spacing: 0.02em;
-  border-radius: 4px;
+  border-radius: 10px;
   cursor: pointer;
-  transition: box-shadow 220ms ease, background 220ms ease;
+  transition: box-shadow 220ms ease, background 220ms ease, transform 160ms ease;
 }
 .prism-form-submit:hover:not(:disabled) {
+  background: var(--purple-deep);
   box-shadow:
-    0 0 0 1px rgba(56,105,72,0.25),
-    0 0 14px rgba(67,107,149,0.30),
-    0 0 22px rgba(181,69,63,0.18);
+    0 0 0 3px rgba(113,50,245,0.18),
+    0 8px 22px rgba(113,50,245,0.28);
+  transform: translateY(-1px);
 }
 .prism-form-submit:disabled { opacity: 0.55; cursor: not-allowed; }
 .prism-form-ghost {
   background: transparent;
-  color: var(--green);
-  border: 1px solid var(--green);
-  padding: 9px 18px;
+  color: var(--purple-deep);
+  border: 1px solid var(--purple);
+  padding: 10px 20px;
   font-family: var(--font);
-  font-size: 0.85rem;
+  font-size: 0.86rem;
   font-weight: 700;
   letter-spacing: 0.02em;
-  border-radius: 4px;
+  border-radius: 10px;
   cursor: pointer;
   transition: background 200ms ease;
 }
-.prism-form-ghost:hover { background: rgba(56,105,72,0.06); }
+.prism-form-ghost:hover { background: var(--purple-pale); }
 .prism-form-danger {
   background: transparent;
   color: var(--red);
   border: 1px solid var(--red);
-  padding: 9px 18px;
+  padding: 10px 20px;
   font-family: var(--font);
-  font-size: 0.85rem;
+  font-size: 0.86rem;
   font-weight: 700;
   letter-spacing: 0.02em;
-  border-radius: 4px;
+  border-radius: 10px;
   cursor: pointer;
   transition: background 200ms ease;
 }
@@ -1130,15 +1132,15 @@ body {
 
 .prism-form-status {
   margin-top: 12px;
-  padding: 10px 12px;
-  border-radius: 4px;
+  padding: 10px 14px;
+  border-radius: 8px;
   font-size: 0.82rem;
   border: 1px solid transparent;
 }
 .prism-form-status--ok {
-  border-color: rgba(56,105,72,0.35);
-  background: rgba(171,225,183,0.18);
-  color: var(--green-deep);
+  border-color: rgba(113,50,245,0.35);
+  background: var(--purple-pale);
+  color: var(--purple-deep);
 }
 .prism-form-status--err {
   border-color: rgba(181,69,63,0.45);
@@ -1308,9 +1310,9 @@ body {
   width: 120px;
   height: 1px;
   background: linear-gradient(90deg,
-    rgba(56,105,72,0.85) 0%,
-    rgba(67,107,149,0.65) 50%,
-    rgba(181,69,63,0.45) 100%);
+    rgba(113,50,245,0.85) 0%,
+    rgba(113,50,245,0.55) 50%,
+    rgba(113,50,245,0.20) 100%);
 }
 .prism-doc-meta {
   font-size: 0.78rem;
@@ -1320,12 +1322,12 @@ body {
 .prism-doc-callout {
   margin: 16px 0 32px;
   padding: 12px 14px;
-  border: 1px solid rgba(116,92,39,0.30);
-  border-left: 2px solid var(--yellow);
-  background: rgba(212,160,48,0.06);
-  border-radius: 4px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--purple);
+  background: var(--purple-pale);
+  border-radius: 8px;
   font-size: 0.82rem;
-  color: var(--fg);
+  color: var(--ink);
 }
 .prism-doc h2 {
   font-family: var(--maru);

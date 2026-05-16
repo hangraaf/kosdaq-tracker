@@ -8,17 +8,17 @@ interface Props {
 }
 
 // ── 디자인 토큰 ─────────────────────────────────────────────────────────
-// ChartPage의 SigCard / bh-card 패턴 계승:
-//   - 카드: bh-card (var(--surf) + 1px border)
-//   - 상단 3px 색 보더로 카테고리 색 구분
-//   - 라벨: 0.62rem · 0.12em letter-spacing · uppercase · var(--muted) · 700
-//   - 숫자: var(--mono) · 800 · 카테고리 색
-const COLOR_DIVIDEND = "var(--yellow)";     // 배당 — 금색
-const COLOR_FLOW     = "var(--blue-deep)";  // 수급 — 딥블루
-const COLOR_INDIV    = "#B5453F";           // 개인 구성 — 빨강
-const COLOR_SENT_POS = "#B5453F";           // 센티먼트 긍정
-const COLOR_SENT_NEG = "#436B95";           // 센티먼트 부정
-const COLOR_SENT_NEU = "#7A6E5A";           // 센티먼트 중립
+// 퍼플 슬라임 카드 패턴:
+//   - 카드: var(--surface) + 1px var(--line) + 16px radius + soft shadow
+//   - 상단 3px 색 보더로 카테고리 구분 (시장 신호는 red/blue 유지)
+//   - 라벨: 0.62rem · 0.12em letter-spacing · uppercase · var(--ink-muted) · 700
+//   - 숫자: var(--mono) · 800
+const COLOR_DIVIDEND = "var(--purple)";     // 배당 — 카테고리 표식 (퍼플)
+const COLOR_FLOW     = "var(--purple-dark)";// 수급 — 카테고리 표식 (퍼플 다크)
+const COLOR_INDIV    = "var(--purple)";     // 외국인 지분율 카드 표식
+const COLOR_SENT_POS = "var(--red)";        // 센티먼트 긍정 = 상승
+const COLOR_SENT_NEG = "var(--blue)";       // 센티먼트 부정 = 하락
+const COLOR_SENT_NEU = "var(--ink-muted)";  // 센티먼트 중립
 
 // ── 공통: 카드 셸 ───────────────────────────────────────────────────────
 function ProfileCard({
@@ -35,10 +35,12 @@ function ProfileCard({
   return (
     <div
       style={{
-        padding: "12px 14px",
-        background: "var(--surf)",
-        border: "1px solid var(--border)",
+        padding: "14px 16px",
+        background: "var(--surface)",
+        border: "1px solid var(--line)",
         borderTop: `3px solid ${accent}`,
+        borderRadius: "14px",
+        boxShadow: "rgba(0,0,0,0.03) 0px 4px 16px",
         display: "flex",
         flexDirection: "column",
         gap: "8px",
@@ -50,7 +52,7 @@ function ProfileCard({
           fontSize: "0.62rem",
           letterSpacing: "0.12em",
           textTransform: "uppercase",
-          color: "var(--muted)",
+          color: "var(--ink-muted)",
           fontWeight: 700,
         }}
       >
@@ -58,12 +60,13 @@ function ProfileCard({
         {badge && (
           <span
             style={{
-              background: "var(--blue-pale)",
-              color: "var(--blue-deep)",
-              padding: "1px 5px",
+              background: "var(--purple-pale)",
+              color: "var(--purple-deep)",
+              padding: "1px 6px",
               fontSize: "0.58rem",
               fontWeight: 800,
               marginLeft: "6px",
+              borderRadius: "4px",
             }}
           >
             {badge}
@@ -88,11 +91,13 @@ function OverviewCard({ profile }: { profile: StockProfile }) {
   return (
     <div
       style={{
-        padding: "14px 16px",
-        background: "var(--surf)",
-        border: "1px solid var(--border)",
-        borderTop: "3px solid var(--blue-deep)",
-        marginBottom: "8px",
+        padding: "16px 18px",
+        background: "var(--surface)",
+        border: "1px solid var(--line)",
+        borderTop: "3px solid var(--purple)",
+        borderRadius: "14px",
+        boxShadow: "rgba(0,0,0,0.03) 0px 4px 16px",
+        marginBottom: "10px",
       }}
     >
       <div
@@ -109,20 +114,21 @@ function OverviewCard({ profile }: { profile: StockProfile }) {
             fontSize: "0.62rem",
             letterSpacing: "0.12em",
             textTransform: "uppercase",
-            color: "var(--muted)",
+            color: "var(--ink-muted)",
             fontWeight: 700,
           }}
         >
           회사 개요
           <span
             style={{
-              background: o.source === "DART" ? "var(--blue-pale)" : "var(--surf2)",
-              color: o.source === "DART" ? "var(--blue-deep)" : "var(--muted)",
-              padding: "1px 5px",
+              background: o.source === "DART" ? "var(--purple-pale)" : "var(--surface-2)",
+              color: o.source === "DART" ? "var(--purple-deep)" : "var(--ink-muted)",
+              padding: "1px 6px",
               fontSize: "0.58rem",
               fontWeight: 800,
               marginLeft: "6px",
-              border: o.source === "DART" ? "none" : "1px dashed var(--border)",
+              borderRadius: "4px",
+              border: o.source === "DART" ? "none" : "1px dashed var(--line)",
             }}
             title={o.source === "DART" ? "DART 공시 기준" : "DART API 키 발급 전 — 임시 데이터"}
           >
@@ -136,21 +142,21 @@ function OverviewCard({ profile }: { profile: StockProfile }) {
             rel="noopener noreferrer"
             style={{
               fontSize: "0.72rem",
-              color: "var(--blue-deep)",
+              color: "var(--purple-deep)",
               textDecoration: "none",
               fontWeight: 700,
             }}
           >
-            홈페이지 ↗
+            홈페이지
           </a>
         )}
       </div>
 
       <div
         style={{
-          fontSize: "0.85rem",
+          fontSize: "0.86rem",
           lineHeight: 1.7,
-          color: "var(--fg)",
+          color: "var(--ink)",
           marginBottom: "10px",
           display: "-webkit-box",
           WebkitLineClamp: expanded ? "unset" : 3,
@@ -168,8 +174,8 @@ function OverviewCard({ profile }: { profile: StockProfile }) {
             alignSelf: "flex-start",
             background: "transparent",
             border: "none",
-            color: "var(--muted)",
-            fontSize: "0.7rem",
+            color: "var(--purple-deep)",
+            fontSize: "0.74rem",
             fontWeight: 700,
             cursor: "pointer",
             padding: 0,
@@ -177,7 +183,7 @@ function OverviewCard({ profile }: { profile: StockProfile }) {
             letterSpacing: "0.04em",
           }}
         >
-          {expanded ? "접기 ▲" : "더보기 ▼"}
+          {expanded ? "접기" : "더보기"}
         </button>
       )}
 
@@ -186,9 +192,9 @@ function OverviewCard({ profile }: { profile: StockProfile }) {
           style={{
             display: "grid",
             gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
-            gap: "8px",
-            paddingTop: "10px",
-            borderTop: "1px solid var(--border)",
+            gap: "10px",
+            paddingTop: "12px",
+            borderTop: "1px solid var(--line)",
           }}
         >
           {metaItems.map((m) => (
@@ -196,7 +202,7 @@ function OverviewCard({ profile }: { profile: StockProfile }) {
               <div
                 style={{
                   fontSize: "0.58rem",
-                  color: "var(--muted)",
+                  color: "var(--ink-muted)",
                   fontWeight: 700,
                   letterSpacing: "0.08em",
                   textTransform: "uppercase",
@@ -205,7 +211,7 @@ function OverviewCard({ profile }: { profile: StockProfile }) {
               >
                 {m.label}
               </div>
-              <div style={{ fontSize: "0.82rem", fontWeight: 700, color: "var(--fg)" }}>
+              <div style={{ fontSize: "0.82rem", fontWeight: 700, color: "var(--ink)" }}>
                 {m.value}
               </div>
             </div>
@@ -523,12 +529,13 @@ function SentimentCard({ sentiment }: { sentiment: NewsSentiment | null }) {
               target="_blank"
               rel="noopener noreferrer"
               style={{
-                fontSize: "0.68rem",
-                color: "var(--blue-deep)",
+                fontSize: "0.7rem",
+                color: "var(--purple-deep)",
                 textDecoration: "none",
                 overflow: "hidden",
                 textOverflow: "ellipsis",
                 whiteSpace: "nowrap",
+                fontWeight: 600,
               }}
               title={h.title}
             >

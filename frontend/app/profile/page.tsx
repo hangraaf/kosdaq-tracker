@@ -86,7 +86,7 @@ export default function ProfilePage() {
   if (loading) {
     return (
       <div className="prism-doc">
-        <div className="prism-doc-eyebrow">PRISM · Profile</div>
+        <div className="prism-doc-eyebrow">PURPLE STOCK SLIME · Profile</div>
         <h1>계정 설정</h1>
         <p style={{ color: "var(--muted)" }}>불러오는 중…</p>
       </div>
@@ -96,7 +96,7 @@ export default function ProfilePage() {
   if (!profile) {
     return (
       <div className="prism-doc">
-        <div className="prism-doc-eyebrow">PRISM · Profile</div>
+        <div className="prism-doc-eyebrow">PURPLE STOCK SLIME · Profile</div>
         <h1>계정 설정</h1>
         <div className="prism-form-status prism-form-status--err">
           프로필을 불러오지 못했습니다. {errorMsg}
@@ -109,7 +109,7 @@ export default function ProfilePage() {
 
   return (
     <div className="prism-doc prism-form">
-      <div className="prism-doc-eyebrow">PRISM · Profile</div>
+      <div className="prism-doc-eyebrow">PURPLE STOCK SLIME · Profile</div>
       <h1>계정 설정</h1>
       <div className="prism-doc-meta">
         가입일 {formatDate(profile.created_at)} · {planLabel(profile.plan)} 플랜

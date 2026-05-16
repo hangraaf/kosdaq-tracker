@@ -1,11 +1,11 @@
 export const metadata = {
-  title: "개인정보 처리방침 — PRISM Stock Tracker",
+  title: "개인정보 처리방침 — PURPLE STOCK SLIME",
 };
 
 export default function PrivacyPage() {
   return (
     <div className="prism-doc">
-      <div className="prism-doc-eyebrow">PRISM · Privacy</div>
+      <div className="prism-doc-eyebrow">PURPLE STOCK SLIME · Privacy</div>
       <h1>개인정보 처리방침</h1>
       <div className="prism-doc-meta">시행일자 2026년 5월 16일 · 버전 0.1 (초안)</div>
 
@@ -15,7 +15,7 @@ export default function PrivacyPage() {
       </div>
 
       <p>
-        PRISM Stock Tracker(이하 &ldquo;회사&rdquo;)는 「개인정보 보호법」 제30조에 따라 정보주체의 개인정보를 보호하고
+        PURPLE STOCK SLIME(이하 &ldquo;회사&rdquo;)는 「개인정보 보호법」 제30조에 따라 정보주체의 개인정보를 보호하고
         이와 관련한 고충을 신속하고 원활하게 처리할 수 있도록 하기 위하여 다음과 같이 개인정보 처리방침을 수립·공개합니다.
       </p>
 
@@ -136,7 +136,7 @@ export default function PrivacyPage() {
       <h2>10. 개인정보 보호책임자</h2>
       <p>회사는 개인정보 처리에 관한 업무를 총괄하여 책임지고 있는 개인정보 보호책임자를 다음과 같이 지정합니다.</p>
       <ul>
-        <li><strong>담당자:</strong> PRISM 운영팀</li>
+        <li><strong>담당자:</strong> PURPLE STOCK SLIME 운영팀</li>
         <li><strong>연락처:</strong> hangraaf@gmail.com</li>
       </ul>
 

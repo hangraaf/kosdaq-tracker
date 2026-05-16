@@ -1,11 +1,11 @@
 export const metadata = {
-  title: "이용약관 — PRISM Stock Tracker",
+  title: "이용약관 — PURPLE STOCK SLIME",
 };
 
 export default function TermsPage() {
   return (
     <div className="prism-doc">
-      <div className="prism-doc-eyebrow">PRISM · Legal</div>
+      <div className="prism-doc-eyebrow">PURPLE STOCK SLIME · Legal</div>
       <h1>서비스 이용약관</h1>
       <div className="prism-doc-meta">시행일자 2026년 5월 16일 · 버전 0.1 (초안)</div>
 
@@ -16,7 +16,7 @@ export default function TermsPage() {
 
       <h2>제1조 (목적)</h2>
       <p>
-        본 약관은 PRISM Stock Tracker(이하 &ldquo;서비스&rdquo;)가 제공하는 KOSPI·KOSDAQ 종목 정보, 차트, 모멘텀 스코어,
+        본 약관은 PURPLE STOCK SLIME(이하 &ldquo;서비스&rdquo;)가 제공하는 KOSPI·KOSDAQ 종목 정보, 차트, 모멘텀 스코어,
         로보어드바이저, 뉴스 분석 등 일체의 정보 제공 서비스(이하 &ldquo;본 서비스&rdquo;)의 이용 조건과 절차,
         회사와 회원의 권리·의무 및 책임 사항을 규정함을 목적으로 합니다.
       </p>
