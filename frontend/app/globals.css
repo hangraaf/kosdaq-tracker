@@ -1616,19 +1616,108 @@ body {
   text-overflow: ellipsis;
 }
 
-/* ── 시계 (헤더 우측, 디지털) ── */
+/* ── 시계 (헤더 우측, 픽셀 LCD) ── */
 .psl-clock {
-  font-family: var(--mono);
-  font-size: 0.82rem;
-  font-weight: 500;
-  color: var(--ink-muted);
-  letter-spacing: 0.04em;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   white-space: nowrap;
+  font-family: var(--mono);
+  color: var(--ink-muted);
+}
+.psl-clock-tag {
+  font-family: var(--mono);
+  font-weight: 800;
+  font-size: 0.62rem;
+  letter-spacing: 0.18em;
+  color: var(--purple);
+  padding: 2px 5px 1px;
+  background: rgba(113, 50, 245, 0.08);
+  border: 1px solid rgba(113, 50, 245, 0.28);
+  border-radius: 3px;
+  text-transform: uppercase;
+  /* 픽셀 베젤 느낌 */
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    inset 0 -1px 0 rgba(113, 50, 245, 0.18);
+  -webkit-font-smoothing: none;
+  font-smooth: never;
+}
+.psl-clock-lcd {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  padding: 3px 7px 2px;
+  background: #110a26;
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      rgba(255, 255, 255, 0.03) 0px,
+      rgba(255, 255, 255, 0.03) 1px,
+      transparent 1px,
+      transparent 2px
+    );
+  border-radius: 4px;
+  box-shadow:
+    inset 0 0 0 1px #1d1240,
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 0 0 1px rgba(113, 50, 245, 0.18);
+}
+.psl-clock-digits {
+  font-family: var(--mono);
+  font-weight: 800;
+  font-size: 0.82rem;
+  color: #d9ccff;
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+  text-shadow:
+    0 0 6px rgba(149, 107, 255, 0.7),
+    0 0 1px rgba(255, 255, 255, 0.8);
+  -webkit-font-smoothing: none;
+  font-smooth: never;
+}
+.psl-clock-colon {
+  font-family: var(--mono);
+  font-weight: 800;
+  font-size: 0.82rem;
+  color: #a988ff;
+  text-shadow: 0 0 6px rgba(149, 107, 255, 0.65);
+  animation: psl-clock-blink 1s steps(2, end) infinite;
+  padding: 0 1px;
+}
+@keyframes psl-clock-blink {
+  50% { opacity: 0.25; }
 }
 .psl-clock-session {
-  color: var(--purple);
-  font-weight: 700;
-  margin-right: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font);
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+.psl-clock-dot {
+  width: 6px;
+  height: 6px;
+  background: #c9c5d6;
+  /* 픽셀 네모 — 둥글지 않게 */
+  border-radius: 1px;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+}
+.psl-clock-session.is-on {
+  color: var(--ink);
+}
+.psl-clock-session.is-on .psl-clock-dot {
+  background: #22c55e;
+  box-shadow:
+    0 0 6px rgba(34, 197, 94, 0.75),
+    inset 0 0 0 1px rgba(0, 80, 30, 0.25);
+  animation: psl-clock-pulse 1.4s ease-in-out infinite;
+}
+@keyframes psl-clock-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.55; }
 }
 
 /* ── 인증 영역 ── */
@@ -1663,25 +1752,72 @@ body {
 }
 .psl-btn-ghost:hover { background: var(--purple-subtle); }
 
-/* 로그인 상태 — 아바타 + 메뉴 */
+/* 로그인 상태 — 픽셀 배지 아바타 (마스코트 톤 정렬) */
 .psl-avatar {
+  position: relative;
   width: 36px;
   height: 36px;
-  border-radius: 50%;
+  border-radius: 6px;
   background: var(--purple);
   color: #fff;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-family: var(--maru);
-  font-weight: 700;
-  font-size: 0.95rem;
+  font-family: var(--mono);
+  font-weight: 800;
+  font-size: 1rem;
+  letter-spacing: 0;
   text-decoration: none;
+  /* 픽셀 입체 베젤 */
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.28),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.28),
+    inset 2px 0 0 rgba(255, 255, 255, 0.10),
+    inset -2px 0 0 rgba(0, 0, 0, 0.15),
+    0 0 0 1.5px #0a0420,
+    0 2px 0 rgba(10, 4, 32, 0.18);
+  -webkit-font-smoothing: none;
+  font-smooth: never;
+  image-rendering: pixelated;
+  transition: transform 120ms steps(2, end), box-shadow 160ms ease;
+}
+/* 모서리 4개 픽셀 — 픽셀 모니터 코너 같은 데코 */
+.psl-avatar::before,
+.psl-avatar::after {
+  content: "";
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.55);
+  pointer-events: none;
+}
+.psl-avatar::before { top: 3px;    left: 3px;  }
+.psl-avatar::after  { bottom: 3px; right: 3px; background: rgba(0, 0, 0, 0.28); }
+.psl-avatar:hover {
+  transform: translate(-1px, -1px);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.32),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.30),
+    inset 2px 0 0 rgba(255, 255, 255, 0.12),
+    inset -2px 0 0 rgba(0, 0, 0, 0.18),
+    0 0 0 1.5px #0a0420,
+    2px 3px 0 rgba(10, 4, 32, 0.25);
 }
 .psl-avatar--premium {
-  background: linear-gradient(135deg, var(--purple) 0%, var(--purple-deep) 100%);
-  box-shadow: 0 0 0 1.5px var(--purple-subtle), 0 4px 14px rgba(113,50,245,0.30);
+  background:
+    linear-gradient(135deg, #ffd45e 0%, #ffae2e 55%, #b87a00 100%);
+  color: #2a1500;
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.55),
+    inset 0 -2px 0 rgba(120, 60, 0, 0.45),
+    inset 2px 0 0 rgba(255, 255, 255, 0.25),
+    inset -2px 0 0 rgba(120, 60, 0, 0.30),
+    0 0 0 1.5px #0a0420,
+    0 0 10px rgba(255, 184, 70, 0.45),
+    0 2px 0 rgba(10, 4, 32, 0.22);
 }
+.psl-avatar--premium::before { background: rgba(255, 255, 255, 0.85); }
+.psl-avatar--premium::after  { background: rgba(80, 40, 0, 0.55); }
 .psl-logout {
   background: transparent;
   border: none;
