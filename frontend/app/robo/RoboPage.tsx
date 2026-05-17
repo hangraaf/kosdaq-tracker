@@ -316,7 +316,7 @@ export default function RoboPage() {
           로그인이 필요합니다
         </div>
         <div style={{ fontSize: "0.86rem", color: "var(--ink-soft)" }}>
-          로그인 후 PRISM 로보어드바이저를 이용할 수 있습니다.
+          로그인 후 퍼플 슬라임 로보어드바이저를 이용할 수 있습니다.
         </div>
       </div>
     );
@@ -334,7 +334,7 @@ export default function RoboPage() {
           PREMIUM
         </div>
         <div style={{ fontFamily: "var(--maru)", fontSize: "1.3rem", fontWeight: 700, color: "var(--ink)", letterSpacing: "-0.4px", marginBottom: "8px" }}>
-          PRISM 로보어드바이저
+          퍼플 슬라임 로보어드바이저
         </div>
         <div style={{ color: "var(--ink-soft)", marginBottom: "22px", fontSize: "0.9rem" }}>
           프리미엄 구독자 전용 서비스입니다.
@@ -380,7 +380,7 @@ export default function RoboPage() {
         fontSize: "1.75rem", fontWeight: 700, letterSpacing: "-0.5px",
         margin: "0 0 8px",
       }}>
-        PRISM 로보어드바이저
+        퍼플 슬라임 로보어드바이저
       </h1>
       <p style={{ color: "var(--ink-muted)", fontSize: "0.88rem", marginBottom: "16px" }}>
         5가지 질문으로 투자 성향을 파악하고, 맞춤 포트폴리오를 추천합니다.

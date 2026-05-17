@@ -88,7 +88,7 @@ function CheckIcon() {
 
 function FeatureList() {
   const features = [
-    "PRISM 로보어드바이저 — 모멘텀 스코어 기반 맞춤 포트폴리오",
+    "퍼플 슬라임 로보어드바이저 — 모멘텀 스코어 기반 맞춤 포트폴리오",
     "실시간 KIS API 차트 데이터",
     "5차원 기술적 분석 스코어링",
     "관심종목 무제한 등록",
@@ -223,7 +223,7 @@ export default function PremiumPage() {
           구독 중입니다
         </div>
         <div style={{ color: "var(--ink-soft)", marginBottom: "24px", fontSize: "0.9rem" }}>
-          PRISM 로보어드바이저를 포함한 모든 기능을 이용 중입니다.
+          퍼플 슬라임 로보어드바이저를 포함한 모든 기능을 이용 중입니다.
         </div>
         {msg && <div style={{ color: "var(--ink-muted)", marginBottom: "16px", fontSize: "0.85rem" }}>{msg}</div>}
         <button
